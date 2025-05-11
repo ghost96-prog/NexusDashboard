@@ -725,7 +725,7 @@ body {
   }
   .buttonsContainerValue {
     flex-direction: column;
-    width: 80%;
+    width: 85%;
 
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
