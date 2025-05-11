@@ -1,0 +1,167 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.mainContainerfiscal {
+  background-color: lavender;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+
+.titleContainerfiscal {
+  background-color: white;
+  height: 70vh;
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  overflow: auto;
+}
+
+.welcomeImage {
+  /* position: absolute; */
+  max-width: 130px;
+  height: 130px;
+  margin-bottom: 1px;
+}
+
+.buttonContainer {
+  margin-top: 20px;
+  flex-direction: column;
+}
+.label2 {
+  font-size: 0.8em;
+  color: #40a578;
+}
+.inputButtonFiscal {
+  width: 15pc;
+  padding: 10px 10px;
+  font-size: 0.8em;
+  color: white;
+  background-color: darkblue;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.inputButtonRegister {
+  width: 15pc;
+  padding: 10px 20px;
+  font-size: 0.8em;
+  color: white;
+  background-color: darkblue;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.inputButtonRegister:hover {
+  background-color: #050c9c;
+}
+
+.inputButtonFiscal:hover {
+  background-color: #050c9c;
+}
+
+.inputContainerfiscal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 10%;
+  margin-top: 30px;
+}
+
+.inputFieldContainerfiscal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 80%;
+  height: 100%; /* Set a fixed height for each input container */
+}
+
+.inputFieldfiscal {
+  width: 100%;
+  height: 95%;
+
+  background-color: white;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  font-size: 0.8em;
+  outline: none;
+}
+
+.inputFieldfiscal:focus {
+  border-bottom: 1.5px solid #40a578;
+  background-color: white;
+}
+
+.inputLabelfiscal {
+  position: absolute;
+  left: 0;
+  color: #ccc;
+  font-size: 0.8em;
+  pointer-events: none;
+  transition: 0.3s ease all;
+}
+.label {
+  font-size: 0.8em;
+  color: darkblue;
+  font-weight: bold;
+}
+.inputFieldfiscal:focus + .inputLabelfiscal,
+.inputLabelActive {
+  bottom: 40px;
+  font-size: 0.8em;
+  color: #40a578;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+  font-size: 1em;
+  color: #ccc;
+}
+
+.passwordToggle:hover {
+  color: #40a578;
+}
+
+.errorMessagefiscal {
+  position: absolute;
+  left: 0;
+  top: 40px;
+  color: red;
+  font-size: 0.8em;
+}
+
+.newToNexus,
+.forgotPin {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #40a578;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.newToNexus:hover,
+.forgotPin:hover {
+  color: darkblue;
+}
+@media (max-width: 900px) {
+  .titleContainerfiscal {
+    width: 80%;
+    height: 70vh;
+  }
+}

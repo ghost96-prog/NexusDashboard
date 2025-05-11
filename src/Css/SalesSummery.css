@@ -1,0 +1,529 @@
+.mainContainerSalesSummery {
+  background-color: aliceblue;
+  min-height: 130vh;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  color: white;
+  overflow: hidden;
+}
+
+.toolBar {
+  width: 100%;
+  height: 50px;
+  background-color: darkblue;
+  color: white;
+  position: fixed;
+  margin-bottom: 30px;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  border-bottom: 1px solid #ddd;
+  overflow: hidden;
+}
+
+.salesContainerSummery {
+  left: 90px;
+  min-height: 50px;
+  width: 90%;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-evenly;
+  border-radius: 8px;
+  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
+  padding: 5px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.tableContainerSummery {
+  background-color: white;
+  left: 90px;
+  height: 400px;
+  width: 90%;
+  margin-top: 20px;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-evenly;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 5px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+.salesTableSales {
+  top: 0;
+  width: 100%;
+  border-collapse: collapse;
+  /* margin: 20px 0; */
+  font-size: 0.8em;
+  text-align: left;
+  background-color: white;
+}
+
+.salesTableSales td {
+  padding: 10px;
+  border: 0.8px solid #f8fafc;
+  color: black;
+  background-color: #f8fafc;
+}
+
+.salesTableSales th {
+  background-color: darkblue;
+  position: sticky;
+  top: 0;
+  padding: 12px 15px;
+  border: 1px solid darkblue;
+  color: white;
+}
+
+.salesTableSales tbody tr:nth-of-type(even) {
+  background-color: #f9f9f9;
+}
+.graphSubContainer {
+  background-color: red;
+  top: 20px;
+  left: 50px;
+  bottom: 5px;
+  height: 90%;
+  right: 0;
+  width: 90%;
+  border-radius: 8px;
+
+  background-color: white;
+  bottom: 0;
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-evenly;
+  font-size: 0.8em;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+.tableSubContainer {
+  background-color: #eef7ff;
+  top: 20px;
+  left: 2.5%;
+  bottom: 5px;
+  height: 90%;
+  right: 0;
+  width: 95%;
+  border-radius: 8px;
+  background-color: white;
+  bottom: 0;
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-evenly;
+  font-size: 0.8em;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  /* padding: 5px; */
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.salesSubContainer {
+  background-color: white;
+  min-height: 120px;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  color: #40a578;
+  border-radius: 50%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+}
+.salesSubContainer:hover {
+  min-height: 130px;
+  min-width: 130px;
+  transform: scale(0.98);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.salesSubContainer h1 {
+  flex-grow: 1; /* Let the title grow to take available space */
+  font-size: 0.8em; /* Adjust font size dynamically */
+  margin-bottom: 10px; /* Add margin to separate from other elements */
+}
+
+.salesSubContainer .amount {
+  flex-grow: 1; /* Let the spans grow to take available space */
+  font-size: 1.5em; /* Adjust font size dynamically */
+  text-align: center; /* Center align the text */
+  color: black;
+  /* font-weight: bold; */
+}
+.salesSubContainer .percentage {
+  flex-grow: 1; /* Let the spans grow to take available space */
+  font-size: 0.6em; /* Adjust font size dynamically */
+  text-align: center; /* Center align the text */
+}
+
+.buttonsContainerSalesSummery {
+  position: relative;
+  left: 90px;
+  min-height: 50px;
+  width: 90%;
+  margin-bottom: 10px;
+  margin-top: 60px;
+  padding: 5px;
+  border-radius: 8px;
+  background-color: white;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.buttonContainerDateSummery {
+  position: relative;
+  display: flex;
+  width: 30%;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-evenly;
+  background-color: white;
+}
+.buttonContainerExportSummery {
+  position: relative;
+  width: 20%;
+  flex-direction: row;
+}
+
+.inputButtonExportSummery {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  padding: 10px 10px;
+  color: black;
+  border: none;
+  border-radius: 5px;
+
+  border-left: 1px solid lightgrey;
+  border-right: 1px solid lightgrey;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  position: relative;
+}
+
+.inputButtonDate {
+  display: flex;
+  align-items: center;
+  padding: 8px 20px;
+  border: 1px solid #d4ebf8;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+  cursor: pointer;
+}
+.inputButtonStore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  padding: 10px 20px;
+  /* font-size: 0.8em; */
+  color: black;
+  border: none;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  cursor: pointer;
+  position: relative;
+}
+/* .inputButtonEmployee {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 85%;
+  height: 40px;
+  padding: 10px 20px;
+  font-size: 0.7em;
+  color: black;
+  border: none;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  cursor: pointer;
+  position: absolute;
+  top: 5px;
+} */
+.inputButtonExportSummery:hover,
+.inputButtonDate:hover,
+.iconContainerBackSummery:hover,
+.iconContainerForwardSummery:hover,
+.inputButtonStore:hover,
+.inputButtonEmployee:hover {
+  background-color: #eef7ff;
+}
+
+.inputButtonExport {
+  width: 100%;
+  /* left: 75%; */
+}
+/* styles.css */
+
+.inputButtonEmployee {
+  left: 65%;
+}
+.iconContainerBackSummery {
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  border-radius: 50px;
+  margin: 5px;
+  height: 40px;
+  width: 40px;
+  background-color: #e4fbff;
+  cursor: pointer;
+}
+.iconLeft {
+  position: relative;
+}
+.iconContainerForwardSummery {
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  border-radius: 50px;
+  margin: 5px;
+
+  height: 40px;
+  width: 40px;
+  background-color: #e4fbff;
+  cursor: pointer;
+}
+.buttonContainerDateSummery :hover {
+  background-color: #eef7ff;
+}
+
+.iconRight {
+  position: relative;
+}
+.content {
+  transition: margin-left 0.3s ease;
+  flex: 1;
+  margin-top: 50px;
+}
+
+/* .content.collapsed {
+  margin-left: 0;
+}
+
+.content.shifted {
+  margin-left: 250px;
+} */
+
+.sidebar-icon {
+  left: 30px;
+  cursor: pointer;
+  position: absolute;
+  font-size: 1rem;
+}
+
+.toolBarTitle {
+  margin-left: 5%;
+  top: 30%;
+  position: absolute;
+  font-size: 1rem;
+}
+/* src/Css/SalesSummery.css */
+.dropdown {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  z-index: 1001;
+  min-width: 50%;
+  overflow-wrap: break-word; /* Add this line */
+  padding: 10px; /* Add some padding */
+  box-sizing: border-box; /* Ensure padding is included in width calculation */
+}
+
+.dropdownItem {
+  display: flex;
+  flex-direction: row;
+  color: black;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: 0.5s all;
+  left: 70px;
+}
+
+.dropdownItem:hover {
+  background-color: #f0f0f0;
+}
+.iconCalender {
+  position: absolute;
+  left: 0px;
+}
+/* Ensure dropdowns don't get cut off */
+.buttonContainerEmployees {
+  top: 0;
+  left: 45%;
+  width: 200px;
+  position: absolute;
+  transition: 0.5s all;
+}
+.dropdownMenu {
+  position: absolute;
+  top: 40px; /* adjust if needed */
+  right: 25px;
+  height: 40px;
+  background-color: white;
+  border: 1px solid lightblue;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+}
+.buttonContainerStoresSummery {
+  width: 20%;
+  position: relative;
+  transition: 0.5s all;
+}
+.checkboxContainer {
+  /* position: absolute; */
+  margin-right: 10px;
+}
+.inputCheckBox {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-radius: 5px;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s; /* Animation transition */
+}
+
+.inputCheckBox:checked {
+  background-color: darkblue;
+  border-color: white;
+}
+
+.datePickerContainer {
+  position: absolute;
+  top: 50px; /* Adjust based on your layout */
+  left: 0;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  z-index: 1000; /* Ensure it appears above other elements */
+  transition: 0.5s, all; /* Animation transition */
+  max-width: 100%; /* Ensure it doesn't overflow */
+  box-sizing: border-box; /* Include padding in the width calculation */
+}
+/* Mobile and Tablet adjustments */
+
+@media (min-width: 280px) and (max-width: 499px) {
+  .buttonsContainerSalesSummery {
+    flex-direction: column;
+    width: 75%;
+    left: 70px;
+
+    align-items: center;
+    gap: 16px; /* Add more space vertically if needed */
+  }
+  .buttonContainerDateSummery {
+    align-items: center;
+    width: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+  }
+  .tableContainerSummery {
+    width: 75%;
+    left: 70px;
+  }
+  .salesContainerSummery {
+    width: 75%;
+    left: 70px;
+  }
+  .receiptsContainerFiscal {
+    overflow-y: auto;
+    overflow-x: auto;
+  }
+  .datePickerContainer {
+    width: 95%; /* Even wider for small screens */
+    top: 70px; /* Further adjust top positioning */
+    left: 2.5%; /* Adjust horizontal centering */
+    overflow-x: auto; /* Enable horizontal scrolling */
+    white-space: nowrap; /* Prevent wrapping of content */
+  }
+  .buttonContainerStoresSummery {
+    width: 100%;
+  }
+  .buttonContainerExportSummery {
+    width: 100%;
+  }
+}
+@media (min-width: 500px) and (max-width: 799px) {
+  .buttonsContainerSalesSummery {
+    flex-direction: column;
+    width: 85%;
+
+    align-items: center;
+    gap: 16px; /* Add more space vertically if needed */
+  }
+  .buttonContainerDateSummery {
+    align-items: center;
+    width: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+  }
+  .salesContainerSummery {
+    width: 85%;
+  }
+  .tableContainerSummery {
+    width: 85%;
+  }
+  .receiptsContainerFiscal {
+    overflow-y: auto;
+    overflow-x: auto;
+  }
+  .datePickerContainer {
+    width: 95%; /* Even wider for small screens */
+    top: 70px; /* Further adjust top positioning */
+    left: 2.5%; /* Adjust horizontal centering */
+    overflow-x: auto; /* Enable horizontal scrolling */
+    white-space: nowrap; /* Prevent wrapping of content */
+  }
+  .buttonContainerStoresSummery {
+    width: 100%;
+  }
+  .buttonContainerExportSummery {
+    width: 100%;
+  }
+}

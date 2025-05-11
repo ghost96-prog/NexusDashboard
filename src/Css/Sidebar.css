@@ -1,0 +1,278 @@
+.sidebar {
+  width: 250px;
+  height: 100%;
+  background: white;
+  color: black;
+  position: fixed;
+  top: 50px;
+  left: -250px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: 0.5s all;
+  padding: 5px;
+  box-sizing: border-box;
+  overflow: auto;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px;
+    overflow-x: auto;
+  }
+  .sidebar.collapsed .userEmailside {
+    opacity: 0;
+    transition: 0.5s all;
+  }
+
+  .sidebar.collapsed ul li span {
+    opacity: 0;
+    transition: 0.5s all;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 150px;
+    overflow-x: auto;
+  }
+  .sidebar.collapsed .userEmailside {
+    opacity: 0;
+    transition: 0.5s all;
+  }
+
+  .sidebar.collapsed ul li span {
+    opacity: 0;
+    transition: 0.5s all;
+  }
+}
+
+.sidebar-header {
+  display: flex;
+  cursor: pointer;
+  flex-direction: column;
+  width: 100%;
+  height: 50px;
+  padding: 0, 5px, 5px, 0;
+  align-items: center;
+  justify-content: center;
+  background-color: #eef7ff;
+}
+
+.listItemsContainer {
+  margin: 5px;
+  background-color: white;
+}
+
+.userEmailside {
+  font-size: 0.8rem;
+  color: black;
+}
+
+.user {
+  font-size: 2rem;
+  margin-left: 4px;
+  color: grey;
+  padding: 0.1rem;
+}
+
+.sidebar.open {
+  left: 0;
+  transition: 0.5s all;
+}
+
+.sidebar.collapsed {
+  width: 65px;
+  left: 0;
+  transition: 0.5s all;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.sidebar ul li {
+  margin: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 35px;
+  width: 100%;
+  border-radius: 0.7rem;
+}
+
+.sidebar ul li:hover {
+  background-color: #eef7ff;
+  transition: 0.25s all;
+}
+
+.sidebar ul li.active {
+  background-color: lightseagreen;
+  transition: 0.5s all;
+}
+
+.sidebar ul li.active span {
+  color: white;
+  transition: 0.5s all;
+}
+
+.icon {
+  margin-left: 20px;
+}
+
+.line {
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 5px;
+}
+
+.sidebar ul li span {
+  text-decoration: none;
+  display: flex;
+  color: black;
+  align-items: center;
+  font-size: 0.8rem;
+  margin-left: 30px;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 3s ease;
+}
+
+.sidebar.collapsed .userEmailside {
+  opacity: 0;
+  transition: 0.5s all;
+}
+
+.sidebar.collapsed ul li span {
+  opacity: 0;
+  transition: 0.5s all;
+}
+.sidebar ul li:hover {
+  background-color: #eef7ff;
+  transform: scale(0.98);
+  transition: all 0.2s ease;
+}
+
+.sidebar ul li:hover .labelside {
+  font-size: 0.75rem;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.sidebar ul li:hover .icon {
+  transform: scale(0.9);
+  transition: transform 0.2s ease;
+}
+.subRoutes {
+  display: block;
+  position: fixed;
+  background: white;
+  flex-direction: column;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  min-width: 200px;
+  transition: 0.5s all;
+  z-index: 1000;
+}
+
+/* Submenu items */
+.subItem {
+  padding: 8px 15px;
+  cursor: pointer;
+  color: #333;
+  font-size: 0.85rem; /* Default font size */
+  transition: all 0.2s ease;
+}
+
+/* Hover effect for submenu items */
+.subItem:hover {
+  background-color: #f5f5f5;
+  font-size: 0.8rem; /* Smaller font size on hover */
+  transform: scale(0.98); /* Optional: Slightly shrink the item */
+}
+.signOutButtonContainer {
+  position: absolute;
+  bottom: 50px;
+  width: 80%;
+  height: 80px;
+  display: flex;
+  border-top: 1px solid #ccc;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  transition: 0.5s all;
+}
+
+.signOutButton {
+  background-color: #40a578;
+  border: none;
+  width: 80%;
+  color: white;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.signOutButton:hover {
+  background-color: green;
+}
+
+.signOutConfirm {
+  position: fixed;
+  background: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  min-width: 200px;
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.confirmText {
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: black;
+}
+
+.confirmButtons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.confirmButton {
+  padding: 5px 15px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.confirmButton.confirm {
+  background-color: #ff4d4d;
+  color: white;
+}
+
+.confirmButton.cancel {
+  background-color: #f0f0f0;
+}
+
+.confirmButton:hover {
+  opacity: 0.9;
+}
+
+.arrow-icon {
+  margin-left: auto;
+  padding-right: 10px;
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+
+.listItem.active .arrow-icon {
+  transform: rotate(180deg);
+}

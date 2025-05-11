@@ -1,0 +1,78 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Poppins", sans-serif;
+}
+.mainContainer {
+  background-color: lavender;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* font-size: calc(10px + 2vmin); */
+}
+
+.titleContainerWelcome {
+  background-color: white;
+  min-height: 70vh;
+  width: 40%;
+  display: flex;
+
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: #40a578;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+.welcomeImage {
+  max-width: 200px;
+  height: 200px;
+  margin-bottom: 10px;
+}
+
+.buttonContainer {
+  margin-top: 20px;
+  flex-direction: column;
+}
+
+.inputButtonvirtual {
+  width: 15pc;
+  padding: 10px 20px;
+  font-size: 1rem;
+  opacity: 0.5;
+  color: white;
+  background-color: grey;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.inputButtonRegister {
+  width: 15pc;
+  padding: 10px 20px;
+  font-size: 1rem;
+  color: white;
+  background-color: darkblue;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.inputButtonRegister:hover {
+  background-color: #050c9c;
+}
+
+.inputButtonvirtual:hover {
+  background-color: dark#40A578;
+}
+.lable {
+  font-size: 1rem;
+}
+@media (max-width: 900px) {
+  .titleContainerWelcome {
+    width: 80%;
+    height: 70vh;
+  }
+}

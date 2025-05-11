@@ -1,0 +1,44 @@
+.inventoryListItem {
+  background-color: #f8fafc;
+  cursor: pointer;
+  color: black;
+  min-width: 600px; /* Adjust based on your expected minimum layout */
+}
+
+.InventoryDetails {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  margin: 0; /* Ensure no margins */
+}
+
+.InventoryDetail {
+  flex: 1;
+  padding: 0 10px;
+  text-align: left;
+  font-size: 0.7em;
+  color: black;
+}
+
+.InventoryDetail:first-child {
+  padding-left: 0;
+}
+
+.InventoryDetail:last-child {
+  padding-right: 0;
+}
+
+.headerItem {
+  flex: 1;
+  padding: 0 10px;
+  text-align: left;
+  margin: 0; /* Ensure no margins */
+}
+
+.headerItem:first-child {
+  padding-left: 0;
+}
+
+.headerItem:last-child {
+  padding-right: 0;
+}
