@@ -560,10 +560,10 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-  .tableContainerSummery {
+  /* .tableContainerSummery {
     width: 75%;
     left: 70px;
-  }
+  } */
   .salesContainerSummery {
     width: 75%;
     left: 70px;
@@ -608,9 +608,9 @@ body {
   .salesContainerSummery {
     width: 85%;
   }
-  .tableContainerSummery {
+  /* .tableContainerSummery {
     width: 80%;
-  }
+  } */
   .receiptsContainerReceipts {
     overflow-y: auto;
     overflow-x: auto;
