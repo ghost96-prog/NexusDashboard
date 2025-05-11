@@ -631,11 +631,11 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-
+  /* 
   .salesContainerSummery {
     width: 75%;
     left: 70px;
-  }
+  } */
   .productsContainerProducts {
     width: 75%;
     left: 70px;
@@ -679,9 +679,9 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-  .salesContainerSummery {
+  /* .salesContainerSummery {
     width: 85%;
-  }
+  } */
 
   .productsContainerProducts {
     overflow-y: auto;

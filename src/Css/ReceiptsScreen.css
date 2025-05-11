@@ -561,10 +561,10 @@ body {
     justify-content: space-evenly;
   }
 
-  .salesContainerSummery {
+  /* .salesContainerSummery {
     width: 75%;
     left: 70px;
-  }
+  } */
   .receiptsContainerReceipts {
     width: 75%;
     left: 70px;
@@ -602,9 +602,9 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-  .salesContainerSummery {
+  /* .salesContainerSummery {
     width: 85%;
-  }
+  } */
 
   .receiptsContainerReceipts {
     overflow-y: auto;
