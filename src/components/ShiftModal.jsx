@@ -41,10 +41,6 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
     pdf.text("Shift Details", margin, y);
     y += 10;
 
-    // Shift details content
-    pdf.setFontSize(12);
-    pdf.setFont(undefined, "normal");
-
     // Helper function to add label-value pairs
     const addRow = (label, value, yPos) => {
       pdf.setFont(undefined, "bold");
@@ -53,6 +49,8 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       pdf.text(value, pageWidth - margin, yPos, { align: "right" });
     };
 
+    // Shift details
+    pdf.setFontSize(12);
     addRow("Opened By", selectedShift.createdBy, y);
     y += 7;
     addRow("Opened", new Date(selectedShift.openingDate).toLocaleString(), y);
@@ -62,18 +60,14 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
     addRow("Closed", new Date(selectedShift.closingDate).toLocaleString(), y);
     y += 12;
 
-    // Financial summary section header
+    // Financial summary
     pdf.setFontSize(14);
     pdf.setFont(undefined, "bold");
-    pdf.text("Financial Summary", margin, y);
+    pdf.text("Cash Drawer Summary", margin, y);
     y += 10;
 
-    // Financial details
     pdf.setFontSize(12);
-    pdf.setFont(undefined, "normal");
-
     const formatCurrency = (value) => `$${value?.toFixed(2) || "0.00"}`;
-
     addRow("Net Sales", formatCurrency(selectedShift.netSales), y);
     y += 7;
     addRow("Starting Cash", formatCurrency(selectedShift.startingCash), y);
@@ -91,16 +85,37 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
     addRow("Variance", formatCurrency(selectedShift.variance), y);
     y += 12;
 
-    // Sales breakdown section header
+    // Sales Summary
+    pdf.setFontSize(14);
+    pdf.setFont(undefined, "bold");
+    pdf.text("Sales Summary", margin, y);
+    y += 10;
+
+    pdf.setFontSize(12);
+    addRow(
+      "Gross Sales (USD)",
+      formatCurrency(selectedShift.totalGrossSalesUSD),
+      y
+    );
+    y += 7;
+    addRow("Refunds", formatCurrency(selectedShift.totalRefunds), y);
+    y += 7;
+    addRow("Discounts", formatCurrency(selectedShift.totalDiscounts), y);
+    y += 7;
+    addRow("Net Sales (USD)", formatCurrency(selectedShift.netSales), y);
+    y += 7;
+    addRow("Cost of Goods Sold", formatCurrency(selectedShift.totalCOGS), y);
+    y += 7;
+    addRow("Net Profit", formatCurrency(selectedShift.profit), y);
+    y += 12;
+
+    // Sales Breakdown
     pdf.setFontSize(14);
     pdf.setFont(undefined, "bold");
     pdf.text("Sales Breakdown", margin, y);
     y += 10;
 
-    // Sales breakdown content
     pdf.setFontSize(12);
-    pdf.setFont(undefined, "normal");
-
     selectedShift.salesBreakdown?.forEach(({ currency, totalAmount }) => {
       const formattedAmount = `${
         currency === "USD" ? "$" : ""
@@ -109,17 +124,22 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       y += 7;
     });
 
-    // Add generated timestamp at bottom
+    // Timestamp
     pdf.setFontSize(10);
     pdf.text(
       `Generated on ${new Date().toLocaleString()}`,
       pageWidth / 2,
       280,
-      { align: "center" }
+      {
+        align: "center",
+      }
     );
 
-    pdf.save(`shift-summary-${store}-${selectedShift.shiftNumber}.pdf`);
+    pdf.save(
+      `shift-summary-${store.storeName}-${selectedShift.shiftNumber}.pdf`
+    );
   };
+
   if (!selectedShift) return null;
 
   return (
@@ -158,6 +178,8 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
         </div>
         <hr />
         <div className="section">
+          <div className="section-header">CASH DRAWER</div>
+
           <div className="data-row">
             <span className="labelShift">Net Sales:</span>
             <span className="value">${selectedShift.netSales?.toFixed(2)}</span>
@@ -183,7 +205,7 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
             </span>
           </div>
           <div className="data-row">
-            <span className="labelShift">Total Expected:</span>
+            <span className="labelShift">TOTAL EXPECTED CASH:</span>
             <span className="value">
               ${selectedShift.expectedCash?.toFixed(2)}
             </span>
@@ -199,6 +221,74 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
             <span className="value">${selectedShift.variance?.toFixed(2)}</span>
           </div>
         </div>
+        <hr />
+
+        <div className="section">
+          <div className="section-header">SALES SUMMARY</div>
+
+          <div className="data-row">
+            <span className="labelShift bold">GROSS SALES (In USD):</span>
+            <span className="value">
+              $
+              {selectedShift?.totalGrossSalesUSD?.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+
+          <div className="data-row">
+            <span className="labelShift">Refunds:</span>
+            <span className="value">
+              $
+              {selectedShift?.totalRefunds?.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+
+          <div className="data-row">
+            <span className="labelShift">Discounts:</span>
+            <span className="value">
+              $
+              {selectedShift?.totalDiscounts?.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+
+          <div className="data-row">
+            <span className="labelShift bold">NET SALES (In USD):</span>
+            <span className="value">
+              $
+              {selectedShift?.netSales?.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+
+          <div className="data-row">
+            <span className="labelShift">Cost of Goods Sold:</span>
+            <span className="value">
+              $
+              {selectedShift?.totalCOGS?.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+
+          <div className="data-row separator"></div>
+
+          <div className="data-row">
+            <span className="labelShift bold profit">NET PROFIT:</span>
+            <span className="value profit">
+              $
+              {selectedShift?.profit?.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+        </div>
+
         <hr />
         <div className="section">
           <h3>Sales Breakdown</h3>

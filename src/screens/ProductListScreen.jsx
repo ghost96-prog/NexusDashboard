@@ -564,7 +564,7 @@ const ProductListScreen = () => {
       </div>
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-      <div className="buttonsContainerReceipts">
+      <div className="buttonsContainerProducts">
         {/* <div className="addProductsButtonContainer">
           <button
             className="addProductsButton"

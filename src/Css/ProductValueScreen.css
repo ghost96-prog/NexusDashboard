@@ -269,22 +269,6 @@ body {
   text-align: center; /* Center align the text */
 }
 
-.buttonsContainerReceipts {
-  margin-top: 60px;
-  margin-bottom: 10px;
-
-  position: relative;
-  min-height: 50px;
-  width: 90%;
-  left: 90px;
-  border-radius: 8px;
-  background-color: white;
-  padding: 5px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-evenly;
-}
 .buttonContainerDateReceipts {
   position: relative;
   display: flex;
@@ -507,6 +491,22 @@ body {
   font-size: 1rem;
 }
 
+.buttonsContainerValue {
+  margin-top: 60px;
+  margin-bottom: 10px;
+
+  position: relative;
+  min-height: 50px;
+  width: 90%;
+  left: 90px;
+  border-radius: 8px;
+  background-color: white;
+  padding: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-evenly;
+}
 /* src/Css/SalesSummery.css */
 .dropdown {
   position: absolute;
@@ -621,14 +621,6 @@ body {
 }
 /* Mobile and Tablet adjustments */
 @media (min-width: 900px) {
-  .buttonsContainerReceipts {
-    flex-direction: row;
-    align-items: center;
-    width: 85%;
-    left: 90px;
-
-    gap: 16px; /* Add more space vertically if needed */
-  }
   .buttonContainerDateReceipts {
     align-items: center;
     width: 100%;
@@ -637,6 +629,14 @@ body {
     flex-direction: row;
     align-items: center;
     justify-content: space-evenly;
+  }
+  .buttonsContainerValue {
+    flex-direction: row;
+    align-items: center;
+    width: 85%;
+    left: 90px;
+
+    gap: 16px; /* Add more space vertically if needed */
   }
   .datePickerContainerReceipts {
     width: 90%; /* Take up more width on smaller screens */
@@ -665,14 +665,6 @@ body {
 }
 
 @media (min-width: 280px) and (max-width: 499px) {
-  .buttonsContainerReceipts {
-    flex-direction: column;
-    width: 75%;
-    left: 70px;
-
-    align-items: center;
-    gap: 16px; /* Add more space vertically if needed */
-  }
   .buttonContainerDateReceipts {
     align-items: center;
     width: 100%;
@@ -682,9 +674,13 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-  .tableContainerSummery {
+  .buttonsContainerValue {
+    flex-direction: column;
     width: 75%;
     left: 70px;
+
+    align-items: center;
+    gap: 16px; /* Add more space vertically if needed */
   }
   .valueContainerSummery {
     width: 75%;
@@ -718,13 +714,6 @@ body {
   }
 }
 @media (min-width: 500px) and (max-width: 799px) {
-  .buttonsContainerReceipts {
-    flex-direction: column;
-    width: 85%;
-
-    align-items: center;
-    gap: 16px; /* Add more space vertically if needed */
-  }
   .buttonContainerDateReceipts {
     align-items: center;
     width: 100%;
@@ -734,12 +723,17 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
+  .buttonsContainerValue {
+    flex-direction: column;
+    width: 80%;
+
+    align-items: center;
+    gap: 16px; /* Add more space vertically if needed */
+  }
   .salesContainerSummery {
     width: 85%;
   }
-  .tableContainerSummery {
-    width: 80%;
-  }
+
   .productsContainerProducts {
     overflow-y: auto;
     overflow-x: auto;

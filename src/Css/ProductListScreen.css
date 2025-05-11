@@ -219,7 +219,7 @@ body {
   overflow-x: auto;
 }
 
-.buttonsContainerReceipts {
+.buttonsContainerProducts {
   margin-top: 60px;
   margin-bottom: 10px;
 
@@ -570,7 +570,7 @@ body {
 }
 /* Mobile and Tablet adjustments */
 @media (min-width: 900px) {
-  .buttonsContainerReceipts {
+  .buttonsContainerProducts {
     flex-direction: row;
     align-items: center;
     width: 85%;
@@ -614,7 +614,7 @@ body {
 }
 
 @media (min-width: 280px) and (max-width: 499px) {
-  .buttonsContainerReceipts {
+  .buttonsContainerProducts {
     flex-direction: column;
     width: 75%;
     left: 70px;
@@ -631,10 +631,7 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-  .tableContainerSummery {
-    width: 75%;
-    left: 70px;
-  }
+
   .salesContainerSummery {
     width: 75%;
     left: 70px;
@@ -666,7 +663,7 @@ body {
   }
 }
 @media (min-width: 500px) and (max-width: 799px) {
-  .buttonsContainerReceipts {
+  .buttonsContainerProducts {
     flex-direction: column;
     width: 85%;
 
@@ -685,9 +682,7 @@ body {
   .salesContainerSummery {
     width: 85%;
   }
-  .tableContainerSummery {
-    width: 80%;
-  }
+
   .productsContainerProducts {
     overflow-y: auto;
     overflow-x: auto;

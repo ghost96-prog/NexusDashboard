@@ -653,7 +653,7 @@ const ProductValueScreen = () => {
         <span className="toolBarTitle">Inventory Total Value</span>
       </div>
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-      <div className="buttonsContainerReceipts">
+      <div className="buttonsContainerValue">
         {/* <div className="addProductsButtonContainer">
           <button
             className="addProductsButton"

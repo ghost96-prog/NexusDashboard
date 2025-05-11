@@ -601,10 +601,7 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-  .tableContainerSummery {
-    width: 75%;
-    left: 70px;
-  }
+
   .salesContainerSummery {
     width: 75%;
     left: 70px;
@@ -649,9 +646,7 @@ body {
   .salesContainerSummery {
     width: 85%;
   }
-  .tableContainerSummery {
-    width: 80%;
-  }
+
   .InventoryContainerInventory {
     overflow-y: auto;
     overflow-x: auto;
