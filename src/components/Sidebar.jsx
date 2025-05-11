@@ -238,10 +238,10 @@ const Sidebar = ({ isOpen }) => {
         <div
           className="signOutConfirm"
           ref={submenuRef}
-          style={{
-            top: hoveredItem?.top,
-            left: hoveredItem?.left,
-          }}
+          // style={{
+          //   top: hoveredItem?.top,
+          //   left: hoveredItem?.left,
+          // }}
         >
           <div className="confirmText">Are you sure you want to sign out?</div>
           <div className="confirmButtons">

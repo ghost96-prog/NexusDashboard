@@ -14,38 +14,6 @@
   z-index: 1000;
 }
 
-@media (max-width: 768px) {
-  .sidebar {
-    width: 200px;
-    overflow-x: auto;
-  }
-  .sidebar.collapsed .userEmailside {
-    opacity: 0;
-    transition: 0.5s all;
-  }
-
-  .sidebar.collapsed ul li span {
-    opacity: 0;
-    transition: 0.5s all;
-  }
-}
-
-@media (max-width: 480px) {
-  .sidebar {
-    width: 150px;
-    overflow-x: auto;
-  }
-  .sidebar.collapsed .userEmailside {
-    opacity: 0;
-    transition: 0.5s all;
-  }
-
-  .sidebar.collapsed ul li span {
-    opacity: 0;
-    transition: 0.5s all;
-  }
-}
-
 .sidebar-header {
   display: flex;
   cursor: pointer;
@@ -225,11 +193,12 @@
 }
 
 .signOutConfirm {
-  position: fixed;
+  top: 43%;
+  position: absolute;
   background: white;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   z-index: 1001;
-  min-width: 200px;
+  min-width: 100px;
   border-radius: 5px;
   padding: 10px;
 }
@@ -267,7 +236,8 @@
 }
 
 .arrow-icon {
-  margin-left: auto;
+  position: absolute;
+  right: 0;
   padding-right: 10px;
   font-size: 0.7rem;
   transition: transform 0.2s;
@@ -275,4 +245,40 @@
 
 .listItem.active .arrow-icon {
   transform: rotate(180deg);
+}
+@media (min-width: 500) and (max-width: 799px) {
+  .sidebar {
+    width: 200px;
+    overflow-x: auto;
+  }
+  .sidebar.collapsed .userEmailside {
+    opacity: 0;
+    transition: 0.5s all;
+  }
+
+  .sidebar.collapsed ul li span {
+    opacity: 0;
+    transition: 0.5s all;
+  }
+}
+
+@media (min-width: 200px) and (max-width: 499px) {
+  .sidebar {
+    width: 270px;
+    overflow-x: auto;
+  }
+  .signOutConfirm {
+    /* margin-left: 0px;
+    position: absolute;
+    background-color: red; */
+  }
+  .sidebar.collapsed .userEmailside {
+    opacity: 0;
+    transition: 0.5s all;
+  }
+
+  .sidebar.collapsed ul li span {
+    opacity: 0;
+    transition: 0.5s all;
+  }
 }
