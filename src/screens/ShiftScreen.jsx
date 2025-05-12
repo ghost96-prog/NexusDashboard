@@ -93,6 +93,22 @@ const ShiftScreen = () => {
       toast.error("Invalid authentication token.");
     }
   }, []);
+  useEffect(() => {
+    if (modalShift) {
+      // Push a state into the history when modal opens
+      window.history.pushState({ modalOpen: true }, "");
+
+      const handlePopState = () => {
+        setModalShift(null); // Close modal on back button
+      };
+
+      window.addEventListener("popstate", handlePopState);
+
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }
+  }, [modalShift]);
 
   console.log("====================================");
   console.log(email);
