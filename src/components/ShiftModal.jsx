@@ -5,18 +5,7 @@ import "../Css/ShiftModal.css";
 
 function ShiftModal({ onClose, store, email, selectedShift }) {
   const contentRef = useRef();
-  useEffect(() => {
-    const handlePopState = () => {
-      onClose();
-    };
 
-    window.history.pushState(null, null, window.location.pathname); // Push dummy state
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [onClose]);
   const handleDownloadPdf = () => {
     const pdf = new jsPDF();
     const pageWidth = pdf.internal.pageSize.getWidth();

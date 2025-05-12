@@ -89,7 +89,21 @@ const ReceiptsScreen = () => {
       toast.error("Invalid authentication token.");
     }
   }, []);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setModalReceipt(null);
+      }
+    };
 
+    if (modalReceipt) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [modalReceipt]);
   console.log("====================================");
   console.log(email);
   console.log("====================================");
