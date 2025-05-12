@@ -30,9 +30,10 @@ import {
   subYears,
   addYears,
   addHours,
+  isAfter,
 } from "date-fns";
 import enUS from "date-fns/locale/en-US";
-import "../Css/ShiftScreen.css";
+import "../Css/LaybyeScreen.css";
 import "react-date-range/dist/styles.css"; // main style file
 import "react-date-range/dist/theme/default.css"; // theme css file
 import { IoCalendar } from "react-icons/io5";
@@ -49,8 +50,10 @@ import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import ShiftListItem from "../components/ShiftListItem";
 import ShiftModal from "../components/ShiftModal";
+import LaybyeListItem from "../components/LaybyeListItem";
+import PaymentsScreen from "./PaymentsScreen";
 
-const ShiftScreen = () => {
+const LaybyeScreen = () => {
   // const stores = ["Store 1", "Store 2", "Store 3"];
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -74,10 +77,14 @@ const ShiftScreen = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [email, setEmail] = useState(null);
-  const [containerShifts, setContainerShifts] = useState([]);
-  const [selectedShift, setSelectedShift] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [paymentsData, setPaymentsData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedLaybye, setSelectedLaybye] = useState(null);
+  const [selectedLaybyeData, setSelectedLaybyeData] = useState(null);
 
-  const [allReceipts, setAllReceipts] = useState([]);
+  const [laybyes, setLaybyes] = useState([]);
   useEffect(() => {
     const token = localStorage.getItem("token"); // Or sessionStorage if needed
 
@@ -93,7 +100,17 @@ const ShiftScreen = () => {
       toast.error("Invalid authentication token.");
     }
   }, []);
-
+  const fetchDepositsandPayments = async () => {
+    setLoading(true);
+    try {
+      await fetchDepositsOnlineAndSetToRealm();
+      await fetchPaymentsOnlineAndSetToRealm();
+    } catch (err) {
+      console.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   console.log("====================================");
   console.log(email);
   console.log("====================================");
@@ -153,7 +170,7 @@ const ShiftScreen = () => {
       console.error("Error fetching stores:", error);
     }
   };
-  const fetchShifts = async () => {
+  const fetchPaymentsOnlineAndSetToRealm = async () => {
     try {
       const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
 
@@ -164,9 +181,9 @@ const ShiftScreen = () => {
 
       const decoded = jwtDecode(token);
       const userEmail = decoded.email;
-      const userId = decoded.userId;
+
       const response = await fetch(
-        `https://nexuspos.onrender.com/api/shiftsRouter/shifts?email=${encodeURIComponent(
+        `https://nexuspos.onrender.com/api/laybyeRouter/laybyes?email=${encodeURIComponent(
           userEmail
         )}`
       );
@@ -176,18 +193,50 @@ const ShiftScreen = () => {
         return;
       }
 
-      const shiftsFromServer = await response.json();
-      console.log("====================================");
-      console.log("shiftsFromServer", shiftsFromServer);
-      console.log("====================================");
+      const responsedata = await response.json();
+      setPaymentsData(responsedata.data); // Set payments data to state
+      const depositLaybyes = responsedata.data.filter(
+        (payment) => payment.type === "Deposit"
+      );
+      setLaybyes(depositLaybyes); // Set laybyes state with filtered data
+    } catch (error) {
+      if (!navigator.onLine) {
+        toast.error("No internet connection. Please check your network.");
+      } else {
+        toast.error("An error occurred while fetching stores.");
+      }
+      console.error("Error fetching stores:", error);
+    }
+  };
 
-      // Filter shifts based on userId
-      const filteredShifts = shiftsFromServer.data.filter(
-        (shift) => shift.userId === userId
+  const fetchDepositsOnlineAndSetToRealm = async () => {
+    try {
+      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
+
+      if (!token) {
+        toast.error("Authentication token is missing.");
+        return;
+      }
+
+      const decoded = jwtDecode(token);
+      const userEmail = decoded.email;
+
+      const response = await fetch(
+        `https://nexuspos.onrender.com/api/laybyeRouter/laybyes?email=${encodeURIComponent(
+          userEmail
+        )}`
       );
 
-      // Set the filtered shifts to the state for rendering
-      setContainerShifts(filteredShifts);
+      if (!response.ok) {
+        const errorMessage = await response.text();
+        toast.error("User not found or invalid email.");
+        return;
+      }
+
+      const responsedata = await response.json();
+      console.log("====================================");
+      console.log("data", responsedata);
+      console.log("====================================");
     } catch (error) {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
@@ -208,15 +257,17 @@ const ShiftScreen = () => {
   };
 
   const onRefresh = async () => {
-    NProgress.start(); // 🔵 Start progress bar
     setIsRefreshing(true);
-    await fetchShifts()
+    NProgress.start(); // 🔵 Start progress bar
+    await fetchDepositsandPayments()
       .then(() => {
         NProgress.done(); // ✅ End progress bar
         setIsRefreshing(false);
       })
       .catch((error) => {
         console.error(error);
+        NProgress.done(); // ✅ End progress bar
+
         setIsRefreshing(false);
       });
   };
@@ -240,13 +291,13 @@ const ShiftScreen = () => {
   const handleClickOutside = (event) => {
     if (
       isStoreDropdownOpen &&
-      !event.target.closest(".buttonContainerStoresReceipts")
+      !event.target.closest(".buttonContainerStoreslaybyes")
     ) {
       setIsStoreDropdownOpen(false);
       console.log("Selected Stores:", selectedStores);
 
       if (selectedStores.length === 0) {
-        setReceipts([]);
+        setlaybyes([]);
       } else {
         onRefresh(selectedOption, selectedStartDate, selectedEndDate);
       }
@@ -254,7 +305,7 @@ const ShiftScreen = () => {
 
     if (
       isExportDropdownOpen &&
-      !event.target.closest(".buttonContainerExportReceipts")
+      !event.target.closest(".buttonContainerExportlaybyes")
     ) {
       setIsExportDropdownOpen(false);
       console.log("Selected Export Option:");
@@ -288,10 +339,58 @@ const ShiftScreen = () => {
     console.log("open receipt", item);
     setModalShift(item);
   }
+
+  const handleLaybyePress = (laybye) => {
+    setSelectedLaybye(laybye);
+    setModalVisible(true);
+  };
   const handleToggleDropdown = () => {
     setShowDropdown((prev) => !prev);
   };
+  // Helper function to calculate late payment fee
+  const calculateLatePayment = (
+    totalBill,
+    totalPaid,
+    balance,
+    finalPaymentDate
+  ) => {
+    if (balance > 0 && finalPaymentDate) {
+      const currentDate = new Date();
+      const isLate = isAfter(currentDate, new Date(finalPaymentDate));
+      if (isLate) {
+        const overdueAmount = totalBill - totalPaid;
+        const lateFee = overdueAmount * 0.05; // 5% late fee
+        return lateFee;
+      }
+    }
+    return 0;
+  };
+  const handleNavigatePayLaybye = (item) => {
+    const formattedItem = {
+      ...item,
+      date: new Date(item.date).toISOString(),
+      finalPaymentDate: new Date(item.finalPaymentDate).toISOString(),
+    };
 
+    setSelectedLaybyeData({
+      laybyeData: formattedItem,
+      paymentsData: paymentsData,
+    });
+
+    setModalVisible(true);
+  };
+
+  //   const handleNavigatePayLaybye = (item) => {
+  //     const formattedItem = {
+  //       ...item,
+  //       date: new Date(item.date).toISOString(),
+  //       finalPaymentDate: new Date(item.finalPaymentDate).toISOString(),
+  //     };
+  //     navigation.navigate("Payments", {
+  //       laybyeData: formattedItem,
+  //       paymentsData: paymentsData,
+  //     });
+  //   };
   const handleSignOut = () => {
     NProgress.start(); // ✅ End progress bar
 
@@ -299,18 +398,49 @@ const ShiftScreen = () => {
     window.location.href = "/"; // or navigate to login using React Router
     NProgress.done(); // ✅ End progress bar
   };
-  // Filter receipts based on the search term
-  const filteredShifts = containerShifts
-    .filter(
-      (shift) =>
-        shift.shiftNumber.toString().includes(searchTerm) ||
-        (shift.closedBy &&
-          shift.closedBy.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-    .sort((a, b) => new Date(b.closingDate) - new Date(a.closingDate));
+  // Filter laybyes based on the search term
+  const filteredLaybyes = laybyes
+    .map((item) => {
+      let totalPaid = parseFloat(item.deposit) || 0;
+
+      const paymentsForLaybye = paymentsData.filter(
+        (payment) =>
+          payment.laybyeId === item.id && payment.refunded !== "REFUNDED"
+      );
+
+      paymentsForLaybye.forEach((payment) => {
+        totalPaid +=
+          payment.type === "Deposit"
+            ? parseFloat(payment.deposit)
+            : parseFloat(payment.amount);
+      });
+
+      const balance = parseFloat(item.totalBill) - totalPaid;
+
+      return {
+        ...item,
+        totalPaid,
+        balance,
+      };
+    })
+    .filter((item) => {
+      const nameMatch = item.customerName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+      const statusMatch =
+        filterStatus === "all"
+          ? true
+          : filterStatus === "paid"
+          ? item.balance === 0
+          : item.balance > 0;
+
+      return nameMatch && statusMatch;
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
-    <div className="mainContainerReceipts">
+    <div className="mainContainerlaybyes">
       {showDropdown && (
         <div className="dropdownMenu">
           <button className="signOutButton" onClick={handleSignOut}>
@@ -318,18 +448,18 @@ const ShiftScreen = () => {
           </button>
         </div>
       )}
-      <div className="toolBarReceipts">
+      <div className="toolBarlaybyes">
         {isSidebarOpen ? (
           <FaTimes className="sidebar-icon" onClick={toggleSidebar} />
         ) : (
           <FaBars className="sidebar-icon" onClick={toggleSidebar} />
         )}
-        <span className="toolBarTitle">Shifts</span>
+        <span className="toolBarTitle">Laybyes</span>
       </div>
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-      <div className="buttonsContainerReceipts">
-        <div className="buttonContainerStoresReceipts">
+      <div className="buttonsContainerLaybyes">
+        <div className="buttonContainerStoreslaybyes">
           <button
             className="inputButtonStore"
             onClick={() => {
@@ -386,9 +516,9 @@ const ShiftScreen = () => {
           )}
         </div>
 
-        {/* <div className="buttonContainerExportReceipts">
+        {/* <div className="buttonContainerExportlaybyes">
           <button
-            className="inputButtonExportReceipts"
+            className="inputButtonExportlaybyes"
             onClick={() => {
               setIsExportDropdownOpen(!isExportDropdownOpen);
               setIsEmployeeDropdownOpen(false);
@@ -423,12 +553,12 @@ const ShiftScreen = () => {
         </div> */}
       </div>
 
-      <div className="shiftsContainerShifts">
+      <div className="laybyesContainerLaybyes">
         {/* Search Input */}
         <div className="searchBar">
           <input
             type="text"
-            placeholder="Search by shift number/employee..."
+            placeholder="Search Customer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="searchInput"
@@ -438,54 +568,82 @@ const ShiftScreen = () => {
               ×
             </button>
           )}
-        </div>
-        <div className="shiftsSubContainer">
-          <div className="receiptHeader">
-            <div className="headerItem">Shift Number</div>
-            <div className="headerItem">closed By</div>
-            <div className="headerItem">Store Name</div>
-            <div className="headerItem">Opening Date</div>
-            <div className="headerItem">Closing Date</div>
-            <div className="headerItem">Amount</div>
+          <div className="filterDropdownlaybye">
+            <select
+              className="filterSelect"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="all">All Laybyes</option>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid Up</option>
+            </select>
           </div>
-          {filteredShifts.map((item, index) => {
-            const matchedStore = stores.find(
-              (store) => store.storeId === item.storeId
+        </div>
+        <div className="laybyeSubContainer">
+          {filteredLaybyes.map((item) => {
+            let totalPaid = item.deposit;
+            const paymentsForLaybye = paymentsData.filter(
+              (payment) =>
+                payment.laybyeId === item.id && payment.refunded !== "REFUNDED"
             );
+
+            paymentsForLaybye.forEach((payment) => {
+              totalPaid +=
+                payment.type === "Deposit" ? payment.deposit : payment.amount;
+            });
+
+            const balance = parseFloat(item.totalBill) - totalPaid;
+
+            const latePayment = calculateLatePayment(
+              parseFloat(item.totalBill),
+              totalPaid,
+              balance,
+              item.finalPaymentDate
+            );
+
             return (
-              <ShiftListItem
-                key={index}
-                closedBy={item.createdBy}
-                shiftNumber={item.shiftNumber}
-                closingDate={item.closingDate}
-                openingDate={item.openingDate}
-                storeName={matchedStore?.storeName || "Unknown Store"}
-                amount={Number(item.expectedCash).toFixed(2)}
-                onClick={() => handleItemClick(item)}
+              <LaybyeListItem
+                key={item.id}
+                itemName={item.customerName}
+                date={new Date(item.date).toLocaleString()}
+                nextPaymentDate={
+                  item.finalPaymentDate
+                    ? new Date(item.finalPaymentDate).toLocaleDateString()
+                    : "N/A"
+                }
+                totalBill={parseFloat(item.totalBill)}
+                totalPaid={totalPaid}
+                balance={balance}
+                latePayment={latePayment}
+                paymentStatus={balance > 0 ? "Unpaid" : "Paid"}
+                onClick={() => handleNavigatePayLaybye(item)}
               />
             );
           })}
-        </div>
+        </div>{" "}
       </div>
-      {modalShift &&
-        (() => {
-          // Compute the matching store before returning JSX
-          const matchedStore = stores.find(
-            (store) => store.storeId === modalShift.storeId
-          );
-          return (
-            <ShiftModal
-              selectedShift={modalShift}
-              store={matchedStore}
-              email={email}
-              onClose={() => setModalShift(null)}
+      {modalVisible && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <PaymentsScreen
+              laybyeData={selectedLaybyeData?.laybyeData}
+              paymentsData={selectedLaybyeData?.paymentsData}
+              onClose={() => setModalVisible(false)}
             />
-          );
-        })()}
+            <button
+              className="close-payment"
+              onClick={() => setModalVisible(false)}
+            >
+              X
+            </button>
+          </div>
+        </div>
+      )}
 
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 };
 
-export default ShiftScreen;
+export default LaybyeScreen;

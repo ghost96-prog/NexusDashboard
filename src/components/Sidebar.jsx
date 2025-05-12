@@ -124,6 +124,7 @@ const Sidebar = ({ isOpen }) => {
         { label: "Sales Summary", path: "/salesSummery" },
         { label: "Receipts", path: "/receiptsScreen" },
         { label: "Top Selling Items", path: "/soldItems" },
+        { label: "Laybyes", path: "/laybye" },
       ],
     },
     {

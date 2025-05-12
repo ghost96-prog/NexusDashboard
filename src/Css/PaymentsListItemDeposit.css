@@ -1,0 +1,84 @@
+.list-item-container {
+  margin: 10px 0;
+  background-color: white;
+}
+
+.item-container {
+  height: 80px;
+  width: 100%;
+  background-color: aliceblue;
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-radius: 8px;
+}
+
+.icon-container {
+  position: absolute;
+  left: 5%;
+  height: 30px;
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticket-number {
+  color: black;
+  font-weight: 600;
+  position: absolute;
+  font-size: 13px;
+  left: 15%;
+  top: 10%;
+}
+
+.payment-date {
+  position: absolute;
+  font-size: 13px;
+  left: 15%;
+  color: grey;
+}
+
+.deposit {
+  position: absolute;
+  font-size: 13px;
+  left: 60%;
+  top: 15%;
+  color: indigo;
+}
+
+.balance {
+  position: absolute;
+  font-size: 13px;
+  right: 5%;
+  top: 55%;
+  color: grey;
+}
+
+.time {
+  position: absolute;
+  color: grey;
+  top: 60%;
+  left: 15%;
+}
+
+.currency {
+  position: absolute;
+  color: green;
+  top: 60%;
+  left: 35%;
+}
+
+.refunded {
+  position: absolute;
+  color: red;
+  top: 60%;
+  left: 55%;
+}
+
+.amountdeposit {
+  position: absolute;
+  font-size: 13px;
+  right: 5%;
+  top: 10%;
+}

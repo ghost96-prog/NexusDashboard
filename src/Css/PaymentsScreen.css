@@ -1,0 +1,180 @@
+.payments-screen {
+  padding: 16px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f4f4;
+  min-height: 100vh;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* CUSTOMER DETAILS */
+.customer-details {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.customer-details h3 {
+  margin: 0 0 12px;
+  font-size: 1.25rem;
+}
+
+/* BILL SUMMARY */
+.bill-summary {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* CIRCLE CONTAINERS */
+.circle-container-payments {
+  text-align: center;
+  flex: 1;
+  min-width: 100px;
+}
+
+.circle-title-payments {
+  margin-bottom: 6px;
+}
+
+.circle-payments {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border-width: 0.1px;
+  border-style: solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin: 0 auto;
+  background-color: #fff;
+}
+
+/* CUSTOMER META */
+.customer-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.customer-meta p {
+  margin: 4px 0;
+  font-size: 0.95rem;
+}
+
+.customer-meta span {
+  font-weight: bold;
+}
+
+/* SELECTED PRODUCTS */
+.selected-products {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.product-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  flex-wrap: wrap;
+}
+
+.product-item.header {
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 8px;
+}
+
+/* PAYMENTS LIST */
+.payments-list {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.payments-list h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* ============================
+     MEDIA QUERIES
+     ============================ */
+
+@media (max-width: 768px) {
+  .header h2 {
+    font-size: 1.25rem;
+  }
+
+  .customer-details h3 {
+    font-size: 1.1rem;
+  }
+
+  .circle-payments {
+    width: 80px;
+    height: 80px;
+    font-size: 1rem;
+  }
+
+  .product-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .bill-summary {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .circle-payments {
+    width: 60px;
+    height: 60px;
+    font-size: 0.9rem;
+  }
+
+  .customer-meta p {
+    font-size: 0.85rem;
+  }
+
+  .product-item {
+    font-size: 0.85rem;
+  }
+
+  .payments-list h3 {
+    font-size: 1rem;
+  }
+}

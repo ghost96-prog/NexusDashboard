@@ -3,7 +3,7 @@ body {
   padding: 0;
   font-family: "Poppins", sans-serif;
 }
-.mainContainerReceipts {
+.mainContainerlaybyes {
   background-color: lavender;
   height: 130vh;
   width: 100%;
@@ -14,7 +14,7 @@ body {
   overflow: hidden;
 }
 
-.toolBarReceipts {
+.toolBarlaybyes {
   width: 100%;
   height: 50px;
   background-color: darkblue;
@@ -95,7 +95,19 @@ body {
   white-space: nowrap;
   z-index: 999;
 }
-
+.close-payment {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: rgb(240, 232, 232);
+  border: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
 .userIconWrapper:hover .userTooltip {
   display: block;
   transition: 0.5s all;
@@ -134,8 +146,41 @@ body {
     padding: 8px 12px;
   }
 }
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.filterDropdownLaybye {
+  left: 30px;
+  margin: 10px 0;
+  background-color: red;
+  display: flex;
+  justify-content: flex-start;
+}
 
-.shiftsContainerShifts {
+.filterSelectLaybye {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid lightblue;
+  border-radius: 4px;
+}
+.modal-content {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  max-width: 600px;
+  width: 90%;
+}
+
+.laybyesContainerLaybyes {
   background-color: white;
   height: 50%;
   width: 60%;
@@ -174,7 +219,7 @@ body {
   border: 1px solid #ddd;
   color: black;
 }
-.shiftsSubContainer {
+.laybyeSubContainer {
   overflow-x: auto;
   width: 100%;
 }
@@ -209,7 +254,7 @@ body {
   overflow-x: auto;
 }
 
-.buttonsContainerReceipts {
+.buttonsContainerLaybyes {
   margin-top: 60px;
   margin-bottom: 10px;
 
@@ -225,7 +270,7 @@ body {
   align-items: center;
   justify-content: space-evenly;
 }
-.buttonContainerDateReceipts {
+.buttonContainerDatelaybyes {
   position: relative;
   display: flex;
   width: 30%;
@@ -240,17 +285,17 @@ body {
   width: 20%;
   flex-direction: row;
 }
-.buttonContainerStoresReceipts {
+.buttonContainerStoreslaybyes {
   position: relative;
   width: 20%;
   flex-direction: row;
 }
-.buttonContainerExportReceipts {
+.buttonContainerExportlaybyes {
   position: relative;
   width: 20%;
   flex-direction: row;
 }
-.inputButtonExportReceipts {
+.inputButtonExportlaybyes {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -296,7 +341,7 @@ body {
   cursor: pointer;
   position: relative;
 }
-.inputButtonExportReceipts:hover,
+.inputButtonExportlaybyes:hover,
 .inputButtonDate:hover,
 .inputButtonStore:hover,
 .iconContainerBack:hover,
@@ -364,7 +409,7 @@ body {
   background-color: #e4fbff;
   cursor: pointer;
 }
-.buttonContainerDateReceipts :hover {
+.buttonContainerDatelaybyes :hover {
   background-color: #eef7ff;
 }
 
@@ -379,12 +424,12 @@ body {
 }
 
 /* .content.collapsed {
-    margin-left: 0;
-  }
-  
-  .content.shifted {
-    margin-left: 250px;
-  } */
+      margin-left: 0;
+    }
+    
+    .content.shifted {
+      margin-left: 250px;
+    } */
 
 .sidebar-icon {
   left: 30px;
@@ -462,7 +507,7 @@ body {
   border-color: white;
 }
 
-.datePickerContainerReceipts {
+.datePickerContainerlaybyes {
   position: absolute;
   top: 50px; /* Adjust based on your layout */
   left: 0;
@@ -505,7 +550,7 @@ body {
 }
 /* Mobile and Tablet adjustments */
 @media (min-width: 800px) {
-  .buttonsContainerReceipts {
+  .buttonsContainerLaybyes {
     flex-direction: row;
     align-items: center;
     width: 85%;
@@ -513,7 +558,7 @@ body {
 
     gap: 16px; /* Add more space vertically if needed */
   }
-  .buttonContainerDateReceipts {
+  .buttonContainerDatelaybyes {
     align-items: center;
     width: 100%;
     position: relative;
@@ -522,28 +567,28 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-  .datePickerContainerReceipts {
+  .datePickerContainerlaybyes {
     width: 90%; /* Take up more width on smaller screens */
     top: 60px; /* Adjust top positioning to avoid overlap */
     left: 5%; /* Center the picker horizontally */
     overflow-x: auto; /* Enable horizontal scrolling */
     white-space: nowrap; /* Prevent wrapping of content */
   }
-  .buttonContainerStoresReceipts {
+  .buttonContainerStoreslaybyes {
     width: 30%;
   }
-  .buttonContainerExportReceipts {
+  .buttonContainerExportlaybyes {
     width: 40%;
   }
-  .shiftsContainerShifts {
-    width: 85%;
+  .laybyesContainerLaybyes {
+    width: 60%;
     overflow-y: auto;
     overflow-x: auto;
   }
 }
 
 @media (min-width: 280px) and (max-width: 499px) {
-  .buttonsContainerReceipts {
+  .buttonsContainerLaybyes {
     flex-direction: column;
     width: 75%;
     left: 70px;
@@ -551,7 +596,7 @@ body {
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
   }
-  .buttonContainerDateReceipts {
+  .buttonContainerDatelaybyes {
     align-items: center;
     width: 100%;
     position: relative;
@@ -561,42 +606,39 @@ body {
     justify-content: space-evenly;
   }
   /* .tableContainerSummery {
-    width: 75%;
-    left: 70px;
-  } */
-  /* .salesContainerSummery {
-    width: 75%;
-    left: 70px;
-  } */
-  .shiftsContainerShifts {
+      width: 75%;
+      left: 70px;
+    } */
+
+  .laybyesContainerLaybyes {
     width: 75%;
     left: 70px;
     overflow-y: auto;
     overflow-x: auto;
   }
-  .datePickerContainerReceipts {
+  .datePickerContainerlaybyes {
     width: 95%; /* Even wider for small screens */
     top: 70px; /* Further adjust top positioning */
     left: 2.5%; /* Adjust horizontal centering */
     overflow-x: auto; /* Enable horizontal scrolling */
     white-space: nowrap; /* Prevent wrapping of content */
   }
-  .buttonContainerStoresReceipts {
+  .buttonContainerStoreslaybyes {
     width: 100%;
   }
-  .buttonContainerExportReceipts {
+  .buttonContainerExportlaybyes {
     width: 100%;
   }
 }
 @media (min-width: 500px) and (max-width: 799px) {
-  .buttonsContainerReceipts {
+  .buttonsContainerLaybyes {
     flex-direction: column;
     width: 80%;
 
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
   }
-  .buttonContainerDateReceipts {
+  .buttonContainerDatelaybyes {
     align-items: center;
     width: 100%;
     position: relative;
@@ -605,28 +647,26 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-  /* .salesContainerSummery {
-    width: 85%;
-  } */
+
   /* .tableContainerSummery {
-    width: 80%;
-  } */
-  .shiftsContainerShifts {
+      width: 80%;
+    } */
+  .laybyesContainerLaybyes {
     overflow-y: auto;
     overflow-x: auto;
     width: 80%;
   }
-  .datePickerContainerReceipts {
+  .datePickerContainerlaybyes {
     width: 95%; /* Even wider for small screens */
     top: 70px; /* Further adjust top positioning */
     left: 2.5%; /* Adjust horizontal centering */
     overflow-x: auto; /* Enable horizontal scrolling */
     white-space: nowrap; /* Prevent wrapping of content */
   }
-  .buttonContainerStoresReceipts {
+  .buttonContainerStoreslaybyes {
     width: 100%;
   }
-  .buttonContainerExportReceipts {
+  .buttonContainerExportlaybyes {
     width: 100%;
   }
 }

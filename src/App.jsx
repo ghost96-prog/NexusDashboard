@@ -12,6 +12,8 @@ import ProductListScreen from "./screens/ProductListScreen";
 import InventoryHistoryScreen from "./screens/InventoryHistoryScreen";
 import ProductValueScreen from "./screens/ProductsValueScreen";
 import ShiftScreen from "./screens/ShiftScreen";
+import LaybyeScreen from "./screens/LaybyeScreen";
+import PaymentsScreen from "./screens/PaymentsScreen";
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
           <Route path="/inventory" element={<InventoryHistoryScreen />} />
           <Route path="/inventory-value" element={<ProductValueScreen />} />
           <Route path="/shifts" element={<ShiftScreen />} />
+          <Route path="/laybye" element={<LaybyeScreen />} />
+          <Route path="/payments" element={<PaymentsScreen />} />
         </Routes>
       </div>
     </Router>

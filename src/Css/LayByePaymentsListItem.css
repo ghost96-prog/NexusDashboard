@@ -1,0 +1,121 @@
+/* LaybyePaymentsListItem.css */
+
+.list-item-container-payments {
+  margin: 0 auto;
+  width: 100%;
+  padding: 10px 0;
+  background-color: white;
+}
+
+.item-container-payments {
+  height: 80px;
+  width: 100%;
+  background-color: aliceblue;
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-radius: 8px;
+}
+
+.icon-container-payments {
+  position: absolute;
+  left: 5%;
+  height: 30px;
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticket-number {
+  position: absolute;
+  font-size: 14px;
+  left: 15%;
+  top: 10%;
+  color: black;
+}
+
+.payment-date {
+  position: absolute;
+  font-size: 13px;
+  left: 15%;
+  top: 30%;
+  color: grey;
+}
+
+.deposit {
+  position: absolute;
+  font-size: 13px;
+  left: 60%;
+  top: 15%;
+  color: green;
+}
+
+.balance {
+  position: absolute;
+  font-size: 13px;
+  right: 5%;
+  top: 55%;
+  color: grey;
+}
+
+.time {
+  position: absolute;
+  font-size: 13px;
+  left: 15%;
+  top: 65%;
+  color: grey;
+}
+
+.currency {
+  position: absolute;
+  font-size: 13px;
+  left: 35%;
+  top: 65%;
+  color: green;
+}
+
+.refunded {
+  position: absolute;
+  font-size: 13px;
+  left: 55%;
+  top: 60%;
+  color: red;
+}
+
+.amountpayments {
+  position: absolute;
+  font-size: 13px;
+  right: 5%;
+  top: 10%;
+}
+
+.separator {
+  margin-top: 5px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 5px;
+}
+@media (max-width: 480px) {
+  .item-container-payments {
+    padding: 12px;
+  }
+
+  .ticket-number {
+    font-size: 12px;
+  }
+
+  .icon-container-payments {
+    width: 30px;
+    height: 30px;
+  }
+
+  .deposit,
+  .balance,
+  .amountpayments,
+  .refunded,
+  .payment-date,
+  .time,
+  .currency {
+    font-size: 11px;
+  }
+}
