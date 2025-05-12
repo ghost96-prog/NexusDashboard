@@ -82,3 +82,28 @@
   right: 5%;
   top: 10%;
 }
+@media (max-width: 480px) {
+  .ticket-number {
+    font-size: 12px;
+  }
+
+  .icon-container {
+    width: 25px;
+    height: 25px;
+  }
+  .currency {
+    left: 45%;
+  }
+  .deposit {
+    font-size: 11px;
+    top: 35%;
+  }
+  .balance,
+  .amountpayments,
+  .refunded,
+  .payment-date,
+  .time,
+  .currency {
+    font-size: 11px;
+  }
+}
