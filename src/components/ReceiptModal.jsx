@@ -16,7 +16,18 @@ function ReceiptModal({ receipt, onClose, store, email }) {
   const [orientation, setOrientation] = useState("portrait");
   const [isGenerating, setIsGenerating] = useState(false);
   const contentRef = useRef();
+  useEffect(() => {
+    const handlePopState = () => {
+      onClose();
+    };
 
+    window.history.pushState(null, null, window.location.pathname); // Push dummy state
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [onClose]);
   // Clear PDF when receipt or settings change
   useEffect(() => {
     setPdfUrl("");
