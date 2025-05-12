@@ -38,6 +38,9 @@ const PaymentsScreen = ({ laybyeData, paymentsData, onBack }) => {
   }, [laybyeId]);
 
   const fetchPayments = () => {
+    console.log("====================================");
+    console.log("laybyeData", laybyeData);
+    console.log("====================================");
     try {
       const payments = paymentsData.filter(
         (payment) =>

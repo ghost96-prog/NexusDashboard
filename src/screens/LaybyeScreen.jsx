@@ -100,6 +100,26 @@ const LaybyeScreen = () => {
       toast.error("Invalid authentication token.");
     }
   }, []);
+
+  useEffect(() => {
+    if (modalVisible) {
+      // Push a new state to the history stack
+      window.history.pushState({ modal: true }, "");
+
+      // Handle the back button
+      const handlePopState = () => {
+        setModalVisible(false);
+      };
+
+      window.addEventListener("popstate", handlePopState);
+
+      // Cleanup
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }
+  }, [modalVisible]);
+
   const fetchDepositsandPayments = async () => {
     setLoading(true);
     try {
@@ -297,7 +317,7 @@ const LaybyeScreen = () => {
       console.log("Selected Stores:", selectedStores);
 
       if (selectedStores.length === 0) {
-        setlaybyes([]);
+        setLaybyes([]);
       } else {
         onRefresh(selectedOption, selectedStartDate, selectedEndDate);
       }
@@ -400,7 +420,11 @@ const LaybyeScreen = () => {
   };
   // Filter laybyes based on the search term
   const filteredLaybyes = laybyes
-    .map((item) => {
+    .filter((item) => {
+      const nameMatch = item.customerName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
       let totalPaid = parseFloat(item.deposit) || 0;
 
       const paymentsForLaybye = paymentsData.filter(
@@ -417,23 +441,12 @@ const LaybyeScreen = () => {
 
       const balance = parseFloat(item.totalBill) - totalPaid;
 
-      return {
-        ...item,
-        totalPaid,
-        balance,
-      };
-    })
-    .filter((item) => {
-      const nameMatch = item.customerName
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
       const statusMatch =
         filterStatus === "all"
           ? true
           : filterStatus === "paid"
-          ? item.balance === 0
-          : item.balance > 0;
+          ? balance === 0
+          : balance > 0;
 
       return nameMatch && statusMatch;
     })
