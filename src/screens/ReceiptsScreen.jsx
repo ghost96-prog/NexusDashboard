@@ -90,20 +90,22 @@ const ReceiptsScreen = () => {
     }
   }, []);
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        setModalReceipt(null);
-      }
-    };
-
     if (modalReceipt) {
-      document.addEventListener("keydown", handleKeyDown);
-    }
+      // Push a state into the history when modal opens
+      window.history.pushState({ modalOpen: true }, "");
 
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+      const handlePopState = () => {
+        setModalReceipt(null); // Close modal on back button
+      };
+
+      window.addEventListener("popstate", handlePopState);
+
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }
   }, [modalReceipt]);
+
   console.log("====================================");
   console.log(email);
   console.log("====================================");
