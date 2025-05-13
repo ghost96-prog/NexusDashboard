@@ -288,9 +288,9 @@ const ReceiptsScreen = () => {
       console.log("Selected Stores:", selectedStores);
 
       if (selectedStores.length === 0) {
-        setReceipts([]);
+        setAllReceipts([]);
       } else {
-        onRefresh(selectedOption, selectedStartDate, selectedEndDate);
+        // onRefresh(selectedOption, selectedStartDate, selectedEndDate);
       }
     }
 

@@ -319,7 +319,7 @@ const LaybyeScreen = () => {
       if (selectedStores.length === 0) {
         setLaybyes([]);
       } else {
-        onRefresh(selectedOption, selectedStartDate, selectedEndDate);
+        // onRefresh(selectedOption, selectedStartDate, selectedEndDate);
       }
     }
 

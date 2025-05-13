@@ -405,7 +405,7 @@ const ProductValueScreen = () => {
       if (selectedStores.length === 0) {
         setProducts([]);
       } else {
-        onRefresh();
+        // onRefresh();
       }
     }
 

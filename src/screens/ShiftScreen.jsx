@@ -262,9 +262,9 @@ const ShiftScreen = () => {
       console.log("Selected Stores:", selectedStores);
 
       if (selectedStores.length === 0) {
-        setReceipts([]);
+        setContainerShifts([]);
       } else {
-        onRefresh(selectedOption, selectedStartDate, selectedEndDate);
+        // onRefresh(selectedOption, selectedStartDate, selectedEndDate);
       }
     }
 

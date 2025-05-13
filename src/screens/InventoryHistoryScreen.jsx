@@ -299,7 +299,7 @@ const InventoryHistoryScreen = () => {
       if (selectedStores.length === 0) {
         setInventoryUpdates([]);
       } else {
-        onRefreshInventory(selectedOption, selectedStartDate, selectedEndDate);
+        // onRefreshInventory(selectedOption, selectedStartDate, selectedEndDate);
       }
     }
 

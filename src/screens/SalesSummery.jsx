@@ -326,9 +326,21 @@ const SalesSummery = () => {
       console.log("Selected Stores:", selectedStores);
 
       if (selectedStores.length === 0) {
+        setLaybyeTotal(0);
+        setReceiptsByDate({});
+        setGrossSales(0);
+        setToTalDiscounts(0);
+        setTotalRefunds(0);
+        setCost(0);
+        setPercentageDiffReceipts(0);
+        setPercentageDiffTotalCost(0);
+        setPercentageDiffTotalIncome(0);
         setReceipts([]);
+        setTotalAmount(0);
+        setProfit(0);
+        setReceiptsLength(0);
       } else {
-        onRefresh(selectedOption, selectedStartDate, selectedEndDate);
+        // onRefresh(selectedOption, selectedStartDate, selectedEndDate);
       }
     }
 

@@ -113,7 +113,7 @@ const ProductListScreen = () => {
   useEffect(() => {
     setSelectedStores(stores);
     setSelectedCategories(categories);
-  }, [selectedOption, stores, categories]);
+  }, [selectedOption, stores, categories, selectedCategories]);
   useEffect(() => {
     console.log("Selected Option:", selectedOption);
   }, [selectedOption]);
@@ -131,52 +131,61 @@ const ProductListScreen = () => {
     const applyFilters = () => {
       let updatedList = [...products];
 
-      // 1. Filter by Store
-      const isAllStoresSelected =
-        selectedStores.length === stores.length ||
-        selectedStores.some((store) => store.storeName === "All Stores");
+      // 1. If no store or category is selected, clear the filtered list
+      if (selectedStores.length === 0 || selectedCategories.length === 0) {
+        updatedList = [];
+      } else {
+        // 2. Filter by Store
+        const isAllStoresSelected =
+          selectedStores.length === stores.length ||
+          selectedStores.some((store) => store.storeName === "All Stores");
 
-      if (!isAllStoresSelected && selectedStores.length > 0) {
-        const storeIds = selectedStores.map((store) => String(store.storeId));
-        updatedList = updatedList.filter((product) =>
-          storeIds.includes(String(product.storeId))
-        );
-      }
+        if (!isAllStoresSelected && selectedStores.length > 0) {
+          const storeIds = selectedStores.map((store) => String(store.storeId));
+          updatedList = updatedList.filter((product) =>
+            storeIds.includes(String(product.storeId))
+          );
+        }
 
-      // 2. Filter by Category
-      const isAllCategoriesSelected =
-        selectedCategories.length === categories.length ||
-        selectedCategories.some((cat) => cat.categoryName === "All Categories");
+        // 3. Filter by Category
+        const isAllCategoriesSelected =
+          selectedCategories.length === categories.length ||
+          selectedCategories.some(
+            (cat) => cat.categoryName === "All Categories"
+          );
 
-      if (!isAllCategoriesSelected && selectedCategories.length > 0) {
-        const selectedCategoryIds = selectedCategories.map((cat) =>
-          String(cat.categoryId)
-        );
-        updatedList = updatedList.filter((product) => {
-          const productCategoryId = String(product.categoryId || "No Category");
-          return selectedCategoryIds.includes(productCategoryId);
-        });
-      }
+        if (!isAllCategoriesSelected && selectedCategories.length > 0) {
+          const selectedCategoryIds = selectedCategories.map((cat) =>
+            String(cat.categoryId)
+          );
+          updatedList = updatedList.filter((product) => {
+            const productCategoryId = String(
+              product.categoryId || "No Category"
+            );
+            return selectedCategoryIds.includes(productCategoryId);
+          });
+        }
 
-      // 3. Filter by Stock Level
-      if (selectStockOption === "Low Stock") {
-        updatedList = updatedList.filter(
-          (product) =>
-            Number(product.stock) > 0 &&
-            Number(product.stock) <= Number(product.lowStockNotification || 0)
-        );
-      } else if (selectStockOption === "Out of Stock") {
-        updatedList = updatedList.filter(
-          (product) => Number(product.stock) <= 0
-        );
-      }
+        // 4. Filter by Stock Level
+        if (selectStockOption === "Low Stock") {
+          updatedList = updatedList.filter(
+            (product) =>
+              Number(product.stock) > 0 &&
+              Number(product.stock) <= Number(product.lowStockNotification || 0)
+          );
+        } else if (selectStockOption === "Out of Stock") {
+          updatedList = updatedList.filter(
+            (product) => Number(product.stock) <= 0
+          );
+        }
 
-      // 4. Filter by Search
-      if (searchTerm.trim() !== "") {
-        const lowerSearch = searchTerm.toLowerCase();
-        updatedList = updatedList.filter((product) =>
-          product.productName?.toLowerCase().includes(lowerSearch)
-        );
+        // 5. Filter by Search
+        if (searchTerm.trim() !== "") {
+          const lowerSearch = searchTerm.toLowerCase();
+          updatedList = updatedList.filter((product) =>
+            product.productName?.toLowerCase().includes(lowerSearch)
+          );
+        }
       }
 
       setFilteredItems(updatedList);
@@ -404,7 +413,7 @@ const ProductListScreen = () => {
       if (selectedStores.length === 0) {
         setProducts([]);
       } else {
-        onRefresh();
+        // onRefresh();
       }
     }
 
@@ -429,11 +438,12 @@ const ProductListScreen = () => {
     ) {
       setIsCategoryDropdownOpen(false);
       console.log("Selected Category Option:");
-      // if (selectedCategories.length === 0) {
-      //   setProducts([]);
-      // } else {
-      //   onRefresh();
-      // }
+      if (selectedCategories.length === 0) {
+        setFilteredItems([]);
+        setProducts([]);
+      } else {
+        onRefresh();
+      }
     }
   };
 
