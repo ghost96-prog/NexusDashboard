@@ -66,7 +66,8 @@ const RemainingTimeFooter = () => {
         const remaining = mostRecentPayment.remainingTime;
         setRemainingTimeData(remaining);
 
-        if (canShowToast()) {
+        if (remaining.days <= 7 && canShowToast()) {
+          // Trigger the toast if the remaining days are 7 or less
           if (mostRecentPayment.status !== "Active") {
             toast.warn(
               `⚠️ Subscription expired on ${new Date(
@@ -74,7 +75,7 @@ const RemainingTimeFooter = () => {
               ).toLocaleString()}`
             );
             incrementToastCounter();
-          } else if (remaining.days < 3 && remaining.days >= 0) {
+          } else if (remaining.days <= 3 && remaining.days >= 0) {
             toast.warn(
               `⚠️ Your subscription will expire in ${remaining.days}d ${remaining.hours}h ${remaining.minutes}m ${remaining.seconds}s`
             );
@@ -91,8 +92,10 @@ const RemainingTimeFooter = () => {
     fetchRemainingTime();
   }, []);
 
+  // Only render the footer if remaining time is 7 days or less
   return (
-    remainingTimeData && (
+    remainingTimeData &&
+    remainingTimeData.days <= 7 && (
       <div className="remaining-time-footer">
         {latestPaymentStatus === "Active" ? (
           <span className="remaining-time">
