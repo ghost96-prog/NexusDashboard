@@ -1,0 +1,23 @@
+.remaining-time-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #e8f9ff;
+  color: white;
+  padding: 10px 20px;
+  font-size: 14px;
+  text-align: center;
+  z-index: 1000;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.remaining-time {
+  color: green;
+  font-weight: bold;
+}
+
+.expired {
+  color: red;
+  font-weight: bold;
+}

@@ -52,6 +52,7 @@ import ShiftListItem from "../components/ShiftListItem";
 import ShiftModal from "../components/ShiftModal";
 import LaybyeListItem from "../components/LaybyeListItem";
 import PaymentsScreen from "./PaymentsScreen";
+import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
 const LaybyeScreen = () => {
   // const stores = ["Store 1", "Store 2", "Store 3"];
@@ -653,6 +654,7 @@ const LaybyeScreen = () => {
           </div>
         </div>
       )}
+      <RemainingTimeFooter />
 
       <ToastContainer position="top-right" autoClose={3000} />
     </div>

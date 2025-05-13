@@ -51,6 +51,7 @@ import SoldItemsListItem from "../components/SoldItemsListItem";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilePdf, FaFileCsv } from "react-icons/fa";
+import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
 const TopSellingProducts = () => {
   // const stores = ["Store 1", "Store 2", "Store 3"];
@@ -910,6 +911,7 @@ const TopSellingProducts = () => {
             />
           );
         })()}
+      <RemainingTimeFooter />
 
       <ToastContainer position="top-right" autoClose={3000} />
     </div>

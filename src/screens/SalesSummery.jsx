@@ -48,6 +48,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable"; // ← import the function directly
 import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
+import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
 const SalesSummery = () => {
   const employees = ["Employee 1", "Employee 2", "Employee 3"];
@@ -1109,6 +1110,7 @@ const SalesSummery = () => {
           <tbody>{generateRows()}</tbody>
         </table>
       </div>
+      <RemainingTimeFooter />
     </div>
   );
 };

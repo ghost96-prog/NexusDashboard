@@ -47,6 +47,7 @@ import ReceiptListItem from "../components/ReceiptListItem";
 import { jwtDecode } from "jwt-decode"; // Make sure this is imported
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
+import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
 const ReceiptsScreen = () => {
   // const stores = ["Store 1", "Store 2", "Store 3"];
@@ -726,6 +727,7 @@ const ReceiptsScreen = () => {
             />
           );
         })()}
+      <RemainingTimeFooter />
 
       <ToastContainer position="top-right" autoClose={3000} />
     </div>

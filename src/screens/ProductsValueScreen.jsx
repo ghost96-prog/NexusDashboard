@@ -53,6 +53,7 @@ import "jspdf-autotable";
 import autoTable from "jspdf-autotable"; // ← import the function directly
 import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
 import ProductsValueListItem from "../components/ProductValueListItem";
+import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
 const ProductValueScreen = () => {
   // const stores = ["Store 1", "Store 2", "Store 3"];
@@ -936,6 +937,7 @@ const ProductValueScreen = () => {
           })}
         </div>
       </div>
+      <RemainingTimeFooter />
 
       <ToastContainer position="top-right" autoClose={3000} />
     </div>

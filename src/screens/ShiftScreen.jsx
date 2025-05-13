@@ -49,6 +49,7 @@ import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import ShiftListItem from "../components/ShiftListItem";
 import ShiftModal from "../components/ShiftModal";
+import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
 const ShiftScreen = () => {
   // const stores = ["Store 1", "Store 2", "Store 3"];
@@ -498,6 +499,7 @@ const ShiftScreen = () => {
             />
           );
         })()}
+      <RemainingTimeFooter />
 
       <ToastContainer position="top-right" autoClose={3000} />
     </div>

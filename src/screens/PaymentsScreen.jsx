@@ -11,6 +11,7 @@ import LaybyePaymentsListItem from "../components/LaybyePaymentListItem";
 import PaymentsListItemDeposit from "../components/PaymentsListItemDeposit";
 // import CustomBackButton from "../components/CustomBackButton";
 import "../Css/PaymentsScreen.css"; // Assume you extract styles here
+import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
 const PaymentsScreen = ({ laybyeData, paymentsData, onBack }) => {
   const [customerName, setCustomerName] = useState(
@@ -184,6 +185,7 @@ const PaymentsScreen = ({ laybyeData, paymentsData, onBack }) => {
           />
         ))}
       </div>
+      <RemainingTimeFooter />
     </div>
   );
 };
