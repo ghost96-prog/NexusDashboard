@@ -26,8 +26,20 @@ const Sidebar = ({ isOpen }) => {
 
   const handleSignOut = () => {
     NProgress.start();
+
+    // Remove auth token
     localStorage.removeItem("token");
+
+    // Reset toast counters
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("toastCounter_")) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    // Redirect to login/home
     window.location.href = "/";
+
     NProgress.done();
   };
 

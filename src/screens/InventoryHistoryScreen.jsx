@@ -52,6 +52,7 @@ import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable"; // ← import the function directly
+import RemainingTimeFooter from "../components/RemainingTimeFooter";
 const InventoryHistoryScreen = () => {
   // const stores = ["Store 1", "Store 2", "Store 3"];
 

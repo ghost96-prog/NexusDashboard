@@ -1,17 +1,35 @@
-// src/components/RemainingTimeFooter.js
 import React, { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import "../Css/RemainingTimeFooter.css";
+import { toast } from "react-toastify";
 
 const RemainingTimeFooter = () => {
   const [remainingTimeData, setRemainingTimeData] = useState(null);
   const [latestPayment, setLatestPayment] = useState(null);
   const [latestPaymentStatus, setLatestPaymentStatus] = useState(null);
 
+  const getTodayKey = () => {
+    const today = new Date();
+    return `toastCounter_${today.getFullYear()}-${
+      today.getMonth() + 1
+    }-${today.getDate()}`;
+  };
+
+  const canShowToast = () => {
+    const key = getTodayKey();
+    const counter = parseInt(localStorage.getItem(key) || "0", 10);
+    return counter < 2;
+  };
+
+  const incrementToastCounter = () => {
+    const key = getTodayKey();
+    const current = parseInt(localStorage.getItem(key) || "0", 10);
+    localStorage.setItem(key, current + 1);
+  };
+
   const fetchRemainingTime = async () => {
     try {
       const token = localStorage.getItem("token");
-
       if (!token) {
         console.error("Authentication token is missing.");
         return;
@@ -45,7 +63,24 @@ const RemainingTimeFooter = () => {
       setLatestPaymentStatus(mostRecentPayment?.status);
 
       if (mostRecentPayment) {
-        setRemainingTimeData(mostRecentPayment.remainingTime);
+        const remaining = mostRecentPayment.remainingTime;
+        setRemainingTimeData(remaining);
+
+        if (canShowToast()) {
+          if (mostRecentPayment.status !== "Active") {
+            toast.warn(
+              `⚠️ Subscription expired on ${new Date(
+                mostRecentPayment.expirationDate
+              ).toLocaleString()}`
+            );
+            incrementToastCounter();
+          } else if (remaining.days < 3 && remaining.days >= 0) {
+            toast.warn(
+              `⚠️ Your subscription will expire in ${remaining.days}d ${remaining.hours}h ${remaining.minutes}m ${remaining.seconds}s`
+            );
+            incrementToastCounter();
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching remaining time:", error);
@@ -54,8 +89,6 @@ const RemainingTimeFooter = () => {
 
   useEffect(() => {
     fetchRemainingTime();
-    const interval = setInterval(fetchRemainingTime, 60000); // refresh every minute
-    return () => clearInterval(interval);
   }, []);
 
   return (
