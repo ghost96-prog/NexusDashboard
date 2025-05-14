@@ -334,7 +334,7 @@ body {
 
 .searchInput {
   width: 100%;
-  min-width: 100px;
+  min-width: 80px;
   padding: 8px 12px;
   font-size: 0.8em;
   border: 1px solid lightblue;
@@ -425,7 +425,7 @@ body {
   padding: 8px 12px;
   background-color: white;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  width: 120px;
+  min-width: 120px;
   color: black;
   border: 1px solid lightblue;
   border-radius: 5px;

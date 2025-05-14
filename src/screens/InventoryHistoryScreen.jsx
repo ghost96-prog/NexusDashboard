@@ -939,7 +939,10 @@ const InventoryHistoryScreen = () => {
           {/* Filter Dropdown */}
           <div className="filterContainer">
             {/* Button to toggle the visibility of the filter dropdown */}
-            <button onClick={() => setIsDropdownVisible(!isDropdownVisible)}>
+            <button
+              className="filteringbutton"
+              onClick={() => setIsDropdownVisible(!isDropdownVisible)}
+            >
               {isDropdownVisible ? "Hide Filters" : "Show Filters"}
               <FaArrowDown color="grey" size={10} />
             </button>
