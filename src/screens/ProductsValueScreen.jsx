@@ -246,7 +246,7 @@ const ProductValueScreen = () => {
       const userId = decoded.userId;
 
       const response = await fetch(
-        `https://nexuspos.onrender.com/api/productRouter/products/initial?email=${encodeURIComponent(
+        `https://nexuspos.onrender.com/api/productRouter/products?email=${encodeURIComponent(
           userEmail
         )}`
       );
