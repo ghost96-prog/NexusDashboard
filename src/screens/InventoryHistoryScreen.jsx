@@ -922,7 +922,7 @@ const InventoryHistoryScreen = () => {
       <div className="InventoryContainerInventory">
         {/* Search Input */}
         <div className="searchBarInventory">
-          <div className="searchInputWrapper">
+          <div className="searchInputWrapperInventory">
             <input
               type="text"
               placeholder="Search Product..."
@@ -941,6 +941,7 @@ const InventoryHistoryScreen = () => {
             {/* Button to toggle the visibility of the filter dropdown */}
             <button onClick={() => setIsDropdownVisible(!isDropdownVisible)}>
               {isDropdownVisible ? "Hide Filters" : "Show Filters"}
+              <FaArrowDown color="grey" size={10} />
             </button>
 
             {/* Dropdown container */}
