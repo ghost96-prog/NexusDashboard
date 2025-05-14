@@ -422,15 +422,16 @@ body {
 
 /* Button style */
 button {
-  padding: 10px;
+  padding: 8px 12px;
   background-color: white;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  width: 50%;
+  width: 120px;
   color: black;
-  border: none;
+  border: 1px solid lightblue;
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
+  margin-left: 10px;
   display: flex;
   align-items: center;
   gap: 5px;
