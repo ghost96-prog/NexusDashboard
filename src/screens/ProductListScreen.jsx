@@ -430,8 +430,8 @@ const ProductListScreen = () => {
       setIsCategoryDropdownOpen(false);
       console.log("Selected Category Option:");
       if (selectedCategories.length === 0) {
-        setFilteredItems([]);
-        setProducts([]);
+        // setFilteredItems([]);
+        // setProducts([]);
       } else {
         onRefresh();
       }
