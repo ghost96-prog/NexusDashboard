@@ -76,12 +76,14 @@ const InventoryHistoryScreen = () => {
   const [modalReceipt, setModalReceipt] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("All Items");
+  const [selectedTypes, setSelectedTypes] = useState([]);
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [email, setEmail] = useState(null);
   const [inventoryUpdates, setInventoryUpdates] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false); // State to control dropdown visibility
 
   const [allReceipts, setAllReceipts] = useState([]);
   useEffect(() => {
@@ -392,6 +394,11 @@ const InventoryHistoryScreen = () => {
       setIsExportDropdownOpen(false);
       console.log("Selected Export Option:");
     }
+
+    if (isDropdownVisible && !event.target.closest(".filterDropdown")) {
+      setIsDropdownVisible(false);
+      console.log("Selected Dropdown filter Option:");
+    }
   };
 
   useEffect(() => {
@@ -570,7 +577,15 @@ const InventoryHistoryScreen = () => {
   const handleToggleDropdown = () => {
     setShowDropdown((prev) => !prev);
   };
-
+  const toggleFilterType = (type) => {
+    setSelectedTypes((prevSelected) => {
+      if (prevSelected.includes(type)) {
+        return prevSelected.filter((item) => item !== type); // Remove the type if it is already selected
+      } else {
+        return [...prevSelected, type]; // Add the type if it is not selected
+      }
+    });
+  };
   const handleSignOut = () => {
     NProgress.start(); // ✅ End progress bar
 
@@ -590,12 +605,13 @@ const InventoryHistoryScreen = () => {
 
         const matchesSearch = productName.includes(searchQuery);
         const matchesType =
-          selectedType === "All Items" || inventory.typeOfEdit === selectedType;
+          selectedTypes.length === 0 ||
+          selectedTypes.includes(inventory.typeOfEdit);
 
         return matchesSearch && matchesType;
       })
       .sort((a, b) => new Date(b.currentDate) - new Date(a.currentDate));
-  }, [inventoryUpdates, searchTerm, selectedType]);
+  }, [inventoryUpdates, searchTerm, selectedTypes]);
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -921,19 +937,62 @@ const InventoryHistoryScreen = () => {
             )}
           </div>
           {/* Filter Dropdown */}
-          <div className="filterDropdown">
-            <select
-              className="filterSelect"
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+          <div className="filterContainer">
+            {/* Button to toggle the visibility of the filter dropdown */}
+            <button onClick={() => setIsDropdownVisible(!isDropdownVisible)}>
+              {isDropdownVisible ? "Hide Filters" : "Show Filters"}
+            </button>
+
+            {/* Dropdown container */}
+            <div
+              className={`filterDropdown ${isDropdownVisible ? "show" : ""}`}
             >
-              <option>All Items</option>
-              <option>Sale</option>
-              <option>Add</option>
-              <option>Refund</option>
-              <option>Create</option>
-              <option>Override</option>
-            </select>
+              <label>
+                <input
+                  type="checkbox"
+                  value="Sale"
+                  checked={selectedTypes.includes("Sale")}
+                  onChange={(e) => toggleFilterType(e.target.value)}
+                />
+                Sale
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  value="Add"
+                  checked={selectedTypes.includes("Add")}
+                  onChange={(e) => toggleFilterType(e.target.value)}
+                />
+                Add
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  value="Refund"
+                  checked={selectedTypes.includes("Refund")}
+                  onChange={(e) => toggleFilterType(e.target.value)}
+                />
+                Refund
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  value="Create"
+                  checked={selectedTypes.includes("Create")}
+                  onChange={(e) => toggleFilterType(e.target.value)}
+                />
+                Create
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  value="Override"
+                  checked={selectedTypes.includes("Override")}
+                  onChange={(e) => toggleFilterType(e.target.value)}
+                />
+                Override
+              </label>
+            </div>
           </div>
         </div>
         <div className="InventorySubContainer">

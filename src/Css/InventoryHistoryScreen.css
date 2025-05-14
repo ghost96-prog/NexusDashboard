@@ -354,17 +354,99 @@ body {
   color: #000;
 }
 
-.filterDropdown {
-  margin: 10px 0;
+/* Container to center the button and dropdown */
+.filterContainer {
   display: flex;
-  justify-content: flex-start;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+  min-width: 350px;
+  margin: 0 auto;
+  padding: 5px;
+  background-color: white;
 }
 
-.filterSelect {
-  padding: 8px;
+/* Style for the filter dropdown */
+.filterDropdown {
+  display: flex;
+  position: absolute;
+  top: 55px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  min-width: 300px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* When dropdown is visible */
+.filterDropdown.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Style for each label */
+.filterDropdown label {
+  display: flex;
+  align-items: center;
   font-size: 14px;
-  border: 1px solid lightblue;
+  height: 30px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+}
+
+.filterDropdown input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+/* Hover effect for labels */
+.filterDropdown label:hover {
+  background-color: #f0f0f0;
   border-radius: 4px;
+  padding: 4px;
+}
+
+/* Focused checkbox input */
+.filterDropdown input[type="checkbox"]:focus {
+  outline: none;
+  border: 2px solid darkblue;
+}
+
+/* Button style */
+button {
+  padding: 10px 20px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  color: black;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+button:hover {
+  background-color: #f0f0f0;
+}
+
+button:focus {
+  outline: none;
+}
+
+/* Adding a little space between button and dropdown */
+button + .filterDropdown {
+  margin-top: 10px;
 }
 
 .searchInput:focus {
