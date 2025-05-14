@@ -80,6 +80,7 @@ const InventoryHistoryScreen = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [email, setEmail] = useState(null);
   const [inventoryUpdates, setInventoryUpdates] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [allReceipts, setAllReceipts] = useState([]);
@@ -120,6 +121,7 @@ const InventoryHistoryScreen = () => {
   useEffect(() => {
     if (email) {
       fetchStores();
+      fetchProducts();
     }
   }, [email]);
 
@@ -243,7 +245,86 @@ const InventoryHistoryScreen = () => {
       console.error("Error fetching receipts:", error);
     }
   };
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
 
+      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
+
+      if (!token) {
+        toast.error("Authentication token is missing.");
+        return;
+      }
+
+      const decoded = jwtDecode(token);
+      const userEmail = decoded.email;
+      const userId = decoded.userId;
+
+      const response = await fetch(
+        `https://nexuspos.onrender.com/api/productRouter/products?email=${encodeURIComponent(
+          userEmail
+        )}`
+      );
+      if (!response.ok) {
+        const errorMessage = await response.text(); // or response.json() if you return JSON errors
+        toast.error(`Error: ${"User not found or invalid email."}`);
+      }
+      const responseData = await response.json();
+
+      const filteredProducts = responseData.data.filter(
+        (product) => product.userId === userId
+      );
+
+      filteredProducts.sort((a, b) =>
+        a.productName.localeCompare(b.productName)
+      );
+
+      // Clear previous products and set new ones
+      setProducts([]);
+
+      // Process products in chunks
+      const CHUNK_SIZE = 800;
+      const loadChunks = (chunkIndex = 0) => {
+        const start = chunkIndex * CHUNK_SIZE;
+        const end = start + CHUNK_SIZE;
+        const chunk = filteredProducts.slice(start, end);
+
+        if (chunk.length > 0) {
+          setProducts((prevProducts) => {
+            const uniqueProducts = [
+              ...prevProducts,
+              ...chunk.filter(
+                (newProduct) =>
+                  !prevProducts.some(
+                    (existingProduct) =>
+                      existingProduct.productId === newProduct.productId
+                  )
+              ),
+            ];
+            return uniqueProducts;
+          });
+
+          setTimeout(() => loadChunks(chunkIndex + 1), 50);
+        } else {
+          setLoading(false);
+        }
+      };
+
+      loadChunks();
+
+      // Update `filteredItems` only if no filters are applied
+      // if (!isFilteringActive) {
+      //   setFilteredItems(filteredProducts);
+      // }
+    } catch (error) {
+      if (!navigator.onLine) {
+        toast.error("No internet connection. Please check your network.");
+      } else {
+        toast.error("An error occurred while fetching receipts.");
+      }
+      console.error("Error fetching receipts:", error);
+    }
+  };
   const onRefreshInventory = async (
     selectedOptionDate,
     selectedStartRange,
@@ -542,6 +623,8 @@ const InventoryHistoryScreen = () => {
         [
           "Date",
           "Product",
+          "Price",
+          "Cost",
           "Editor",
           "Type of Edit",
           "Stock Before",
@@ -559,18 +642,26 @@ const InventoryHistoryScreen = () => {
           ? parseFloat(item.stockAfter).toFixed(2)
           : parseFloat(item.stockAfter);
         const rawDifference = stockAfter - stockBefore;
-        const difference =
-          item.productType === "Weight" || item.productType === ""
-            ? rawDifference.toFixed(2)
-            : rawDifference;
+        const difference = isWeight ? rawDifference.toFixed(2) : rawDifference;
         const diffLabel =
           rawDifference > 0 ? `+${difference}` : `${difference}`;
+
+        // Get price and cost from products array
+        const product = products.find((p) => p.productId === item.productId);
+        const price = product?.price ?? "N/A";
+        const cost = product?.cost ?? "N/A";
+
+        if (!product) {
+          console.log("No product found for item:", item);
+        }
 
         return [
           format(new Date(item.currentDate), "MMM d, yyyy - hh:mm:ss a"),
           item.productName || item.itemName,
+          Number(price).toFixed(2),
+          Number(cost).toFixed(2),
           `${item.createdBy} (${item.roleOfEditor})`,
-          item.typeOfEdit || "N/A", // Added Type of Edit column
+          item.typeOfEdit || "N/A",
           stockBefore,
           diffLabel,
           stockAfter,
@@ -587,10 +678,11 @@ const InventoryHistoryScreen = () => {
       `"Date Range: ${format(selectedStartDate, "MMM d, yyyy")} - ${format(
         selectedEndDate,
         "MMM d, yyyy"
-      )}"`, // Wrap the entire date range in quotes
-      "", // Empty line
-      "Date,Product,Editor,Type of Edit,Stock Before,Difference,Stock After",
+      )}"`,
+      "",
+      "Date,Product,Price,Cost,Editor,Type of Edit,Stock Before,Difference,Stock After",
     ];
+
     const rows = filteredInventory.map((item) => {
       const isWeight = item.productType === "Weight" || item.productType === "";
       const stockBefore = isWeight
@@ -600,22 +692,24 @@ const InventoryHistoryScreen = () => {
         ? parseFloat(item.stockAfter).toFixed(2)
         : parseFloat(item.stockAfter);
       const rawDifference = stockAfter - stockBefore;
-      const difference =
-        item.productType === "Weight" || item.productType === ""
-          ? rawDifference.toFixed(2)
-          : rawDifference;
+      const difference = isWeight ? rawDifference.toFixed(2) : rawDifference;
       const diffLabel = rawDifference > 0 ? `+${difference}` : `${difference}`;
 
-      // Ensure the date is properly formatted without commas that can split columns
       const formattedDate = format(
         new Date(item.currentDate),
         "MMM d, yyyy - hh:mm:ss a"
       );
 
-      // Return a properly joined row
+      // Get price and cost from products array
+      const product = products.find((p) => p.productId === item.productId);
+      const price = product?.price || "N/A";
+      const cost = product?.cost || "N/A";
+
       return [
-        `"${formattedDate}"`, // Wrap in quotes to preserve the date format as one field
+        `"${formattedDate}"`,
         item.productName || item.itemName,
+        Number(price).toFixed(2),
+        Number(cost).toFixed(2),
         `${item.createdBy} (${item.roleOfEditor})`,
         item.typeOfEdit || "N/A",
         stockBefore,
