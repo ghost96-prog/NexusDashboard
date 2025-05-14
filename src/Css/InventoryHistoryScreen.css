@@ -421,7 +421,7 @@ body {
 }
 
 /* Button style */
-button {
+.filteringbutton {
   padding: 8px 12px;
   background-color: white;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -437,16 +437,16 @@ button {
   gap: 5px;
 }
 
-button:hover {
+.filteringbutton:hover {
   background-color: #f0f0f0;
 }
 
-button:focus {
+.filteringbutton:focus {
   outline: none;
 }
 
-/* Adding a little space between button and dropdown */
-button + .filterDropdown {
+/* Adding a little space between .filteringbutton and dropdown */
+.filteringbutton + .filterDropdown {
   margin-top: 10px;
 }
 
