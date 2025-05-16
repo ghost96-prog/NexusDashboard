@@ -591,8 +591,8 @@ body {
 @media (min-width: 280px) and (max-width: 499px) {
   .buttonsContainerLaybyes {
     flex-direction: column;
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
 
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
@@ -612,8 +612,8 @@ body {
     } */
 
   .laybyesContainerLaybyes {
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
     overflow-y: auto;
     overflow-x: auto;
   }
@@ -634,8 +634,8 @@ body {
 @media (min-width: 500px) and (max-width: 799px) {
   .buttonsContainerLaybyes {
     flex-direction: column;
-    width: 80%;
-
+    width: 92%;
+    left: 2.5%;
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
   }
@@ -655,7 +655,8 @@ body {
   .laybyesContainerLaybyes {
     overflow-y: auto;
     overflow-x: auto;
-    width: 80%;
+    width: 92%;
+    left: 2.5%;
   }
   .datePickerContainerlaybyes {
     width: 95%; /* Even wider for small screens */

@@ -545,8 +545,8 @@ body {
 @media (min-width: 280px) and (max-width: 499px) {
   .buttonsContainerReceipts {
     flex-direction: column;
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
 
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
@@ -566,8 +566,8 @@ body {
     left: 70px;
   } */
   .receiptsContainerReceipts {
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
     overflow-y: auto;
     overflow-x: auto;
   }
@@ -588,8 +588,8 @@ body {
 @media (min-width: 500px) and (max-width: 799px) {
   .buttonsContainerReceipts {
     flex-direction: column;
-    width: 80%;
-
+    width: 92%;
+    left: 2.5%;
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
   }
@@ -609,7 +609,8 @@ body {
   .receiptsContainerReceipts {
     overflow-y: auto;
     overflow-x: auto;
-    width: 80%;
+    width: 92%;
+    left: 2.5%;
   }
   .datePickerContainerReceipts {
     width: 95%; /* Even wider for small screens */

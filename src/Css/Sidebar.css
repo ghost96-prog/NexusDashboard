@@ -53,11 +53,7 @@
   left: 0;
   transition: 0.5s all;
 }
-/* @media (max-width: 768px) {
-  .sidebar.collapsed {
-    display: none;
-  }
-} */
+
 .sidebar ul {
   list-style: none;
   padding: 0;
@@ -284,5 +280,10 @@
   .sidebar.collapsed ul li span {
     opacity: 0;
     transition: 0.5s all;
+  }
+}
+@media (min-width: 295px) and (max-width: 799px) {
+  .sidebar.collapsed {
+    display: none;
   }
 }

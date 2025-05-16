@@ -594,8 +594,8 @@ body {
 @media (min-width: 280px) and (max-width: 499px) {
   .buttonsContainersoldItems {
     flex-direction: column;
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
 
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
@@ -610,13 +610,13 @@ body {
     justify-content: space-evenly;
   }
 
-  .salesContainerSummery {
+  /* .salesContainerSummery {
     width: 75%;
     left: 70px;
-  }
+  } */
   .soldItemsContainersoldItems {
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
     overflow-y: auto;
     overflow-x: auto;
   }
@@ -637,8 +637,8 @@ body {
 @media (min-width: 500px) and (max-width: 799px) {
   .buttonsContainersoldItems {
     flex-direction: column;
-    width: 80%;
-
+    width: 92%;
+    left: 2.5%;
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
   }
@@ -651,14 +651,15 @@ body {
     align-items: center;
     justify-content: space-evenly;
   }
-  .salesContainerSummery {
+  /* .salesContainerSummery {
     width: 85%;
-  }
+  } */
 
   .soldItemsContainersoldItems {
     overflow-y: auto;
     overflow-x: auto;
-    width: 80%;
+    width: 92%;
+    left: 2.5%;
   }
   .datePickerContainersoldItems {
     width: 95%; /* Even wider for small screens */

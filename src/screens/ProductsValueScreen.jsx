@@ -892,7 +892,7 @@ const ProductValueScreen = () => {
         </div>
       </div>
 
-      <div className="productsContainerProducts">
+      <div className="productsContainerProductsValue">
         {/* Search Input */}
         <div className="searchBar">
           <input

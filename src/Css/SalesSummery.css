@@ -445,9 +445,8 @@
 @media (min-width: 280px) and (max-width: 499px) {
   .buttonsContainerSalesSummery {
     flex-direction: column;
-    width: 75%;
-    left: 70px;
-
+    width: 92%;
+    left: 2.5%;
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
   }
@@ -461,12 +460,12 @@
     justify-content: space-evenly;
   }
   .tableContainerSummery {
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
   }
   .salesContainerSummery {
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
   }
   .receiptsContainerFiscal {
     overflow-y: auto;
@@ -489,8 +488,8 @@
 @media (min-width: 500px) and (max-width: 799px) {
   .buttonsContainerSalesSummery {
     flex-direction: column;
-    width: 85%;
-
+    width: 93%;
+    left: 2.5%;
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
   }
@@ -504,10 +503,12 @@
     justify-content: space-evenly;
   }
   .salesContainerSummery {
-    width: 85%;
+    width: 92%;
+    left: 2.5%;
   }
   .tableContainerSummery {
-    width: 85%;
+    width: 92%;
+    left: 2.5%;
   }
   .receiptsContainerFiscal {
     overflow-y: auto;

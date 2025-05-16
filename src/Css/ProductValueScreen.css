@@ -135,7 +135,7 @@ body {
   }
 }
 
-.productsContainerProducts {
+.productsContainerProductsValue {
   background-color: white;
   height: 50%;
   width: 85%;
@@ -623,7 +623,7 @@ body {
 @media (min-width: 900px) {
   .buttonContainerDateReceipts {
     align-items: center;
-    width: 100%;
+    width: 85%;
     position: relative;
     display: flex;
     flex-direction: row;
@@ -634,9 +634,10 @@ body {
     flex-direction: row;
     align-items: center;
     width: 85%;
-    left: 90px;
-
     gap: 16px; /* Add more space vertically if needed */
+  }
+  .valueContainerSummery {
+    width: 85%;
   }
   .datePickerContainerReceipts {
     width: 90%; /* Take up more width on smaller screens */
@@ -657,7 +658,7 @@ body {
   .buttonContainerFilterByCategory {
     width: 100%;
   }
-  .productsContainerProducts {
+  .productsContainerProductsValue {
     width: 85%;
     overflow-y: auto;
     overflow-x: auto;
@@ -676,19 +677,19 @@ body {
   }
   .buttonsContainerValue {
     flex-direction: column;
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
 
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
   }
   .valueContainerSummery {
-    width: 75%;
-    left: 70px;
+    width: 92%;
+    left: 2.5%;
   }
-  .productsContainerProducts {
-    width: 75%;
-    left: 70px;
+  .productsContainerProductsValue {
+    width: 92%;
+    left: 2.5%;
     overflow-y: auto;
     overflow-x: auto;
   }
@@ -725,19 +726,20 @@ body {
   }
   .buttonsContainerValue {
     flex-direction: column;
-    width: 85%;
-
+    width: 92%;
+    left: 2.5%;
     align-items: center;
     gap: 16px; /* Add more space vertically if needed */
   }
-  /* .salesContainerSummery {
-    width: 85%;
-  } */
-
-  .productsContainerProducts {
+  .valueContainerSummery {
+    width: 92%;
+    left: 2.5%;
+  }
+  .productsContainerProductsValue {
     overflow-y: auto;
     overflow-x: auto;
-    width: 85%;
+    width: 92%;
+    left: 2.5%;
   }
   .datePickerContainerReceipts {
     width: 95%; /* Even wider for small screens */

@@ -345,7 +345,7 @@ const ShiftScreen = () => {
       </div>
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-      <div className="buttonsContainerReceipts">
+      <div className="buttonsContainerShifts">
         <div className="buttonContainerStoresReceipts">
           <button
             className="inputButtonStore"
