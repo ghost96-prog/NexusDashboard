@@ -9,6 +9,8 @@ import {
   FaArrowUp,
   FaDownload,
   FaUserCircle,
+  FaCat,
+  FaFileAlt,
 } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { DateRangePicker, defaultStaticRanges } from "react-date-range";
@@ -51,7 +53,7 @@ import ProductsListItem from "../components/ProductsListItem";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable"; // ← import the function directly
-import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
+import { FaChevronDown, FaFile, FaFileCsv, FaFilePdf } from "react-icons/fa6";
 import ProductsValueListItem from "../components/ProductValueListItem";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
@@ -753,7 +755,7 @@ const ProductValueScreen = () => {
               : selectedCategories.length === categories.length
               ? "All Categories"
               : selectedCategories.map((s) => s.categoryName).join(", ")}{" "}
-            <FaStore className="icon" color="grey" />
+            <FaFileAlt className="icon" color="grey" />
           </button>
           {isCategoryDropdownOpen && (
             <div className="dropdown">
@@ -804,7 +806,7 @@ const ProductValueScreen = () => {
             }}
           >
             {selectStockOption === "" ? "All Items" : selectStockOption}{" "}
-            <FaDownload className="icon" color="grey" />
+            <FaChevronDown className="icon" color="grey" />
           </button>
           {isLowStock && (
             <div className="dropdown">
