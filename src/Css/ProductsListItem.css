@@ -50,3 +50,14 @@
 .headerItem:last-child {
   padding-right: 0;
 }
+.stock-red {
+  color: red;
+}
+
+.stock-orange {
+  color: orange;
+}
+
+.stock-normal {
+  color: black;
+}

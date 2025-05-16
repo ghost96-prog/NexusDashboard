@@ -812,6 +812,7 @@ const ProductListScreen = () => {
             return (
               <ProductsListItem
                 key={index}
+                lowStockNotification={item.lowStockNotification}
                 itemName={item.productName}
                 category={item.category}
                 price={Number(item.price).toFixed(2)}

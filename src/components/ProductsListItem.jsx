@@ -1,5 +1,5 @@
 import React from "react";
-import { format } from "date-fns"; // Import date formatting function from date-fns
+import { format } from "date-fns"; // Not used here but fine to keep
 import "../Css/ProductsListItem.css";
 
 const ProductsListItem = ({
@@ -8,8 +8,21 @@ const ProductsListItem = ({
   price,
   cost,
   stock,
+  lowStockNotification,
   onClick,
 }) => {
+  const getStockColor = () => {
+    if (stock <= 0) return "red";
+    if (stock <= lowStockNotification) return "orange"; // includes equality check
+    return "black";
+  };
+
+  const getStockLabel = () => {
+    if (stock <= 0) return "(Out of stock)";
+    if (stock <= lowStockNotification) return "(Low stock)"; // includes equality check
+    return "";
+  };
+
   return (
     <div className="productListItem" onClick={onClick}>
       <div className="productDetails">
@@ -17,7 +30,10 @@ const ProductsListItem = ({
         <div className="productDetail">{category}</div>
         <div className="productDetail">${price}</div>
         <div className="productDetail">${cost}</div>
-        <div className="productDetail">{stock}</div>
+        <div className="productDetail" style={{ color: getStockColor() }}>
+          {stock}
+          {"   "} <span>{getStockLabel()}</span>
+        </div>
       </div>
     </div>
   );
