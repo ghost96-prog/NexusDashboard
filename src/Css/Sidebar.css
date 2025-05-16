@@ -264,7 +264,7 @@
 
 @media (min-width: 200px) and (max-width: 499px) {
   .sidebar {
-    width: 270px;
+    width: 220px;
     overflow-x: auto;
   }
   .signOutConfirm {
