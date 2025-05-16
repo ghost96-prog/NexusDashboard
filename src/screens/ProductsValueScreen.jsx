@@ -551,10 +551,18 @@ const ProductValueScreen = () => {
 
     // Table headers and body
     const head = [
-      ["Product Name", "QTY", "Retail Value", "Cost Value", "Profit Margin"],
+      [
+        "Product Name",
+        "QTY",
+        "Retail Value",
+        "Cost Value",
+        "Toal Profit",
+        "Profit Margin",
+      ],
     ];
     const body = items.map((item) => {
-      const { retailValue, costValue, margin } = calculateValues(item);
+      const { retailValue, costValue, potentialValue, margin } =
+        calculateValues(item);
       return [
         item.productName,
         item.productType === "Weight"
@@ -562,6 +570,7 @@ const ProductValueScreen = () => {
           : item.stock,
         `$${retailValue.toFixed(2)}`,
         `$${costValue.toFixed(2)}`,
+        `$${potentialValue.toFixed(2)}`,
         `${margin.toFixed(2)}%`,
       ];
     });
@@ -572,6 +581,7 @@ const ProductValueScreen = () => {
       "",
       `$${totalRetailValue.toFixed(2)}`,
       `$${totalCostValue.toFixed(2)}`,
+      `$${totalPotentialValue.toFixed(2)}`,
       `${totalMargin.toFixed(2)}%`,
     ];
     body.push(totalRow);
@@ -610,7 +620,8 @@ const ProductValueScreen = () => {
     csvContent += "Product Name,QTY,Retail Value,Cost Value,Profit Margin\n";
 
     items.forEach((item) => {
-      const { retailValue, costValue, margin } = calculateValues(item);
+      const { retailValue, costValue, potentialValue, margin } =
+        calculateValues(item);
       const quantity =
         item.productType === "Weight"
           ? parseFloat(item.stock).toFixed(2)
@@ -618,13 +629,17 @@ const ProductValueScreen = () => {
 
       csvContent += `${item.productName},${quantity},${retailValue.toFixed(
         2
-      )},${costValue.toFixed(2)},${margin.toFixed(2)}%\n`;
+      )},${costValue.toFixed(2)},${potentialValue.toFixed(2)},${margin.toFixed(
+        2
+      )}%\n`;
     });
 
     // Add totals row
     csvContent += `TOTAL,,${totalRetailValue.toFixed(
       2
-    )},${totalCostValue.toFixed(2)},${totalMargin.toFixed(2)}%\n`;
+    )},${totalCostValue.toFixed(2)},${totalPotentialValue.toFixed(
+      2
+    )},${totalMargin.toFixed(2)}%\n`;
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
