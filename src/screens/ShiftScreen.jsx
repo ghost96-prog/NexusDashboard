@@ -209,7 +209,7 @@ const ShiftScreen = () => {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
       } else {
-        toast.error("An error occurred while fetching stores.");
+        toast.error("An error occurred while fetching shifts.");
       }
       console.error("Error fetching stores:", error);
     }

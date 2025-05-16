@@ -242,7 +242,7 @@ const InventoryHistoryScreen = () => {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
       } else {
-        toast.error("An error occurred while fetching receipts.");
+        toast.error("An error occurred while fetching inventory updates.");
       }
       console.error("Error fetching receipts:", error);
     }
@@ -322,7 +322,7 @@ const InventoryHistoryScreen = () => {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
       } else {
-        toast.error("An error occurred while fetching receipts.");
+        toast.error("An error occurred while fetching products.");
       }
       console.error("Error fetching receipts:", error);
     }
