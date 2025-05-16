@@ -115,7 +115,7 @@ const ProductListScreen = () => {
   useEffect(() => {
     setSelectedStores(stores);
     setSelectedCategories(categories);
-  }, [selectedOption, stores, categories, selectedCategories]);
+  }, [selectedOption, categories, stores]);
   useEffect(() => {
     console.log("Selected Option:", selectedOption);
   }, [selectedOption]);
@@ -435,7 +435,7 @@ const ProductListScreen = () => {
         // setFilteredItems([]);
         // setProducts([]);
       } else {
-        onRefresh();
+        // onRefresh();
       }
     }
   };
