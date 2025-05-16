@@ -100,7 +100,7 @@ const RemainingTimeFooter = () => {
         {latestPaymentStatus === "Active" ? (
           <span className="remaining-time">
             ⚠️ Your Nexus POS Subscription Expires In –{" "}
-            {`${remainingTimeData.days}days ${remainingTimeData.hours}hours ${remainingTimeData.minutes}m ${remainingTimeData.seconds}s`}
+            {`${remainingTimeData.days} days ${remainingTimeData.hours} hours ${remainingTimeData.minutes}m ${remainingTimeData.seconds}s`}
           </span>
         ) : (
           <span className="expired">
