@@ -688,6 +688,8 @@ const InventoryHistoryScreen = () => {
     doc.save("inventory-history.pdf");
   };
   const handleDownloadCSV = () => {
+    console.log("Sample product:", products[0]);
+
     const header = [
       "Inventory History",
       `Store: ${storeName}`,
@@ -718,8 +720,18 @@ const InventoryHistoryScreen = () => {
 
       // Get price and cost from products array
       const product = products.find((p) => p.productId === item.productId);
-      const price = product?.price || "N/A";
-      const cost = product?.cost || "N/A";
+      if (!product) {
+        console.warn("Product not found:", {
+          inventoryProductId: item.productId,
+          inventoryProductName: item.productName,
+          availableProductIds: products.map((p) => p.productId),
+        });
+      } else if (product.cost === undefined) {
+        console.warn("Product found but no cost:", product);
+      }
+
+      const price = product?.price || 0;
+      const cost = product?.cost || 0;
 
       return [
         `"${formattedDate}"`,
