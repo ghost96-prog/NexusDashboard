@@ -12,7 +12,7 @@ const PAGE_SIZES = [
 
 function ReceiptModal({ receipt, onClose, store, email }) {
   const [pdfUrl, setPdfUrl] = useState("");
-  const [format, setFormat] = useState("a4");
+  const [format, setFormat] = useState("a5");
   const [orientation, setOrientation] = useState("portrait");
   const [isGenerating, setIsGenerating] = useState(false);
   const contentRef = useRef();
@@ -31,6 +31,7 @@ function ReceiptModal({ receipt, onClose, store, email }) {
         scale: 2,
         logging: false,
         useCORS: true,
+        backgroundColor: "#ffffff",
       });
       const imgData = canvas.toDataURL("image/png");
 
@@ -106,10 +107,12 @@ function ReceiptModal({ receipt, onClose, store, email }) {
           ×
         </button>
 
+        <h2 className="modalTitle">Receipt Details</h2>
+
         {/* PDF format controls */}
         <div className="formatControls">
-          <label>
-            Size:
+          <div className="controlGroup">
+            <label>Page Size:</label>
             <select
               value={format}
               onChange={(e) => setFormat(e.target.value)}
@@ -121,9 +124,9 @@ function ReceiptModal({ receipt, onClose, store, email }) {
                 </option>
               ))}
             </select>
-          </label>
-          <label>
-            Orientation:
+          </div>
+          <div className="controlGroup">
+            <label>Orientation:</label>
             <select
               value={orientation}
               onChange={(e) => setOrientation(e.target.value)}
@@ -132,99 +135,120 @@ function ReceiptModal({ receipt, onClose, store, email }) {
               <option value="portrait">Portrait</option>
               <option value="landscape">Landscape</option>
             </select>
-          </label>
+          </div>
         </div>
 
         {/* Receipt content to be converted to PDF */}
         <div ref={contentRef} className="invoiceContent">
+          {/* Header with decorative elements */}
+          <div className="receiptDecorTop">
+            <div className decorLine></div>
+            <div className="storeIcon">🛒</div>
+            <div className decorLine></div>
+          </div>
+
           {/* Header */}
           <div className="invoiceHeader">
             <div className="companyInfo">
-              <h1>{store?.storeName}</h1>
-              <p>{store?.address}</p>
-              <p>{store?.phone}</p>
-              <p>{email}</p>
-            </div>
-            <div className="receiptInfo">
-              <p>
-                <strong>Receipt #:</strong> {receipt.ticketNumber}
-              </p>
-              <p>
-                <strong>Date:</strong>{" "}
-                {new Date(receipt.dateTime).toLocaleString()}
-              </p>
-              <p>
-                <strong>Cashier:</strong> {receipt.createdBy}
-              </p>
+              <h1 className="storeName">{store?.storeName}</h1>
+              <p className="storeDetails">{store?.address}</p>
+              <p className="storeDetails">{store?.phone}</p>
+              <p className="storeEmail">{email}</p>
             </div>
           </div>
 
-          <span className="refund">{receipt.label}</span>
+          {/* Receipt details */}
+          <div className="receiptDetails">
+            <div className="detailRow">
+              <span className="detailLabel">Receipt #:</span>
+              <span className="detailValue">{receipt.ticketNumber}</span>
+            </div>
+            <div className="detailRow">
+              <span className="detailLabel">Date:</span>
+              <span className="detailValue">
+                {new Date(receipt.dateTime).toLocaleString()}
+              </span>
+            </div>
+            <div className="detailRow">
+              <span className="detailLabel">Cashier:</span>
+              <span className="detailValue">{receipt.createdBy}</span>
+            </div>
+          </div>
+
+          {receipt.label && <div className="refundBadge">{receipt.label}</div>}
 
           {/* Items Table */}
-          <table className="itemsTable">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Qty</th>
-                <th>Currency</th>
-                <th>Unit Price</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {receipt.items.map((item, i) => (
-                <tr key={i}>
-                  <td>{item.productName}</td>
-                  <td>{item.quantity}</td>
-                  <td>{receipt.selectedCurrency}</td>
-                  <td>{(receipt.rate * item.unitPrice).toFixed(2)}</td>
-                  <td>{(receipt.rate * item.actualTotal).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="itemsSection">
+            <div className="tableHeader">
+              <div className="colItem">Item</div>
+              <div className="colQty">Qty</div>
+              <div className="colPrice">Unit Price</div>
+              <div className="colTotal">Total</div>
+            </div>
+
+            {receipt.items.map((item, i) => (
+              <div key={i} className="itemRow">
+                <div className="colItem">{item.productName}</div>
+                <div className="colQty">{item.quantity}</div>
+                <div className="colPrice">
+                  {receipt.selectedCurrency}{" "}
+                  {(receipt.rate * item.unitPrice).toFixed(2)}
+                </div>
+                <div className="colTotal">
+                  {receipt.selectedCurrency}{" "}
+                  {(receipt.rate * item.actualTotal).toFixed(2)}
+                </div>
+              </div>
+            ))}
+          </div>
 
           {/* Summary */}
-          <div className="summary">
-            <div>
-              <strong className="subTotal">
-                <span>Subtotal: </span> {receipt.selectedCurrency}{" "}
-                {receipt.totalSales.toFixed(2)}
-              </strong>
-              <p>
-                <span>Discount:</span> {receipt.selectedCurrency}{" "}
+          <div className="summarySection">
+            <div className="summaryRow">
+              <span>Subtotal:</span>
+              <span>
+                {receipt.selectedCurrency} {receipt.totalSales.toFixed(2)}
+              </span>
+            </div>
+
+            <div className="summaryRow discount">
+              <span>Discount:</span>
+              <span>
+                - {receipt.selectedCurrency}{" "}
                 {(receipt.rate * receipt.discountApplied).toFixed(2)}
-              </p>
-              <strong className="grandTotal">
-                <span>Total:</span> {receipt.selectedCurrency}{" "}
-                {receipt.totalAmount.toFixed(2)}
-              </strong>
-              <p>
-                <span>Received:</span> {receipt.selectedCurrency}{" "}
-                {receipt.received.toFixed(2)}
-              </p>
-              <p>
-                <span>Change:</span> {receipt.selectedCurrency}{" "}
-                {receipt.change.toFixed(2)}
-              </p>
+              </span>
+            </div>
+
+            <div className="summaryRow total">
+              <span>TOTAL:</span>
+              <span>
+                {receipt.selectedCurrency} {receipt.totalAmount.toFixed(2)}
+              </span>
+            </div>
+
+            <div className="paymentDetails">
+              <div className="summaryRow">
+                <span>Received:</span>
+                <span>
+                  {receipt.selectedCurrency} {receipt.received.toFixed(2)}
+                </span>
+              </div>
+              <div className="summaryRow">
+                <span>Change:</span>
+                <span>
+                  {receipt.selectedCurrency} {receipt.change.toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* QR Code (optional) */}
-          {/* <div className="qrSection">
-            <QRCode
-              value={`https://fdms.zimra.co.zw/validate?invoice=${receipt.ticketNumber}`}
-              size={100}
-            />
-            <p>Scan to verify with ZIMRA</p>
-          </div> */}
+          {/* Footer */}
         </div>
 
         {/* Action buttons */}
         <div className="invoiceActions">
           <button
-            className="btn"
+            className="btn btnPrimary"
             onClick={() => generateAndHandlePdf("preview")}
             disabled={isGenerating}
           >
@@ -234,14 +258,14 @@ function ReceiptModal({ receipt, onClose, store, email }) {
           {pdfUrl && (
             <>
               <button
-                className="btn"
+                className="btn btnSecondary"
                 onClick={handleDownload}
                 disabled={isGenerating}
               >
                 Download
               </button>
               <button
-                className="btn"
+                className="btn btnTertiary"
                 onClick={() => generateAndHandlePdf("print")}
                 disabled={isGenerating}
               >
@@ -253,7 +277,9 @@ function ReceiptModal({ receipt, onClose, store, email }) {
 
         {/* PDF preview */}
         {pdfUrl && (
-          <iframe className="pdfPreview" src={pdfUrl} title="PDF Preview" />
+          <div className="pdfPreviewContainer">
+            <iframe className="pdfPreview" src={pdfUrl} title="PDF Preview" />
+          </div>
         )}
       </div>
     </div>

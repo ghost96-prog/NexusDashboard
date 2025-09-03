@@ -167,7 +167,7 @@
   font-size: 1.5em; /* Adjust font size dynamically */
   text-align: center; /* Center align the text */
   color: black;
-  /* font-weight: bold; */
+  font-weight: bold;
 }
 .salesSubContainer .percentage {
   flex-grow: 1; /* Let the spans grow to take available space */
