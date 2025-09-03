@@ -150,7 +150,7 @@ function ReceiptModal({ receipt, onClose, store, email }) {
           {/* Header */}
           <div className="invoiceHeader">
             <div className="companyInfo">
-              <h1 className="storeName">{store?.storeName}</h1>
+              <h1 className="storeNamemod">{store?.storeName}</h1>
               <p className="storeDetails">{store?.address}</p>
               <p className="storeDetails">{store?.phone}</p>
               <p className="storeEmail">{email}</p>
