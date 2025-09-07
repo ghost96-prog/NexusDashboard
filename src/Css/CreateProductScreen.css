@@ -1,0 +1,641 @@
+/* ProductScreens.css - Responsive Version */
+
+/* General Styles */
+.safeAreacontainer {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    sans-serif;
+}
+
+/* Header Styles */
+.header {
+  height: auto;
+  padding: 5px 10px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
+  color: white;
+  position: relative;
+  z-index: 10;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+}
+
+.headerTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin-left: 15px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.headerSubtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  font-style: italic;
+  margin-left: 55px;
+}
+
+.backButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-right: 15px;
+}
+
+.backIcon {
+  font-size: 24px;
+}
+
+/* Form Container */
+.scrollContainer {
+  padding: 20px 15px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.formContainer {
+  background-color: white;
+  border-radius: 15px;
+  padding: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+/* Input Styles */
+.inputContainer {
+  margin-bottom: 10px;
+}
+
+.inputLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+  margin-left: 5px;
+}
+
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  padding: 0 15px;
+  height: 40px;
+  border: 1px solid #eee;
+}
+
+.input {
+  flex: 1;
+  height: 100%;
+  margin-left: 10px;
+  color: #333;
+  font-size: 15px;
+  border: none;
+  background: transparent;
+  outline: none;
+}
+
+.inputIcon {
+  color: #888;
+  font-size: 16px;
+  margin-right: 5px;
+}
+
+.currencySymbol {
+  color: #888;
+  font-size: 16px;
+  margin-right: 5px;
+}
+
+/* Dropdown Styles */
+.dropdownTrigger {
+  display: flex;
+  align-items: center;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  padding: 0 15px;
+  height: 50px;
+  border: 1px solid #eee;
+  cursor: pointer;
+}
+
+.dropdownTriggerText {
+  flex: 1;
+  margin-left: 10px;
+  color: #333;
+  font-size: 15px;
+}
+
+.dropdownIcon {
+  color: #888;
+  font-size: 16px;
+}
+
+.dropdownModalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dropdownModalContainer {
+  width: 80%;
+  max-width: 400px;
+  max-height: 60%;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.dropdownModalHeader {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(to right, #1b839aab, #1b839aab);
+}
+
+.dropdownModalHeaderText {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+.dropdownModalScroll {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdownModalItemp {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  background-color: white;
+}
+
+.dropdownModalItemSelected {
+  background-color: #e6f7ff;
+}
+
+.dropdownModalItemText {
+  font-size: 16px;
+  color: #333;
+  margin-left: 12px;
+}
+
+.dropdownModalItemTextSelected {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.itemIcon {
+  color: #888;
+  font-size: 16px;
+}
+
+/* Radio Button Styles */
+.radioGroup {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.radioButton {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background-color: white;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.radioButtonSelected {
+  background-color: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.radioButtonText {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+}
+
+.radioButtonTextSelected {
+  color: #1890ff;
+}
+
+/* Row Container */
+.rowContainer {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.rowInputContainer {
+  flex: 1;
+}
+
+/* Switch Styles */
+.switchContainer {
+  margin-bottom: 20px;
+}
+
+.switchWrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.switchLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #2196f3;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+/* Stock Controls */
+.currentStockText {
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 15px;
+  text-align: center;
+  background-color: #f0f8ff;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.stockControlsContainer {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stockControl {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+}
+
+/* Button Styles */
+.buttonContainer {
+  margin-top: 30px;
+}
+
+.saveButton {
+  width: 100%;
+  height: 50px;
+  border-radius: 10px;
+  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.saveButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+.saveButton:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.saveButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.saveButtonText {
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  margin-right: 10px;
+}
+
+.saveIcon {
+  color: white;
+  font-size: 18px;
+}
+
+/* Error Text */
+.errorText {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 5px;
+  margin-left: 5px;
+}
+
+/* Modal Styles */
+.modalBackground {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: white;
+  padding: 30px;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 250px;
+}
+
+.loader {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.modalText {
+  font-size: 16px;
+  color: #555;
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+/* Mobile Phones (up to 767px) */
+@media (max-width: 767px) {
+  .header {
+    padding: 12px 15px;
+    padding-bottom: 12px;
+  }
+
+  .headerTitle {
+    font-size: 18px;
+    margin-left: 10px;
+  }
+
+  .headerSubtitle {
+    margin-left: 50px;
+    font-size: 12px;
+  }
+
+  .backButton {
+    width: 35px;
+    height: 35px;
+    margin-top: 15px;
+  }
+
+  .scrollContainer {
+    padding: 15px 10px;
+  }
+
+  .formContainer {
+    padding: 15px;
+    border-radius: 12px;
+  }
+
+  .inputWrapper,
+  .dropdownTrigger {
+    height: 45px;
+  }
+
+  .input,
+  .dropdownTriggerText {
+    font-size: 14px;
+  }
+
+  .rowContainer {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .radioGroup {
+    flex-direction: column;
+  }
+
+  .radioButton {
+    padding: 10px 12px;
+  }
+
+  .stockControlsContainer {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .saveButton {
+    height: 45px;
+  }
+
+  .saveButtonText {
+    font-size: 14px;
+  }
+
+  .dropdownModalContainer {
+    width: 90%;
+    max-height: 70%;
+  }
+}
+
+/* Tablets (768px to 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .scrollContainer {
+    padding: 20px 30px;
+  }
+
+  .formContainer {
+    max-width: 90%;
+  }
+
+  .headerTitle {
+    font-size: 22px;
+  }
+
+  .headerSubtitle {
+    font-size: 13px;
+  }
+}
+
+/* Large Tablets and Small Desktops (1024px to 1279px) */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .scrollContainer {
+    padding: 20px 40px;
+  }
+
+  .formContainer {
+    max-width: 85%;
+  }
+}
+
+/* Desktops and Large Screens (1280px and above) */
+@media (min-width: 1280px) {
+  .scrollContainer {
+    padding: 20px 60px;
+  }
+
+  .formContainer {
+    max-width: 800px;
+  }
+}
+
+/* Very small mobile devices (up to 320px) */
+@media (max-width: 320px) {
+  .headerTitle {
+    font-size: 16px;
+  }
+
+  .headerSubtitle {
+    font-size: 11px;
+    margin-left: 45px;
+  }
+
+  .inputLabel {
+    font-size: 13px;
+  }
+
+  .input,
+  .dropdownTriggerText {
+    font-size: 13px;
+  }
+
+  .saveButtonText {
+    font-size: 13px;
+  }
+}
+
+/* Landscape orientation for mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .scrollContainer {
+    padding: 10px 15px;
+  }
+
+  .inputContainer {
+    margin-bottom: 15px;
+  }
+
+  .inputWrapper,
+  .dropdownTrigger {
+    height: 40px;
+  }
+
+  .buttonContainer {
+    margin-top: 20px;
+  }
+
+  .saveButton {
+    height: 40px;
+  }
+}
+
+/* High-resolution displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .header {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+  .formContainer {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}

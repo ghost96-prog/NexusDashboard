@@ -14,6 +14,8 @@ import ProductValueScreen from "./screens/ProductsValueScreen";
 import ShiftScreen from "./screens/ShiftScreen";
 import LaybyeScreen from "./screens/LaybyeScreen";
 import PaymentsScreen from "./screens/PaymentsScreen";
+import CreateProductScreen from "./screens/CreateProductScreen";
+import EditProductScreen from "./screens/EditProductScreen";
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
           <Route path="/receiptsScreen" element={<ReceiptsScreen />} />
           <Route path="/soldItems" element={<TopSellingProducts />} />
           <Route path="/products" element={<ProductListScreen />} />
+          <Route path="/create-products" element={<CreateProductScreen />} />
+          <Route path="/edit-products" element={<EditProductScreen />} />
           <Route path="/inventory" element={<InventoryHistoryScreen />} />
           <Route path="/inventory-value" element={<ProductValueScreen />} />
           <Route path="/shifts" element={<ShiftScreen />} />

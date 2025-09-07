@@ -40,7 +40,7 @@ import { IoCalendar } from "react-icons/io5";
 import { Bar } from "react-chartjs-2";
 import Chart from "chart.js/auto";
 import { format } from "date-fns";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ReceiptModal from "../components/ReceiptModal";
@@ -52,8 +52,9 @@ import ProductsListItem from "../components/ProductsListItem";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable"; // ← import the function directly
-import { FaChevronDown, FaFileCsv, FaFilePdf } from "react-icons/fa6";
+import { FaChevronDown, FaFileCsv, FaFilePdf, FaPlus } from "react-icons/fa6";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
+import SubscriptionModal from "../components/SubscriptionModal";
 
 const ProductListScreen = () => {
   // const stores = ["Store 1", "Store 2", "Store 3"];
@@ -89,6 +90,42 @@ const ProductListScreen = () => {
   const [categories, setCategories] = useState([]);
   const [selectStockOption, setSelectStockOption] = useState("All Items");
   const [allReceipts, setAllReceipts] = useState([]);
+  const navigate = useNavigate(); // Initialize navigate
+
+  const [isSubscribedAdmin, setIsSubscribedAdmin] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+
+  // Add this useEffect to fetch subscription status
+  useEffect(() => {
+    if (email) {
+      fetchAdminSubscriptionStatus();
+      fetchStores();
+      fetchCategories();
+    }
+  }, [email]);
+
+  const fetchAdminSubscriptionStatus = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const decoded = jwtDecode(token);
+      const userEmail = decoded.email;
+
+      const response = await fetch(
+        `https://nexuspos.onrender.com/api/adminSubscriptionRouter/status?email=${encodeURIComponent(
+          userEmail
+        )}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsSubscribedAdmin(data.isSubscribedAdmin);
+      }
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token"); // Or sessionStorage if needed
@@ -463,12 +500,12 @@ const ProductListScreen = () => {
     };
   }, [dateRangePickerRef]);
 
-  function handleItemClick(item) {
-    console.log("====================================");
-    console.log(item);
-    console.log("====================================");
-    // setModalProduct(item);
-  }
+  // function handleItemClick(item) {
+  //   console.log("====================================");
+  //   console.log(item);
+  //   console.log("====================================");
+  //   // setModalProduct(item);
+  // }
   const handleToggleDropdown = () => {
     setShowDropdown((prev) => !prev);
   };
@@ -547,7 +584,21 @@ const ProductListScreen = () => {
     link.click();
     document.body.removeChild(link);
   };
+  const handleItemClick = (item) => {
+    if (!isSubscribedAdmin) {
+      setShowSubscriptionModal(true);
+      return;
+    }
+    navigate("/edit-products", { state: item });
+  };
 
+  const handleCreateProduct = () => {
+    if (!isSubscribedAdmin) {
+      setShowSubscriptionModal(true);
+      return;
+    }
+    navigate("/create-products");
+  };
   return (
     <div className="mainContainerReceipts">
       {showDropdown && (
@@ -784,10 +835,18 @@ const ProductListScreen = () => {
           )}
         </div>
       </div>
-
       <div className="productsContainerProducts">
         {/* Search Input */}
         <div className="searchBar">
+          <div className="createProductButtonContainer">
+            <button
+              className="createProductButton"
+              onClick={handleCreateProduct}
+            >
+              <FaPlus className="icon" />
+              Create Product
+            </button>
+          </div>
           <input
             type="text"
             placeholder="Search Product..."
@@ -829,6 +888,10 @@ const ProductListScreen = () => {
           })}
         </div>
       </div>
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+      />
       {modalProduct &&
         (() => {
           // Compute the matching store before returning JSX

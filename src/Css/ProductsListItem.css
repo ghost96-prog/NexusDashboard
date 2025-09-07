@@ -3,7 +3,9 @@
   cursor: pointer;
   min-width: 600px; /* Adjust based on your expected minimum layout */
 }
-
+.productListItem:hover {
+  background-color: #dfeaf8;
+}
 .productDetails {
   display: flex;
   border-bottom: 1px solid #ddd;

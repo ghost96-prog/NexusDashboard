@@ -17,7 +17,11 @@ body {
 .toolBarInventory {
   width: 100%;
   height: 50px;
-  background-color: darkblue;
+  padding: 5px 10px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
   color: white;
   position: fixed;
   margin-bottom: 70px;
@@ -152,7 +156,7 @@ body {
   min-width: 600px; /* Adjust based on your expected minimum layout */
 
   margin: 0; /* Ensure no margins */
-  background-color: darkblue;
+  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
 }
 .InventoryContainerInventory {
   background-color: white;
