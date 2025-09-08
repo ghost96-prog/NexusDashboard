@@ -1021,74 +1021,112 @@ const SalesSummery = () => {
       <div className="salesContainerSummery">
         <div className="salesSubContainer">
           <h1>Gross Sales</h1>
-          <span className="amount">${grossSales.toFixed(2)}</span>
-          <span className="percentage" style={percentageStyleSales}>
-            {percentageDifferenceIncome}{" "}
-            {/* dynamically displays percentage difference */}
+          <span className="amount">
+            $
+            {grossSales.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </span>
-
-          {/* Dynamically show either red down arrow or green up arrow */}
+          <span className="percentage" style={percentageStyleSales}>
+            {percentageDifferenceIncome}
+          </span>
           {percentageDiffTotalIncome < 0 ? (
-            <FaArrowDown color="red" size={10} /> // Down arrow for negative difference, red color
+            <FaArrowDown color="red" size={10} />
           ) : (
-            <FaArrowUp color="green" size={10} /> // Up arrow for positive difference, green color
+            <FaArrowUp color="green" size={10} />
           )}
         </div>
+
         {laybyeTotal > 0 && (
           <div className="salesSubContainer">
             <h1>Laybye Payments</h1>
-            <span className="amount">${laybyeTotal.toFixed(2)}</span>
+            <span className="amount">
+              $
+              {laybyeTotal.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
             <span className="percentage">-</span>
             <FaArrowDown color="white" size={10} />
           </div>
         )}
+
         <div className="salesSubContainer">
-          {" "}
           <h1>Refunds</h1>
-          <span className="amount">${refunds.toFixed(2)}</span>
-          <span className="percentage">-</span>
-          <FaArrowDown color="white" size={10} />
-        </div>
-        <div className="salesSubContainer">
-          {" "}
-          <h1>Discounts</h1>
-          <span className="amount">${discounts.toFixed(2)}</span>
-          <span className="percentage">-</span>
-          <FaArrowDown color="white" size={10} />
-        </div>
-        <div className="salesSubContainer">
-          {" "}
-          <h1>Net Sales</h1>
-          <span className="amount">${totalAmount.toFixed(2)}</span>
-          <span className="percentage" style={percentageStyleSales}>
-            {percentageDifferenceIncome}{" "}
-            {/* dynamically displays percentage difference */}
+          <span className="amount">
+            $
+            {refunds.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </span>
-          {/* Dynamically show either red down arrow or green up arrow */}
+          <span className="percentage">-</span>
+          <FaArrowDown color="white" size={10} />
+        </div>
+
+        <div className="salesSubContainer">
+          <h1>Discounts</h1>
+          <span className="amount">
+            $
+            {discounts.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+          <span className="percentage">-</span>
+          <FaArrowDown color="white" size={10} />
+        </div>
+
+        <div className="salesSubContainer">
+          <h1>Net Sales</h1>
+          <span className="amount">
+            $
+            {totalAmount.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+          <span className="percentage" style={percentageStyleSales}>
+            {percentageDifferenceIncome}
+          </span>
           {percentageDiffTotalIncome < 0 ? (
-            <FaArrowDown color="red" size={10} /> // Down arrow for negative difference, red color
+            <FaArrowDown color="red" size={10} />
           ) : (
-            <FaArrowUp color="green" size={10} /> // Up arrow for positive difference, green color
+            <FaArrowUp color="green" size={10} />
           )}
         </div>
+
         <div className="salesSubContainer">
-          {" "}
           <h1>COGS</h1>
-          <span className="amount">${cost.toFixed(2)}</span>
+          <span className="amount">
+            $
+            {cost.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
           <span className="percentage">-</span>
           <FaArrowDown color="white" size={10} />
         </div>
+
         <div className="salesSubContainer">
-          {" "}
           <h1>Profit</h1>
-          <span className="amount">${profit.toFixed(2)}</span>
+          <span className="amount">
+            $
+            {profit.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
           <span className="percentage" style={percentageStyleProfit}>
-            {percentageDifferenceProfit}{" "}
+            {percentageDifferenceProfit}
           </span>
           {percentageDiffProfit < 0 ? (
-            <FaArrowDown color="red" size={10} /> // Down arrow for negative difference, red color
+            <FaArrowDown color="red" size={10} />
           ) : (
-            <FaArrowUp color="green" size={10} /> // Up arrow for positive difference, green color
+            <FaArrowUp color="green" size={10} />
           )}
         </div>
       </div>
