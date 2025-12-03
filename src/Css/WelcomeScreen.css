@@ -1,78 +1,275 @@
+/* WelcomeScreen.css */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 0;
   font-family: "Poppins", sans-serif;
 }
-.mainContainer {
-  background-color: lavender;
+
+.nexus-mainContainer {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* font-size: calc(10px + 2vmin); */
+  position: relative;
+  overflow: hidden;
 }
 
-.titleContainerWelcome {
-  background-color: white;
+/* Background Logos */
+.nexus-backgroundLogosContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.nexus-backgroundLogo {
+  user-select: none;
+  -webkit-user-drag: none;
+  position: absolute;
+}
+
+.nexus-titleContainerWelcome {
+  background: rgba(255, 255, 255, 0.1);
   min-height: 70vh;
   width: 40%;
   display: flex;
-
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: #40a578;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+  color: white;
+  border-radius: 25px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+  padding: 30px 25px;
+  position: relative;
+  z-index: 2;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
-.welcomeImage {
-  max-width: 200px;
-  height: 200px;
+
+.nexus-welcomeImage {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
   margin-bottom: 10px;
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.2));
+  animation: nexus-float 3s ease-in-out infinite;
 }
 
-.buttonContainer {
-  margin-top: 20px;
-  flex-direction: column;
+@keyframes nexus-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
-.inputButtonvirtual {
-  width: 15pc;
-  padding: 10px 20px;
-  font-size: 1rem;
-  opacity: 0.5;
+.nexus-welcomeTitle {
+  font-size: 22px;
+  font-weight: 600;
   color: white;
-  background-color: grey;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-.inputButtonRegister {
-  width: 15pc;
-  padding: 10px 20px;
-  font-size: 1rem;
-  color: white;
-  background-color: darkblue;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-.inputButtonRegister:hover {
-  background-color: #050c9c;
+  text-align: center;
+  margin-bottom: 8px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.inputButtonvirtual:hover {
-  background-color: dark#40A578;
+.nexus-welcomeSubtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 25px;
+  font-weight: 400;
 }
-.lable {
-  font-size: 1rem;
+
+.nexus-taglineContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-top: 8px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
 }
+
+.nexus-sparkle {
+  font-size: 14px;
+  margin: 0 5px;
+}
+
+.nexus-taglineText {
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.nexus-buttonContainer {
+  width: 100%;
+  margin-bottom: 16px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.nexus-buttonContainer:hover {
+  transform: translateY(-2px);
+}
+
+.nexus-inputButtonvirtual {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 14px;
+  color: white;
+  background: linear-gradient(135deg, #6c757d, #495057);
+  border: none;
+  border-radius: 20px;
+  cursor: not-allowed;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Poppins", sans-serif;
+}
+
+.nexus-inputButtonRegister {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 14px;
+  color: white;
+  background: linear-gradient(135deg, #40a578, #2e7d5e);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Poppins", sans-serif;
+  transition: all 0.3s ease;
+}
+
+.nexus-inputButtonRegister:hover {
+  background: linear-gradient(135deg, #2e7d5e, #40a578);
+  transform: scale(1.02);
+}
+
+/* Coming Soon Badge */
+.nexus-comingSoonBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  z-index: 3;
+  animation: nexus-pulse 2s infinite;
+}
+
+@keyframes nexus-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Icon and Chevron */
+.nexus-buttonIcon {
+  position: absolute;
+  left: 20px;
+  font-size: 18px;
+}
+
+.nexus-chevron {
+  position: absolute;
+  right: 20px;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.nexus-inputButtonRegister:hover .nexus-chevron,
+.nexus-inputButtonvirtual:hover .nexus-chevron {
+  transform: translateX(4px);
+}
+
+/* Responsive Design */
 @media (max-width: 900px) {
-  .titleContainerWelcome {
+  .nexus-titleContainerWelcome {
     width: 80%;
-    height: 70vh;
+    min-height: 60vh;
+    padding: 25px 20px;
+  }
+
+  .nexus-welcomeImage {
+    width: 140px;
+    height: 140px;
+  }
+
+  .nexus-welcomeTitle {
+    font-size: 20px;
+  }
+
+  .nexus-welcomeSubtitle {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nexus-titleContainerWelcome {
+    width: 90%;
+    padding: 22px 15px;
+  }
+
+  .nexus-welcomeImage {
+    width: 120px;
+    height: 120px;
+  }
+
+  .nexus-welcomeTitle {
+    font-size: 18px;
+  }
+
+  .nexus-welcomeSubtitle {
+    font-size: 12px;
+  }
+
+  .nexus-inputButtonvirtual,
+  .nexus-inputButtonRegister {
+    padding: 14px 15px;
+    font-size: 13px;
+  }
+
+  .nexus-buttonIcon {
+    left: 15px;
+    font-size: 16px;
+  }
+
+  .nexus-chevron {
+    right: 15px;
+    font-size: 14px;
   }
 }
