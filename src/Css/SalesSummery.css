@@ -1,3 +1,23 @@
+/* Apply to entire app */
+* {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Or be more specific */
+body {
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
 .mainContainerSalesSummery {
   background-color: aliceblue;
   min-height: 130vh;
@@ -32,18 +52,121 @@
 
 .salesContainerSummery {
   left: 90px;
-  min-height: 50px;
+  min-height: auto;
   width: 90%;
   position: relative;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: space-evenly;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  padding: 16px;
   border-radius: 8px;
-  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
-  padding: 5px;
-  overflow-y: auto;
-  overflow-x: auto;
+  overflow: visible;
+  margin-bottom: 20px;
+}
+
+.salesSubContainer {
+  background-color: white;
+  min-height: 120px;
+  width: 100%;
+  aspect-ratio: 1/1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #40a578;
+  border-radius: 50%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.salesSubContainer:hover {
+  transform: scale(1.05);
+  cursor: pointer;
+}
+
+.salesSubContainer h1 {
+  font-size: 0.8em;
+  margin-bottom: 8px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+
+
+.salesSubContainer .percentage {
+  font-size: 0.7em;
+  text-align: center;
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+/* Mobile and Tablet adjustments */
+@media (min-width: 280px) and (max-width: 499px) {
+  .salesContainerSummery {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 92%;
+    left: 2.5%;
+    padding: 12px;
+  }
+  
+  .salesSubContainer {
+    min-height: 100px;
+    padding: 12px;
+  }
+  
+  .salesSubContainer h1 {
+    font-size: 0.7em;
+  }
+  
+  .salesSubContainer .amount {
+    font-size: 1.1em;
+  }
+  
+  .salesSubContainer .percentage {
+    font-size: 0.6em;
+  }
+}
+
+@media (min-width: 500px) and (max-width: 799px) {
+  .salesContainerSummery {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    width: 92%;
+    left: 2.5%;
+    padding: 14px;
+  }
+  
+  .salesSubContainer {
+    min-height: 110px;
+  }
+}
+
+@media (min-width: 800px) and (max-width: 1199px) {
+  .salesContainerSummery {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .salesContainerSummery {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+  }
+  
+  .salesSubContainer {
+    min-height: 130px;
+  }
+  
+  .salesSubContainer h1 {
+    font-size: 16px;
+  }
+  
+  .salesSubContainer .amount {
+    font-size: 20px;
+  }
 }
 
 .tableContainerSummery {
@@ -139,8 +262,8 @@
 
 .salesSubContainer {
   background-color: white;
-  min-height: 120px;
-  min-width: 120px;
+  min-height: 100px;
+  min-width: 100px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -161,7 +284,6 @@
 .salesSubContainer h1 {
   flex-grow: 1; /* Let the title grow to take available space */
   font-size: 0.8em; /* Adjust font size dynamically */
-  margin-bottom: 10px; /* Add margin to separate from other elements */
 }
 
 .salesSubContainer .amount {
@@ -169,7 +291,7 @@
   font-size: 1.5em; /* Adjust font size dynamically */
   text-align: center; /* Center align the text */
   color: rgb(61, 55, 82);
-  font-weight: bold;
+  font-weight: 500;
 }
 .salesSubContainer .percentage {
   flex-grow: 1; /* Let the spans grow to take available space */
