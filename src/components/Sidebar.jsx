@@ -65,7 +65,7 @@ const Sidebar = ({ isOpen }) => {
     // Redirect to login
     setTimeout(() => {
       NProgress.done();
-      navigate("/login");
+      navigate("/loginBackOffice");
       window.location.reload(); // Optional: to ensure clean state
     }, 300);
   };
