@@ -97,7 +97,6 @@
 .sold-detail:first-child {
   padding-left: 0;
   color: #333;
-  font-weight: 500;
   font-size: 0.9em;
 }
 
@@ -109,19 +108,16 @@
 /* Product Name Styling */
 .sold-detail:nth-child(1) {
   color: #333;
-  font-weight: 500;
 }
 
 /* Store Name Styling */
 .sold-detail:nth-child(2) {
   color: #1a5b7b;
-  font-weight: 500;
 }
 
 /* Quantity Styling */
 .sold-detail:nth-child(3) {
   color: #1a5b7b;
-  font-weight: 600;
   position: relative;
   padding-left: 20px;
 }
@@ -137,17 +133,14 @@
 /* Sales and Cost Styling */
 .sold-detail:nth-child(4) { /* Total Sales */
   color: #28a745;
-  font-weight: 600;
 }
 
 .sold-detail:nth-child(5) { /* Cost */
   color: #dc3545;
-  font-weight: 600;
 }
 
 /* Profit Styling */
 .sold-detail:nth-child(6) {
-  font-weight: 700;
   font-size: 0.9em;
   position: relative;
 }

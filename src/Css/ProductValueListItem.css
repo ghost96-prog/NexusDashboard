@@ -97,7 +97,6 @@
 .product-value-detail:first-child {
   padding-left: 0;
   color: #333;
-  font-weight: 500;
   font-size: 0.9em;
 }
 
@@ -108,23 +107,19 @@
 
 /* Value Styling */
 .product-value-detail:nth-child(2) { /* Quantity */
-  font-weight: 600;
   color: #1a5b7b;
 }
 
 .product-value-detail:nth-child(3) { /* Retail Value */
   color: #28a745;
-  font-weight: 600;
 }
 
 .product-value-detail:nth-child(4) { /* Cost Value */
   color: #dc3545;
-  font-weight: 600;
 }
 
 /* Margin Styling */
 .product-value-detail:nth-child(5) {
-  font-weight: 700;
   font-size: 0.9em;
   position: relative;
   padding-right: 20px;
@@ -136,7 +131,6 @@
   padding: 4px 10px;
   border-radius: 15px;
   font-size: 0.75em;
-  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-left: 8px;
