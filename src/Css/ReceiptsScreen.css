@@ -183,11 +183,7 @@ body {
   width: 100%;
 }
 
-.receiptHeader {
-  min-width: 600px; /* Adjust based on your expected minimum layout */
-  display: flex;
-  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
-}
+
 .salesTable tbody tr:nth-of-type(even) {
   background-color: #f9f9f9;
 }

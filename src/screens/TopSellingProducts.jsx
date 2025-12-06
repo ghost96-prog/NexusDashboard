@@ -884,7 +884,7 @@ const TopSellingProducts = () => {
           })}
 
           {/* Totals Row */}
-          <div className="receiptTotalRow">
+          <div className="TotalsoldRow">
             <div className="headerItem">Total</div>
             <div className="headerItem"></div>{" "}
             <div className="headerItem"></div>{" "}

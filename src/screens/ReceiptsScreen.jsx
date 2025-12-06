@@ -682,13 +682,14 @@ const ReceiptsScreen = () => {
           )}
         </div>
         <div className="receiptsSubContainer">
-          <div className="receiptHeader">
-            <div className="headerItem">Receipt Number</div>
-            <div className="headerItem">Date</div>
-            <div className="headerItem">Store Name</div>
-            <div className="headerItem">Payment Type</div>
-            <div className="headerItem">Total Sales</div>
-          </div>
+      <div className="receiptHeader">
+  <div className="headerItem">Receipt Number</div>
+  <div className="headerItem">Date</div>
+  <div className="headerItem">Store Name</div>
+  <div className="headerItem">Payment Type</div>
+  <div className="headerItem">Total Sales</div>
+  <div className="headerItem"></div> {/* Empty column for refund label */}
+</div>
           {[...filteredReceipts]
             .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime))
             .map((item, index) => {

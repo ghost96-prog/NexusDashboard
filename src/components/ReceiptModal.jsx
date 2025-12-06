@@ -100,19 +100,42 @@ function ReceiptModal({ receipt, onClose, store, email }) {
     }
   };
 
+  // Format currency
+  const formatCurrency = (value) => {
+    return parseFloat(value || 0).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  // Generate QR code data
+  const generateQRData = () => {
+    const data = {
+      receiptNumber: receipt.ticketNumber,
+      date: receipt.dateTime,
+      store: store?.storeName,
+      total: receipt.totalAmount,
+      currency: receipt.selectedCurrency,
+    };
+    return JSON.stringify(data);
+  };
+
   return (
-    <div className="modalOverlay">
-      <div className="modalContent invoiceModal">
-        <button className="closeBtn" onClick={onClose}>
+    <div className="receipt-modal-overlay">
+      <div className="receipt-modal-content">
+        <button 
+          className="receipt-modal-close-btn" 
+          onClick={onClose}
+        >
           ×
         </button>
 
-        <h2 className="modalTitle">Receipt Details</h2>
+        <h2 className="receipt-modal-title">📋 Receipt Details</h2>
 
         {/* PDF format controls */}
-        <div className="formatControls">
-          <div className="controlGroup">
-            <label>Page Size:</label>
+        <div className="receipt-modal-format-controls">
+          <div className="receipt-modal-control-group">
+            <label>📄 Page Size</label>
             <select
               value={format}
               onChange={(e) => setFormat(e.target.value)}
@@ -125,8 +148,8 @@ function ReceiptModal({ receipt, onClose, store, email }) {
               ))}
             </select>
           </div>
-          <div className="controlGroup">
-            <label>Orientation:</label>
+          <div className="receipt-modal-control-group">
+            <label>🔄 Orientation</label>
             <select
               value={orientation}
               onChange={(e) => setOrientation(e.target.value)}
@@ -139,137 +162,146 @@ function ReceiptModal({ receipt, onClose, store, email }) {
         </div>
 
         {/* Receipt content to be converted to PDF */}
-        <div ref={contentRef} className="invoiceContent">
+        <div ref={contentRef} className="receipt-modal-invoice-content">
           {/* Header with decorative elements */}
-          <div className="receiptDecorTop">
-            <div className decorLine></div>
-            <div className="storeIcon">🛒</div>
-            <div className decorLine></div>
+          <div className="receipt-modal-decor-top">
+            <div className="receipt-modal-decor-line"></div>
+            <div className="receipt-modal-store-icon">🛒</div>
+            <div className="receipt-modal-decor-line"></div>
           </div>
 
           {/* Header */}
-          <div className="invoiceHeader">
-            <div className="companyInfo">
-              <h1 className="storeNamemod">{store?.storeName}</h1>
-              <p className="storeDetails">{store?.address}</p>
-              <p className="storeDetails">{store?.phone}</p>
-              <p className="storeEmail">{email}</p>
+          <div className="receipt-modal-header">
+            <div className="company-info">
+              <h1 className="receipt-modal-store-name">{store?.storeName || "STORE NAME"}</h1>
+              <p className="receipt-modal-store-details">{store?.address || "Store Address"}</p>
+              <p className="receipt-modal-store-details">📞 {store?.phone || "(000) 000-0000"}</p>
+              <p className="receipt-modal-store-email">✉️ {email || "store@example.com"}</p>
             </div>
           </div>
 
           {/* Receipt details */}
-          <div className="receiptDetails">
-            <div className="detailRow">
-              <span className="detailLabel">Receipt #:</span>
-              <span className="detailValue">{receipt.ticketNumber}</span>
+          <div className="receipt-modal-details">
+            <div className="receipt-modal-detail-row">
+              <span className="receipt-modal-detail-label">Receipt #:</span>
+              <span className="receipt-modal-detail-value">#{receipt.ticketNumber}</span>
             </div>
-            <div className="detailRow">
-              <span className="detailLabel">Date:</span>
-              <span className="detailValue">
+            <div className="receipt-modal-detail-row">
+              <span className="receipt-modal-detail-label">Date & Time:</span>
+              <span className="receipt-modal-detail-value">
                 {new Date(receipt.dateTime).toLocaleString()}
               </span>
             </div>
-            <div className="detailRow">
-              <span className="detailLabel">Cashier:</span>
-              <span className="detailValue">{receipt.createdBy}</span>
+            <div className="receipt-modal-detail-row">
+              <span className="receipt-modal-detail-label">Cashier:</span>
+              <span className="receipt-modal-detail-value">👤 {receipt.createdBy}</span>
             </div>
           </div>
 
-          {receipt.label && <div className="refundBadge">{receipt.label}</div>}
+          {receipt.label && (
+            <div className="receipt-modal-refund-badge">
+              ⚠️ {receipt.label}
+            </div>
+          )}
 
           {/* Items Table */}
-          <div className="itemsSection">
-            <div className="tableHeader">
-              <div className="colItem">Item</div>
-              <div className="colQty">Qty</div>
-              <div className="colPrice">Unit Price</div>
-              <div className="colTotal">Total</div>
+          <div className="receipt-modal-items-section">
+            <div className="receipt-modal-table-header">
+              <div className="receipt-modal-col-item">Item</div>
+              <div className="receipt-modal-col-qty">Qty</div>
+              <div className="receipt-modal-col-price">Unit Price</div>
+              <div className="receipt-modal-col-total">Total</div>
             </div>
 
             {receipt.items.map((item, i) => (
-              <div key={i} className="itemRow">
-                <div className="colItem">{item.productName}</div>
-                <div className="colQty">{item.quantity}</div>
-                <div className="colPrice">
-                  {receipt.selectedCurrency}{" "}
-                  {(receipt.rate * item.unitPrice).toFixed(2)}
+              <div key={i} className="receipt-modal-item-row">
+                <div className="receipt-modal-col-item">{item.productName}</div>
+                <div className="receipt-modal-col-qty">{item.quantity}</div>
+                <div className="receipt-modal-col-price">
+                  {receipt.selectedCurrency} {formatCurrency(receipt.rate * item.unitPrice)}
                 </div>
-                <div className="colTotal">
-                  {receipt.selectedCurrency}{" "}
-                  {(receipt.rate * item.actualTotal).toFixed(2)}
+                <div className="receipt-modal-col-total">
+                  {receipt.selectedCurrency} {formatCurrency(receipt.rate * item.actualTotal)}
                 </div>
               </div>
             ))}
           </div>
 
           {/* Summary */}
-          <div className="summarySection">
-            <div className="summaryRow">
+          <div className="receipt-modal-summary-section">
+            <div className="receipt-modal-summary-row">
               <span>Subtotal:</span>
               <span>
-                {receipt.selectedCurrency} {receipt.totalSales.toFixed(2)}
+                {receipt.selectedCurrency} {formatCurrency(receipt.totalSales)}
               </span>
             </div>
 
-            <div className="summaryRow discount">
+            <div className="receipt-modal-summary-row discount">
               <span>Discount:</span>
               <span>
-                - {receipt.selectedCurrency}{" "}
-                {(receipt.rate * receipt.discountApplied).toFixed(2)}
+                - {receipt.selectedCurrency} {formatCurrency(receipt.rate * receipt.discountApplied)}
               </span>
             </div>
 
-            <div className="summaryRow total">
-              <span>TOTAL:</span>
+            <div className="receipt-modal-summary-row total">
+              <span>💰 TOTAL:</span>
               <span>
-                {receipt.selectedCurrency} {receipt.totalAmount.toFixed(2)}
+                {receipt.selectedCurrency} {formatCurrency(receipt.totalAmount)}
               </span>
             </div>
 
-            <div className="paymentDetails">
-              <div className="summaryRow">
-                <span>Received:</span>
+            <div className="receipt-modal-payment-details">
+              <div className="receipt-modal-summary-row">
+                <span>💵 Received:</span>
                 <span>
-                  {receipt.selectedCurrency} {receipt.received.toFixed(2)}
+                  {receipt.selectedCurrency} {formatCurrency(receipt.received)}
                 </span>
               </div>
-              <div className="summaryRow">
-                <span>Change:</span>
+              <div className="receipt-modal-summary-row">
+                <span>🪙 Change:</span>
                 <span>
-                  {receipt.selectedCurrency} {receipt.change.toFixed(2)}
+                  {receipt.selectedCurrency} {formatCurrency(receipt.change)}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
         </div>
 
         {/* Action buttons */}
-        <div className="invoiceActions">
+        <div className="receipt-modal-actions">
           <button
-            className="btn btnPrimary"
+            className="receipt-modal-btn receipt-modal-btn-primary"
             onClick={() => generateAndHandlePdf("preview")}
             disabled={isGenerating}
           >
-            {isGenerating ? "Generating..." : "Preview PDF"}
+            {isGenerating ? (
+              <>
+                <div className="receipt-modal-spinner"></div>
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                👁️ <span>Preview PDF</span>
+              </>
+            )}
           </button>
 
           {pdfUrl && (
             <>
               <button
-                className="btn btnSecondary"
+                className="receipt-modal-btn receipt-modal-btn-secondary"
                 onClick={handleDownload}
                 disabled={isGenerating}
               >
-                Download
+                📥 <span>Download</span>
               </button>
               <button
-                className="btn btnTertiary"
+                className="receipt-modal-btn receipt-modal-btn-tertiary"
                 onClick={() => generateAndHandlePdf("print")}
                 disabled={isGenerating}
               >
-                Print
+                🖨️ <span>Print</span>
               </button>
             </>
           )}
@@ -277,8 +309,12 @@ function ReceiptModal({ receipt, onClose, store, email }) {
 
         {/* PDF preview */}
         {pdfUrl && (
-          <div className="pdfPreviewContainer">
-            <iframe className="pdfPreview" src={pdfUrl} title="PDF Preview" />
+          <div className="receipt-modal-pdf-preview-container">
+            <iframe 
+              className="receipt-modal-pdf-preview" 
+              src={pdfUrl} 
+              title="PDF Preview" 
+            />
           </div>
         )}
       </div>

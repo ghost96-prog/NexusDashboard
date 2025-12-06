@@ -17,31 +17,14 @@ import "nprogress/nprogress.css";
 const Sidebar = ({ isOpen }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [clickedItem, setClickedItem] = useState(null);
-  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const submenuRef = useRef(null);
+  const logoutModalRef = useRef(null);
   const timeoutRef = useRef(null);
   const [email, setEmail] = useState(null);
-
-  const handleSignOut = () => {
-    NProgress.start();
-
-    // Remove auth token
-    localStorage.removeItem("token");
-
-    // Reset toast counters
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith("toastCounter_")) {
-        localStorage.removeItem(key);
-      }
-    });
-
-    // Redirect to login/home
-    window.location.href = "/";
-
-    NProgress.done();
-  };
+  const [companyName, setCompanyName] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -52,14 +35,48 @@ const Sidebar = ({ isOpen }) => {
 
     try {
       const decoded = jwtDecode(token);
-      setEmail(decoded.email);
+      console.log(decoded);
+      setEmail(decoded.email || "user@example.com");
+      // You can set company name from token or use default
+      setCompanyName(decoded.companyName || "COMPANY NAME");
     } catch (error) {
-      toast.error("Invalid authentication token.");
+      console.error("Error decoding token:", error);
+      setEmail("user@example.com");
+      setCompanyName("COMPANY NAME");
     }
   }, []);
 
+  const handleLogoutConfirm = () => {
+    NProgress.start();
+
+    // Clear all auth related data
+    localStorage.removeItem("token");
+    
+    // Reset toast counters
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("toastCounter_")) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    // Close modal and redirect
+    setShowLogoutModal(false);
+    
+    // Redirect to login
+    setTimeout(() => {
+      NProgress.done();
+      navigate("/login");
+      window.location.reload(); // Optional: to ensure clean state
+    }, 300);
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
+    setHoveredItem(null);
+    setClickedItem(null);
+  };
+
   const handleMouseEnter = (index, event) => {
-    // Clear clicked item if hovering over a different item
     if (clickedItem !== null && clickedItem !== index) {
       setClickedItem(null);
     }
@@ -70,8 +87,7 @@ const Sidebar = ({ isOpen }) => {
   };
 
   const handleMouseLeave = () => {
-    // Only close if not clicked and not showing signout confirmation
-    if (clickedItem === null && !showSignOutConfirm) {
+    if (clickedItem === null && !showLogoutModal) {
       timeoutRef.current = setTimeout(() => {
         setHoveredItem(null);
       }, 200);
@@ -81,22 +97,17 @@ const Sidebar = ({ isOpen }) => {
   const handleItemClick = (index, event) => {
     event.stopPropagation();
 
-    if (index === 4) {
-      // Sign Out item
-      setShowSignOutConfirm(true);
-      const itemRect = event.target
-        .closest(".listItem")
-        .getBoundingClientRect();
-      setHoveredItem({ index, top: itemRect.top, left: itemRect.right });
+    if (index === 4) { // Sign Out item
+      setShowLogoutModal(true);
+      setClickedItem(null);
+      setHoveredItem(null);
       return;
     }
 
     if (clickedItem === index) {
-      // Clicking the same item closes it
       setClickedItem(null);
       setHoveredItem(null);
     } else {
-      // Open clicked item
       setClickedItem(index);
       const itemRect = event.target
         .closest(".listItem")
@@ -111,21 +122,31 @@ const Sidebar = ({ isOpen }) => {
     setHoveredItem(null);
   };
 
-  const handleDocumentClick = (event) => {
-    if (submenuRef.current && !submenuRef.current.contains(event.target)) {
-      setHoveredItem(null);
-      setClickedItem(null);
-      setShowSignOutConfirm(false);
-    }
-  };
-
+  // Close menus when clicking outside
   useEffect(() => {
-    document.addEventListener("click", handleDocumentClick);
+    const handleClickOutside = (event) => {
+      // Close submenus when clicking outside
+      if (submenuRef.current && !submenuRef.current.contains(event.target)) {
+        if (!showLogoutModal) {
+          setHoveredItem(null);
+          setClickedItem(null);
+        }
+      }
+      
+      // Close logout modal when clicking outside
+      if (showLogoutModal && logoutModalRef.current && !logoutModalRef.current.contains(event.target)) {
+        setShowLogoutModal(false);
+        setHoveredItem(null);
+        setClickedItem(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("click", handleDocumentClick);
+      document.removeEventListener("mousedown", handleClickOutside);
       clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [showLogoutModal]);
 
   // Menu items configuration
   const menuItems = [
@@ -158,26 +179,60 @@ const Sidebar = ({ isOpen }) => {
       subItems: [{ label: "Shifts Reports", path: "/shifts" }],
     },
     {
-      icon: <FaSignOutAlt className="icon" size={15} color="purple" />,
+      icon: <FaSignOutAlt className="icon" size={15} color="#dc3545" />,
       label: "Sign Out",
       isSignOut: true,
     },
   ];
 
   const shouldShowSubmenu = (index) => {
-    // Only show submenu for the currently hovered item or if it's the clicked item
     return (
-      (hoveredItem?.index === index && clickedItem === null) || // Show on hover when nothing is clicked
-      clickedItem === index // Or show if this is the clicked item
+      (hoveredItem?.index === index && clickedItem === null) ||
+      clickedItem === index
     );
   };
 
   return (
     <>
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="modal-overlay">
+          <div className="logout-modal" ref={logoutModalRef}>
+            <div className="logout-modal-header">
+              <span className="logout-modal-icon">🚪</span>
+              <h3 className="logout-modal-title">Confirm Logout</h3>
+            </div>
+            <div className="logout-modal-content">
+              <p className="logout-modal-message">
+                Are you sure you want to logout?
+              </p>
+              <div className="logout-modal-user">
+                <span className="user-email">{email || "user@example.com"}</span>
+                <span className="company-name">{companyName || "COMPANY NAME"}</span>
+              </div>
+            </div>
+            <div className="logout-modal-actions">
+              <button 
+                className="logout-modal-cancel"
+                onClick={handleLogoutCancel}
+              >
+                Cancel
+              </button>
+              <button 
+                className="logout-modal-confirm"
+                onClick={handleLogoutConfirm}
+              >
+                Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`sidebar ${isOpen ? "open" : "collapsed"}`}>
         <div className="sidebar-header">
           <FaUserCircle className="user" />
-          {isOpen && <span className="userEmailside">{email}</span>}
+          {isOpen && <span className="userEmailside">{email || "user@example.com"}</span>}
         </div>
         <div className="line"></div>
         <div className="listItemsContainer">
@@ -200,16 +255,6 @@ const Sidebar = ({ isOpen }) => {
               </li>
             ))}
           </ul>
-          {/* {isOpen && (
-            <div className="signOutButtonContainer">
-              <button
-                className="signOutButton"
-                onClick={() => setShowSignOutConfirm(true)}
-              >
-                Sign Out
-              </button>
-            </div>
-          )} */}
         </div>
       </div>
 
@@ -244,31 +289,6 @@ const Sidebar = ({ isOpen }) => {
               ))}
             </div>
           )
-      )}
-
-      {/* Sign Out confirmation tooltip */}
-      {showSignOutConfirm && (
-        <div
-          className="signOutConfirm"
-          ref={submenuRef}
-          // style={{
-          //   top: hoveredItem?.top,
-          //   left: hoveredItem?.left,
-          // }}
-        >
-          <div className="confirmText">Are you sure you want to sign out?</div>
-          <div className="confirmButtons">
-            <button className="confirmButton confirm" onClick={handleSignOut}>
-              Yes
-            </button>
-            <button
-              className="confirmButton cancel"
-              onClick={() => setShowSignOutConfirm(false)}
-            >
-              No
-            </button>
-          </div>
-        </div>
       )}
     </>
   );

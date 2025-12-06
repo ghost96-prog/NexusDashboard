@@ -456,33 +456,35 @@ const ShiftScreen = () => {
             </button>
           )}
         </div>
-        <div className="shiftsSubContainer">
-          <div className="receiptHeader">
-            <div className="headerItem">Shift Number</div>
-            <div className="headerItem">closed By</div>
-            <div className="headerItem">Store Name</div>
-            <div className="headerItem">Opening Date</div>
-            <div className="headerItem">Closing Date</div>
-            <div className="headerItem">Amount</div>
-          </div>
-          {filteredShifts.map((item, index) => {
-            const matchedStore = stores.find(
-              (store) => store.storeId === item.storeId
-            );
-            return (
-              <ShiftListItem
-                key={index}
-                closedBy={item.createdBy}
-                shiftNumber={item.shiftNumber}
-                closingDate={item.closingDate}
-                openingDate={item.openingDate}
-                storeName={matchedStore?.storeName || "Unknown Store"}
-                amount={Number(item.expectedCash).toFixed(2)}
-                onClick={() => handleItemClick(item)}
-              />
-            );
-          })}
-        </div>
+
+
+<div className="shift-table-container">
+  <div className="receiptHeader">
+    <div className="headerItem">Shift Number</div>
+    <div className="headerItem">Closed By</div>
+    <div className="headerItem">Store Name</div>
+    <div className="headerItem">Opening Date</div>
+    <div className="headerItem">Closing Date</div>
+    <div className="headerItem">Amount</div>
+  </div>
+  {filteredShifts.map((item, index) => {
+    const matchedStore = stores.find(
+      (store) => store.storeId === item.storeId
+    );
+    return (
+      <ShiftListItem
+        key={index}
+        closedBy={item.createdBy}
+        shiftNumber={item.shiftNumber}
+        closingDate={item.closingDate}
+        openingDate={item.openingDate}
+        storeName={matchedStore?.storeName || "Unknown Store"}
+        amount={Number(item.expectedCash).toFixed(2)}
+        onClick={() => handleItemClick(item)}
+      />
+    );
+  })}
+</div>
       </div>
       {modalShift &&
         (() => {

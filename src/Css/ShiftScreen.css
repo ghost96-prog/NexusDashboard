@@ -36,7 +36,52 @@ body {
   border-bottom: 1px solid #ddd;
   overflow: hidden;
 }
+/* Add this to your ShiftScreen.css file */
+.shiftsSubContainer {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
 
+.shiftsSubContainer .receiptHeader {
+  min-width: 800px; /* Match the rows' min-width on mobile */
+}
+
+.shiftsSubContainer::-webkit-scrollbar {
+  height: 6px;
+}
+
+.shiftsSubContainer::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.shiftsSubContainer::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.shiftsSubContainer::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Make sure header items have the same widths as row items */
+.shiftsSubContainer .headerItem {
+  min-width: 120px;
+}
+
+.shiftsSubContainer .headerItem:nth-child(4),
+.shiftsSubContainer .headerItem:nth-child(5) {
+  min-width: 180px; /* Match date column width */
+}
+
+/* On mobile, ensure the container has proper width */
+@media (max-width: 768px) {
+  .shiftsSubContainer {
+    min-width: 800px; /* Force horizontal scroll */
+  }
+}
 .toolBarLeft {
   display: flex;
   align-items: center;
@@ -141,7 +186,7 @@ body {
 
 .shiftsContainerShifts {
   background-color: white;
-  height: 50%;
+  height: 80%;
   width: 60%;
   left: 90px;
   position: relative;

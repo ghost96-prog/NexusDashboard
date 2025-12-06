@@ -141,7 +141,7 @@ body {
 
 .productsContainerProducts {
   background-color: white;
-  height: 50%;
+  height: 90%;
   width: 85%;
   left: 90px;
   position: relative;
@@ -190,13 +190,17 @@ body {
   overflow-x: auto;
   width: 100%;
 }
+.productsSubContainer {
+  overflow-x: auto;
+  width: 100%;
+}
 .productsHeader {
   display: flex;
   border-bottom: 2px solid #fff;
   padding: 10px;
   font-weight: 400;
   font-size: 0.8em;
-  min-width: 600px; /* Adjust based on your expected minimum layout */
+  min-width: 780px; /* Adjust based on your expected minimum layout */
 
   margin: 0; /* Ensure no margins */
   background: linear-gradient(to right, darkblue, #5694e6, darkblue);

@@ -926,7 +926,7 @@ const ProductValueScreen = () => {
           )}
         </div>
         <div className="productsSubContainer">
-          <div className="productsHeader">
+          <div className="productsvalueHeader">
             <div className="headerItem">Product Name</div>
             <div className="headerItem">QTY</div>
             <div className="headerItem">Retail Value</div>

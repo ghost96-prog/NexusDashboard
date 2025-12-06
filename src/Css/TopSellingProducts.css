@@ -170,16 +170,39 @@ body {
   border-radius: 4px;
 }
 
-.receiptTotalRow {
-  display: flex;
-  justify-content: space-between;
-  background-color: #fff;
+/* Totals Row Styling */
+.TotalsoldRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr;
+  gap: 15px;
+  background-color: #f8f9fa;
   font-weight: bold;
-  padding: 5px;
-  color: black;
+  padding: 16px 20px;
+  color: darkblue;
+  border-top: 2px solid #e9ecef;
+  min-width: 790px; /* MUST match soldHeader min-width */
+  margin-top: 10px;
+  border-radius: 0 0 8px 8px;
+  align-items: center;
 }
-.headerItem {
-  font-size: 0.8em;
+
+.TotalsoldRow .headerItem {
+  text-align: left;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: #333;
+  padding: 0 5px;
+}
+
+.TotalsoldRow .headerItem:nth-child(4), /* Total Sales */
+.TotalsoldRow .headerItem:nth-child(5), /* Total Cost */
+.TotalsoldRow .headerItem:nth-child(6) { /* Profit */
+  color: #333;
+  font-weight: 800;
+}
+
+.TotalsoldRow .headerItem:nth-child(5) { /* Total Cost */
+  color: #dc3545;
 }
 .totalItem {
   flex: 1;
@@ -188,8 +211,8 @@ body {
 
 .soldItemsContainersoldItems {
   background-color: white;
-  height: 50%;
-  width: 50%;
+  height: 80%;
+  width: 70%;
   left: 90px;
   position: relative;
   flex-direction: column;
@@ -239,7 +262,7 @@ body {
   padding: 10px;
   font-weight: 400;
   font-size: 0.8em;
-  min-width: 600px; /* Adjust based on your expected minimum layout */
+  min-width: 790px; /* Adjust based on your expected minimum layout */
 
   margin: 0; /* Ensure no margins */
   background: linear-gradient(to right, darkblue, #5694e6, darkblue);
@@ -589,7 +612,7 @@ body {
     width: 100%;
   }
   .soldItemsContainersoldItems {
-    width: 50%;
+    width: 80%;
     overflow-y: auto;
     overflow-x: auto;
   }

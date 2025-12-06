@@ -1,52 +1,361 @@
-.soldListItem {
-  background-color: #f8fafc;
-  cursor: pointer;
-  min-width: 600px; /* Adjust based on your expected minimum layout */
-}
+/* SoldProductListItem.css - Modern & Beautiful Design */
 
-.soldDetails {
+/* Header Styling */
+.sold-list-header {
   display: flex;
-  border-bottom: 1px solid #ddd;
-  padding: 10px;
-  margin: 0; /* Ensure no margins */
+  border-bottom: 2px solid darkblue;
+  padding: 15px 20px;
+  font-weight: 600;
+  font-size: 0.85em;
+  margin: 0;
+  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
+  color: white;
+  border-radius: 8px 8px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(26, 91, 123, 0.2);
+  min-width: 600px;
 }
 
-.soldDetail {
+.sold-list-header-item {
   flex: 1;
   padding: 0 10px;
   text-align: left;
-  font-size: 0.7em;
-  color: black;
-}
-
-.soldDetail:first-child {
-  padding-left: 0;
-}
-
-.soldDetail:last-child {
-  padding-right: 0;
-}
-.soldHeader {
-  display: flex;
-  border-bottom: 2px solid #fff;
-  padding: 10px;
-  font-weight: 400;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   font-size: 0.8em;
-  margin: 0; /* Ensure no margins */
-  background-color: darkblue;
+  opacity: 0.9;
 }
 
-.headerItem {
-  flex: 1;
-  padding: 0 10px;
-  text-align: left;
-  margin: 0; /* Ensure no margins */
-}
-
-.headerItem:first-child {
+.sold-list-header-item:first-child {
   padding-left: 0;
 }
 
-.headerItem:last-child {
+.sold-list-header-item:last-child {
   padding-right: 0;
+}
+
+/* Sold List Item */
+.sold-list-item {
+  background: white;
+  cursor: pointer;
+  min-width: 600px;
+  margin: 0;
+  border-radius: 10px;
+  border: 0.1px solid #e9ecef;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+.sold-list-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  border-color: darkblue;
+}
+
+.sold-list-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, darkblue, #40a578);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sold-list-item:hover::before {
+  opacity: 1;
+}
+
+.sold-details {
+  display: flex;
+  padding: 10px 10px;
+  margin: 0;
+  align-items: center;
+  position: relative;
+}
+
+.sold-detail {
+  flex: 1;
+  padding: 0 10px;
+  text-align: left;
+  font-size: 0.85em;
+  color: #444;
+  transition: all 0.3s ease;
+}
+
+.sold-list-item:hover .sold-detail {
+  color: #333;
+}
+
+.sold-detail:first-child {
+  padding-left: 0;
+  color: #333;
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+.sold-detail:last-child {
+  padding-right: 0;
+  font-size: 0.85em;
+}
+
+/* Product Name Styling */
+.sold-detail:nth-child(1) {
+  color: #333;
+  font-weight: 500;
+}
+
+/* Store Name Styling */
+.sold-detail:nth-child(2) {
+  color: #1a5b7b;
+  font-weight: 500;
+}
+
+/* Quantity Styling */
+.sold-detail:nth-child(3) {
+  color: #1a5b7b;
+  font-weight: 600;
+  position: relative;
+  padding-left: 20px;
+}
+
+.sold-detail:nth-child(3)::before {
+  content: "×";
+  position: absolute;
+  left: 0;
+  color: #6c757d;
+  font-size: 0.9em;
+}
+
+/* Sales and Cost Styling */
+.sold-detail:nth-child(4) { /* Total Sales */
+  color: #28a745;
+  font-weight: 600;
+}
+
+.sold-detail:nth-child(5) { /* Cost */
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* Profit Styling */
+.sold-detail:nth-child(6) {
+  font-weight: 700;
+  font-size: 0.9em;
+  position: relative;
+}
+
+/* Profit Badge */
+.sold-profit-badge {
+  display: inline-block;
+  border-radius: 15px;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+}
+
+.profit-high-badge {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.profit-medium-badge {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.profit-low-badge {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.profit-loss-badge {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.4);
+}
+
+/* Profit Trend Indicator */
+.profit-trend {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  font-size: 0.8em;
+}
+
+.profit-trend-up {
+  color: #28a745;
+}
+
+.profit-trend-down {
+  color: #dc3545;
+}
+
+.profit-trend-neutral {
+  color: #6c757d;
+}
+
+/* Status Indicator */
+.sold-status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-sold {
+  background-color: #28a745;
+  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+.status-returned {
+  background-color: #ffc107;
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+}
+
+.status-cancelled {
+  background-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .sold-list-item,
+  .sold-list-header {
+    min-width: 100%;
+  }
+  
+  .sold-list-header {
+    font-size: 0.8em;
+    padding: 12px 15px;
+  }
+  
+  .sold-details {
+    padding: 10px 15px;
+  }
+  
+  .sold-detail {
+    font-size: 0.8em;
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sold-list-item,
+  .sold-list-header {
+    min-width: 800px; /* Force horizontal scroll on small screens */
+  }
+  
+  .sold-list-header {
+    font-size: 0.75em;
+    padding: 12px 15px;
+  }
+  
+  .sold-details {
+    padding: 10px 15px;
+  }
+  
+  .sold-detail {
+    font-size: 0.8em;
+    padding: 0 8px;
+    min-width: 100px; /* Prevent columns from collapsing */
+  }
+  
+  .sold-detail:first-child {
+    min-width: 120px; /* More space for product name */
+  }
+  
+  .sold-detail:nth-child(2) {
+    min-width: 120px; /* More space for store name */
+  }
+}
+
+/* Loading Animation */
+.sold-list-item.loading {
+  animation: sold-shimmer 1.5s infinite linear;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes sold-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Empty State */
+.sold-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin: 20px 0;
+  border: 2px dashed #dee2e6;
+  min-width: 600px;
+}
+
+.sold-empty-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.sold-empty-text {
+  font-size: 0.9em;
+  margin: 0;
+}
+
+/* Selection State */
+.sold-list-item.selected {
+  background: linear-gradient(135deg, rgba(26, 91, 123, 0.05), rgba(64, 165, 120, 0.05));
+  border-color: darkblue;
+  box-shadow: 0 4px 15px rgba(26, 91, 123, 0.15);
+}
+
+.sold-list-item.selected::before {
+  opacity: 1;
+  background: linear-gradient(to bottom, darkblue, #40a578);
+}
+
+/* Container for horizontal scrolling */
+.sold-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sold-table-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.sold-table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.sold-table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.sold-table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }

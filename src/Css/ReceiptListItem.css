@@ -1,56 +1,476 @@
-.ReceiptListItem {
-  background-color: #f8fafc;
-  cursor: pointer;
-  min-width: 600px; /* Adjust based on your expected minimum layout */
-}
+/* ReceiptListItem.css - Perfect Grid Alignment */
 
-.ReceiptDetails {
-  display: flex;
-  border-bottom: 1px solid #ddd;
-  padding: 10px;
-  margin: 0; /* Ensure no margins */
-}
-.refundlabel {
-  color: red;
-  position: absolute;
-  right: 10px;
-}
-.ReceiptDetail {
-  flex: 1;
-  padding: 0 10px;
-  text-align: left;
-  font-size: 0.7em;
-  color: black;
-}
-
-.ReceiptDetail:first-child {
-  padding-left: 0;
-}
-
-.ReceiptDetail:last-child {
-  padding-right: 0;
-}
+/* Header Styling */
 .receiptHeader {
-  display: flex;
-  border-bottom: 2px solid #fff;
-  padding: 10px;
-  font-weight: 400;
-  font-size: 0.8em;
-  margin: 0; /* Ensure no margins */
-  background-color: darkblue;
+  display: grid;
+  grid-template-columns: 1.2fr 1.5fr 1fr 1fr 1fr auto;
+  gap: 15px;
+  border-bottom: 2px solid darkblue;
+  padding: 15px 20px;
+  font-weight: 600;
+  font-size: 0.85em;
+  margin: 0;
+  background: linear-gradient(135deg, darkblue, #276482);
+  color: white;
+  border-radius: 8px 8px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(26, 91, 123, 0.2);
+  min-width: 700px;
+  align-items: center;
 }
 
 .headerItem {
-  flex: 1;
-  padding: 0 10px;
   text-align: left;
-  margin: 0; /* Ensure no margins */
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.8em;
+  opacity: 0.9;
 }
 
-.headerItem:first-child {
-  padding-left: 0;
+/* Receipt List Item */
+.ReceiptListItem {
+  background: white;
+  cursor: pointer;
+  margin: 6px 0;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  position: relative;
+  min-width: 700px;
 }
 
-.headerItem:last-child {
-  padding-right: 0;
+.ReceiptListItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  border-color: darkblue;
+}
+
+.ReceiptListItem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, darkblue, #9b59b6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ReceiptListItem:hover::before {
+  opacity: 1;
+}
+
+.ReceiptDetails {
+  display: grid;
+  grid-template-columns: 1.2fr 1.5fr 1fr 1fr 1fr auto;
+  gap: 15px;
+  padding: 16px 20px;
+  margin: 0;
+  align-items: start;
+  position: relative;
+}
+
+.ReceiptDetail {
+  text-align: left;
+  font-size: 0.85em;
+  color: #444;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ReceiptListItem:hover .ReceiptDetail {
+  color: darkblue;
+}
+
+.ReceiptDetail:first-child {
+  color: darkblue;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+/* Price & Cost Styling */
+.price-cell {
+  color: #28a745;
+  font-weight: 600;
+  position: relative;
+}
+
+.price-cell::before {
+  content: '$';
+  font-size: 0.8em;
+  opacity: 0.7;
+  margin-right: 2px;
+}
+
+.cost-cell {
+  color: #e74c3c;
+  font-weight: 600;
+  position: relative;
+}
+
+.cost-cell::before {
+  content: '⚡';
+  font-size: 0.8em;
+  opacity: 0.7;
+  margin-right: 4px;
+}
+
+/* Margin Styling */
+.margin-cell {
+  font-weight: 700;
+  position: relative;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  text-align: left;
+  display: inline-block;
+}
+/* Container for the entire receipts table */
+.receipts-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Make sure all elements have consistent min-width */
+.receiptHeader,
+.ReceiptListItem,
+.ReceiptDetails {
+  min-width: 700px; /* Must be the same value */
+  box-sizing: border-box;
+}
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+  .receiptHeader,
+  .ReceiptListItem,
+  .ReceiptDetails {
+    min-width: 650px;
+  }
+}
+.margin-positive {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.margin-negative {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.margin-neutral {
+  background: rgba(108, 117, 125, 0.1);
+  color: #6c757d;
+  border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+/* Stock Level Styling */
+.stock-cell {
+  position: relative;
+  padding-left: 20px;
+}
+
+.stock-low::before {
+  content: '⚠️';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.stock-normal::before {
+  content: '✅';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+}
+
+.stock-out::before {
+  content: '❌';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.stock-low {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+.stock-normal {
+  color: #28a745;
+}
+
+.stock-out {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* Availability Styling */
+.availability-cell {
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  text-align: center;
+  display: inline-block;
+}
+
+.available {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.unavailable {
+  background: rgba(108, 117, 125, 0.1);
+  color: #6c757d;
+  border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+/* Category Styling */
+.category-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category-electronics {
+  background: rgba(155, 89, 182, 0.1);
+  color: #9b59b6;
+  border: 1px solid rgba(155, 89, 182, 0.3);
+}
+
+.category-clothing {
+  background: rgba(52, 152, 219, 0.1);
+  color: #3498db;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.category-food {
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.category-other {
+  background: rgba(243, 156, 18, 0.1);
+  color: #f39c12;
+  border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+/* Selection State */
+.ReceiptListItem.selected {
+  background: linear-gradient(135deg, rgba(26, 91, 123, 0.05), rgba(155, 89, 182, 0.05));
+  border-color: darkblue;
+  box-shadow: 0 4px 12px rgba(26, 91, 123, 0.15);
+}
+
+.ReceiptListItem.selected::before {
+  opacity: 1;
+  background: linear-gradient(to bottom, darkblue, #9b59b6);
+}
+
+/* Refund Label */
+.refundlabel {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7em;
+  font-weight: 600;
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  animation: pulse 2s infinite;
+  justify-self: end; /* Align to end of grid column */
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .ReceiptListItem {
+    min-width: 650px;
+  }
+  
+  .receiptHeader {
+    min-width: 650px;
+    padding: 12px 15px;
+    font-size: 0.75em;
+    gap: 12px;
+  }
+  
+  .ReceiptDetails {
+    min-width: 650px;
+    padding: 14px 15px;
+    gap: 12px;
+  }
+  
+  .ReceiptDetail {
+    font-size: 0.8em;
+  }
+}
+
+@media (max-width: 768px) {
+  .ReceiptListItem {
+    min-width: 600px;
+    margin: 4px 0;
+  }
+  
+  .receiptHeader {
+    min-width: 600px;
+    padding: 10px 15px;
+    font-size: 0.7em;
+    gap: 10px;
+  }
+  
+  .ReceiptDetails {
+    min-width: 600px;
+    padding: 12px 15px;
+    gap: 10px;
+  }
+  
+  .ReceiptDetail {
+    font-size: 0.75em;
+  }
+  
+  .refundlabel {
+    font-size: 0.65em;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ReceiptListItem {
+    min-width: 550px;
+    margin: 3px 0;
+  }
+  
+  .receiptHeader {
+    min-width: 550px;
+    padding: 8px 12px;
+    font-size: 0.65em;
+    gap: 8px;
+  }
+  
+  .ReceiptDetails {
+    min-width: 550px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  
+  .ReceiptDetail {
+    font-size: 0.7em;
+  }
+  
+  .ReceiptDetail:first-child {
+    font-size: 0.75em;
+  }
+  
+  .refundlabel {
+    font-size: 0.6em;
+    padding: 2px 5px;
+  }
+}
+
+/* Loading Animation */
+.ReceiptListItem.loading {
+  animation: shimmer 1.5s infinite linear;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Empty State */
+.empty-receipt {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin: 20px 0;
+  border: 2px dashed #dee2e6;
+  min-width: 100%;
+}
+
+.empty-receipt-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.empty-receipt-text {
+  font-size: 0.9em;
+  margin: 0;
+}
+
+/* Quick Actions */
+.quick-actions {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ReceiptListItem:hover .quick-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  background: white;
+  border: 1px solid #e9ecef;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  font-size: 0.8em;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: darkblue;
+  color: white;
+  border-color: darkblue;
+  transform: scale(1.1);
 }

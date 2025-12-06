@@ -288,3 +288,190 @@
     display: none;
   }
 }
+/* Logout Modal Styles - Same as SideNav */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000 !important;
+  padding: 15px;
+}
+
+.logout-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 350px;
+  width: 100%;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  animation: modalSlideIn 0.3s ease;
+  z-index: 10001 !important;
+  position: relative;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-15px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.logout-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.logout-modal-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.logout-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a5b7b;
+  margin: 0;
+}
+
+.logout-modal-content {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.logout-modal-message {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.logout-modal-user {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 12px;
+  border-left: 3px solid #1a5b7b;
+}
+
+.user-email {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a5b7b;
+  margin-bottom: 4px;
+}
+
+.company-name {
+  display: block;
+  font-size: 11px;
+  color: #666;
+  font-style: italic;
+}
+
+.logout-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.logout-modal-cancel,
+.logout-modal-confirm {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+.logout-modal-cancel {
+  background: #f8f9fa;
+  color: #666;
+  border: 1px solid #dee2e6;
+}
+
+.logout-modal-cancel:hover {
+  background: #e9ecef;
+  transform: translateY(-1px);
+}
+
+.logout-modal-confirm {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  box-shadow: 0 3px 8px rgba(220, 53, 69, 0.3);
+}
+
+.logout-modal-confirm:hover {
+  background: linear-gradient(135deg, #c82333, #bd2130);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Responsive Design for Modal */
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 12px;
+  }
+  
+  .logout-modal {
+    padding: 16px 12px;
+  }
+  
+  .logout-modal-actions {
+    flex-direction: column;
+  }
+  
+  .logout-modal-cancel,
+  .logout-modal-confirm {
+    flex: none;
+  }
+  
+  .logout-modal-title {
+    font-size: 16px;
+  }
+  
+  .logout-modal-icon {
+    font-size: 36px;
+  }
+  
+  .logout-modal-message {
+    font-size: 13px;
+  }
+}
+
+/* Ensure modal appears above everything */
+.modal-overlay {
+  z-index: 10000 !important;
+}
+
+.logout-modal {
+  z-index: 10001 !important;
+}
+
+/* Ensure sidebar z-index is lower than modal */
+.sidebar {
+  z-index: 999;
+}
+
+.subRoutes {
+  z-index: 1000;
+}
+
+/* Remove old sign out confirm styles */
+.signOutConfirm {
+  display: none !important;
+}

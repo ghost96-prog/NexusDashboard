@@ -16,6 +16,7 @@ const InventoryListItem = ({
   editedBy,
   differenceColor,
   onClick,
+  isSelected = false,
 }) => {
   // Format the difference with + for positives, - for negatives
   const formattedDifference =
@@ -28,13 +29,37 @@ const InventoryListItem = ({
       : difference.toString();
 
   return (
-    <div className="inventoryListItem" onClick={onClick}>
+    <div 
+      className={`InventoryListItem ${isSelected ? "selected" : ""}`} 
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyPress={(e) => e.key === "Enter" && onClick()}
+    >
       <div className="InventoryDetails">
-        <div className="InventoryDetail">
+        {/* DATE COLUMN - ADDED date-column class */}
+        <div 
+          className="InventoryDetail date-column" 
+          data-label="Date"
+          title={`Date: ${format(new Date(date), "MMM d, yyyy : hh:mm:ss a")}`}
+        >
           {format(new Date(date), "MMM d, yyyy : hh:mm:ss a")}
         </div>
-        <div className="InventoryDetail">{itemName}</div>
-        <div className="InventoryDetail" style={{ whiteSpace: "pre-line" }}>
+        
+        <div 
+          className="InventoryDetail" 
+          data-label="Item"
+          title={`Item: ${itemName}`}
+        >
+          {itemName}
+        </div>
+        
+        <div 
+          className="InventoryDetail" 
+          data-label="Editor"
+          title={`Editor: ${createdBy} (${roleofeditor})`}
+          style={{ whiteSpace: "pre-line" }}
+        >
           {createdBy}
           {"\n"}({roleofeditor})
           {editedBy && (
@@ -44,12 +69,42 @@ const InventoryListItem = ({
             </>
           )}
         </div>
-        <div className="InventoryDetail">{typeofedit}</div>
-        <div className="InventoryDetail">{stockBefore}</div>
-        <div className="InventoryDetail" style={{ color: differenceColor }}>
-          {formattedDifference}
+        
+        <div 
+          className="InventoryDetail" 
+          data-label="Edit Type"
+          title={`Edit Type: ${typeofedit}`}
+        >
+          <span className={`edit-type-badge ${typeofedit?.toLowerCase().includes('add') ? 'edit-type-addition' : typeofedit?.toLowerCase().includes('remove') ? 'edit-type-removal' : 'edit-type-correction'}`}>
+            {typeofedit}
+          </span>
         </div>
-        <div className="InventoryDetail">{stockAfter}</div>
+        
+        <div 
+          className="InventoryDetail" 
+          data-label="Before"
+          title={`Before: ${stockBefore}`}
+        >
+          {stockBefore}
+        </div>
+        
+        <div 
+          className="InventoryDetail" 
+          data-label="Difference"
+          title={`Difference: ${formattedDifference}`}
+        >
+          <span className={`difference-value ${difference > 0 ? '' : difference < 0 ? 'difference-negative' : 'difference-neutral'}`}>
+            {formattedDifference}
+          </span>
+        </div>
+        
+        <div 
+          className="InventoryDetail" 
+          data-label="After"
+          title={`After: ${stockAfter}`}
+        >
+          {stockAfter}
+        </div>
       </div>
     </div>
   );
