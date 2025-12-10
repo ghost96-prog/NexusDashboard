@@ -368,6 +368,7 @@ body {
   margin: 0 auto;
   padding: 5px;
   background-color: white;
+  z-index: 1000;
 }
 
 /* Style for the filter dropdown */
