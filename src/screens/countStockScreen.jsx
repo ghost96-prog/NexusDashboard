@@ -13,7 +13,7 @@ import {
   FaExclamationTriangle,
   FaSpinner,
 } from "react-icons/fa";
-import Sidebar from '../Components/Sidebar';
+import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
