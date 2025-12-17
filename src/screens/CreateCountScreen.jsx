@@ -15,7 +15,7 @@ import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import SubscriptionModal from '../Components/SubscriptionModal';
+import SubscriptionModal from '../components/SubscriptionModal';
 import NProgress from 'nprogress'; // Add this import
 import 'nprogress/nprogress.css'; // Add this import
 
