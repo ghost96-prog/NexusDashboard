@@ -589,6 +589,8 @@ const ProductListScreen = () => {
       setShowSubscriptionModal(true);
       return;
     }
+    console.log(item);
+    
     navigate("/edit-products", { state: item });
   };
 

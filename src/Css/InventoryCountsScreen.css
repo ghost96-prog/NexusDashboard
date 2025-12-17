@@ -1,0 +1,579 @@
+/* InventoryCountsScreen.css */
+.inventory-counts-mainContainer {
+  background-color: lavender;
+  min-height: 100vh;
+  width: 100%;
+  font-family: "Poppins", sans-serif;
+}
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Poppins", sans-serif;
+}
+/* Content area with sidebar shift */
+.toolBarrInventory {
+    width: 100%;
+  height: 50px;
+  padding: 5px 10px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to right, #0e627e, #5694e6, #0e627e);
+  color: white;
+  position: fixed;
+  margin-bottom: 70px;
+  
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  border-bottom: 1px solid #ddd;
+  overflow: hidden;
+}
+.content {
+  transition: margin-left 0.3s ease;
+  flex: 1;
+  margin-top: 50px;
+}
+
+.content.collapsed {
+  margin-left: 0;
+}
+.content.shifted {
+  margin-left: 250px;
+}
+
+/* Buttons Container - following ProductListScreen pattern */
+.inventory-counts-buttonsContainer {
+  margin-top: 60px;
+  margin-bottom: 10px;
+  position: relative;
+  min-height: 50px;
+  width: 85%;
+  left: 90px;
+  border-radius: 8px;
+  background-color: white;
+  padding: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.inventory-counts-addButtonContainer {
+  position: relative;
+  width: 25%;
+  flex-direction: row;
+}
+
+.inventory-counts-createButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 15px;
+  background: linear-gradient(to right, #0e627e, #5694e6, #0e627e);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  width: 100%;
+}
+
+.inventory-counts-createButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Main Container */
+.inventory-counts-container {
+  background-color: white;
+  min-height: 80vh;
+  width: 85%;
+  left: 90px;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.inventory-counts-header {
+  display: flex;
+  border-bottom: 2px solid #fff;
+  padding: 15px 20px;
+  font-weight: 600;
+  font-size: 1.1em;
+  margin: 0;
+  background: linear-gradient(to right, #0e627e, #5694e6, #0e627e);
+  color: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.inventory-counts-header h2 {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+/* Sub Container */
+.inventory-counts-subContainer {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Info Section */
+.inventory-counts-infoSection {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.inventory-counts-infoSection h3 {
+  color: #0e627e;
+  margin: 0 0 10px 0;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.inventory-counts-infoSection p {
+  color: #666;
+  font-size: 0.85em;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.inventory-counts-learnMore {
+  color: #5694e6;
+  text-decoration: none;
+  margin-left: 5px;
+}
+
+.inventory-counts-learnMore:hover {
+  text-decoration: underline;
+}
+
+/* Mobile Add Button (hidden on desktop) */
+.inventory-counts-addButtonMobile {
+  display: none;
+}
+
+/* Table Container */
+.inventory-counts-tableContainer {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+/* Add these to InventoryCountsScreen.css */
+
+/* Loading State */
+.inventory-counts-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.inventory-counts-loading-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #5694e6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.inventory-counts-loading-text {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Filter Section */
+.inventory-counts-filterSection {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.inventory-counts-filterLabel {
+  font-size: 14px;
+  color: #0e627e;
+  font-weight: 600;
+}
+
+.inventory-counts-filterButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inventory-counts-filterBtn {
+  padding: 6px 12px;
+  background-color: #f4f4f4;
+  color: #666;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.inventory-counts-filterBtn:hover {
+  background-color: #e9ecef;
+}
+
+.inventory-counts-filterBtn.active {
+  background-color: #5694e6;
+  color: white;
+}
+
+/* Empty State Subtext */
+.inventory-counts-empty-subtext {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
+/* Footer */
+.inventory-counts-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-top: 1px solid #e9ecef;
+  margin-top: 20px;
+}
+
+.inventory-counts-paginationInfo {
+  font-size: 13px;
+  color: #666;
+}
+
+.inventory-counts-totalInfo {
+  font-size: 13px;
+  color: #0e627e;
+  font-weight: 600;
+}
+
+/* Make items clickable */
+.inventory-counts-item {
+  cursor: pointer;
+}
+
+.inventory-counts-item:hover {
+  background-color: #f8f9fa;
+}
+/* Header Row */
+.inventory-counts-receiptHeader {
+  display: flex;
+  border-bottom: 2px solid #0e627e;
+  padding: 15px 20px;
+  font-weight: 600;
+  font-size: 0.85em;
+  margin: 0;
+  background: linear-gradient(to right, #0e627e, #5694e6, #0e627e);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(26, 91, 123, 0.2);
+  min-width: 600px;
+}
+
+.inventory-counts-headerItem {
+  flex: 1;
+  padding: 0 10px;
+  text-align: left;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.8em;
+  opacity: 0.9;
+}
+
+.inventory-counts-headerItem:first-child {
+  padding-left: 0;
+}
+
+.inventory-counts-headerItem:last-child {
+  padding-right: 0;
+}
+
+/* Items List */
+.inventory-counts-itemsList {
+  background: white;
+  min-width: 600px;
+}
+
+/* Individual Item */
+.inventory-counts-item {
+  background: white;
+  cursor: pointer;
+  min-width: 600px;
+  margin: 0;
+  border-bottom: 1px solid #e9ecef;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+.inventory-counts-item:hover {
+  background: #f8f9fa;
+}
+
+.inventory-counts-item:last-child {
+  border-bottom: none;
+}
+
+.inventory-counts-itemDetails {
+  display: flex;
+  padding: 12px 20px;
+  margin: 0;
+  align-items: center;
+}
+
+.inventory-counts-itemDetail {
+  flex: 1;
+  padding: 0 10px;
+  text-align: left;
+  font-size: 0.85em;
+  color: #444;
+}
+
+.inventory-counts-itemDetail:first-child {
+  padding-left: 0;
+  color: #333;
+  font-size: 0.9em;
+}
+
+.inventory-counts-itemDetail:last-child {
+  padding-right: 0;
+  font-size: 0.85em;
+}
+
+/* Status Badges */
+.inventory-counts-status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.inventory-counts-status-completed {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.inventory-counts-status-in-progress {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.inventory-counts-status-draft {
+  background: rgba(108, 117, 125, 0.1);
+  color: #6c757d;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+/* Empty State */
+.inventory-counts-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  min-width: 600px;
+}
+
+.inventory-counts-empty-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.inventory-counts-empty-text {
+  font-size: 0.9em;
+  margin: 0;
+}
+
+/* Footer */
+.inventory-counts-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-top: 1px solid #e9ecef;
+}
+
+.inventory-counts-paginationInfo {
+  font-size: 0.8em;
+  color: #666;
+}
+
+.inventory-counts-filterSection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inventory-counts-filterLabel {
+  font-size: 0.8em;
+  color: #666;
+  font-weight: 500;
+}
+
+.inventory-counts-filterButtons {
+  display: flex;
+  gap: 5px;
+}
+
+.inventory-counts-filterBtn {
+  padding: 6px 12px;
+  background-color: #f4f4f4;
+  color: #666;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.inventory-counts-filterBtn:hover {
+  background-color: #e9ecef;
+}
+
+.inventory-counts-filterBtn.active {
+  background-color: #5694e6;
+  color: white;
+}
+
+/* Horizontal scroll container */
+.inventory-counts-tableContainer {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inventory-counts-tableContainer::-webkit-scrollbar {
+  height: 6px;
+}
+
+.inventory-counts-tableContainer::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.inventory-counts-tableContainer::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.inventory-counts-tableContainer::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .inventory-counts-buttonsContainer {
+    left: 2.5%;
+    width: 92%;
+  }
+  
+  .inventory-counts-container {
+    left: 2.5%;
+    width: 92%;
+  }
+  
+  .content.shifted {
+    margin-left: 0;
+  }
+  
+  .inventory-counts-addButtonContainer {
+    display: none;
+  }
+  
+  .inventory-counts-addButtonMobile {
+    display: block;
+    width: 100%;
+  }
+  
+  .inventory-counts-footer {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .inventory-counts-filterSection {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .inventory-counts-filterButtons {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 1024px) {
+  .inventory-counts-buttonsContainer {
+    width: 85%;
+    left: 90px;
+  }
+  
+  .inventory-counts-container {
+    width: 85%;
+    left: 90px;
+  }
+}
+
+@media (min-width: 280px) and (max-width: 499px) {
+  .inventory-counts-buttonsContainer {
+    flex-direction: column;
+    width: 92%;
+    left: 2.5%;
+    gap: 16px;
+  }
+  
+  .inventory-counts-container {
+    width: 92%;
+    left: 2.5%;
+  }
+}
+
+@media (min-width: 500px) and (max-width: 799px) {
+  .inventory-counts-buttonsContainer {
+    flex-direction: column;
+    width: 92%;
+    left: 2.5%;
+    gap: 16px;
+  }
+  
+  .inventory-counts-container {
+    width: 92%;
+    left: 2.5%;
+  }
+}

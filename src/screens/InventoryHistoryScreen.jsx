@@ -1008,6 +1008,15 @@ const InventoryHistoryScreen = () => {
                 />
                 Override
               </label>
+              <label>
+                <input
+                  type="checkbox"
+                  value="Stock Count"
+                  checked={selectedTypes.includes("Stock Count")}
+                  onChange={(e) => toggleFilterType(e.target.value)}
+                />
+                Stock Count
+              </label>
             </div>
           </div>
         </div>

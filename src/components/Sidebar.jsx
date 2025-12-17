@@ -50,8 +50,10 @@ const Sidebar = ({ isOpen }) => {
     NProgress.start();
 
     // Clear all auth related data
-    localStorage.removeItem("token");
-    
+// Remove specific items
+localStorage.removeItem("token");
+localStorage.removeItem("inventoryCounts");
+localStorage.removeItem("userData");
     // Reset toast counters
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith("toastCounter_")) {
@@ -171,7 +173,7 @@ const Sidebar = ({ isOpen }) => {
       subItems: [
         { label: "Inventory History", path: "/inventory" },
         { label: "Inventory Value", path: "/inventory-value" },
-      ],
+        { label: "Inventory Counts", path: "/counts" },],
     },
     {
       icon: <FaChartPie className="icon" size={15} color="red" />,

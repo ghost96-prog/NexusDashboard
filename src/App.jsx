@@ -16,6 +16,10 @@ import LaybyeScreen from "./screens/LaybyeScreen";
 import PaymentsScreen from "./screens/PaymentsScreen";
 import CreateProductScreen from "./screens/CreateProductScreen";
 import EditProductScreen from "./screens/EditProductScreen";
+import InventoryCountsScreen from "./screens/InventoryCountsScreen";
+import CreateCountScreen from "./screens/CreateCountScreen";
+import CountStockScreen from "./screens/countStockScreen";
+import InventoryCountDetailsScreen from "./screens/InventoryCountDetailsScreen";
 
 function App() {
   return (
@@ -37,6 +41,10 @@ function App() {
           <Route path="/shifts" element={<ShiftScreen />} />
           <Route path="/laybye" element={<LaybyeScreen />} />
           <Route path="/payments" element={<PaymentsScreen />} />
+          <Route path="/counts" element={<InventoryCountsScreen />} />
+          <Route path="/create-counts" element={<CreateCountScreen />} />
+          <Route path="/count-stock" element={<CountStockScreen />} />
+          <Route path="/inventory-count/:id" element={<InventoryCountDetailsScreen />} />
         </Routes>
       </div>
     </Router>
