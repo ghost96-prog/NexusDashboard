@@ -11,6 +11,7 @@ const ShiftListItem = ({
   onClick,
   closingDate,
   isSelected = false,
+  baseCurrency = "USD", // Add default value
   status = "closed",
   hasRefund = false,
 }) => {
@@ -22,11 +23,20 @@ const ShiftListItem = ({
     }
   };
 
+  // Move formatCurrency inside the component but as a const function
   const formatCurrency = (value) => {
-    return `$${value?.toLocaleString("en-US", {
+    const formattedNumber = Number(value).toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })}`;
+    });
+    
+    // Match the React Native logic
+    if (baseCurrency === "USD") {
+      return `$${formattedNumber}`;
+    } else {
+      // For non-USD, show the currency code
+      return `${baseCurrency}${formattedNumber}`;
+    }
   };
 
   return (

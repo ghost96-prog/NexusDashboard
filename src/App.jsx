@@ -20,6 +20,7 @@ import InventoryCountsScreen from "./screens/InventoryCountsScreen";
 import CreateCountScreen from "./screens/CreateCountScreen";
 import CountStockScreen from "./screens/countStockScreen";
 import InventoryCountDetailsScreen from "./screens/InventoryCountDetailsScreen";
+import CashManagementScreen from "./screens/CashManagementScreen";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/loginBackOffice" element={<LoginScreen />} />
           <Route path="/salesSummery" element={<SalesSummery />} />
           <Route path="/receipts" element={<FiscalisationScreen />} />
+          <Route path="/payin_payout" element={<CashManagementScreen />} />
           <Route path="/receiptsScreen" element={<ReceiptsScreen />} />
           <Route path="/soldItems" element={<TopSellingProducts />} />
           <Route path="/products" element={<ProductListScreen />} />

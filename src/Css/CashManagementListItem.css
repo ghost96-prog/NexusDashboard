@@ -1,0 +1,149 @@
+/* Table Rows */
+.cash-mgt-list-row {
+  display: flex;
+  background-color: white;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e0e0e0;
+  min-width: 600px;
+  transition: background-color 0.2s;
+}
+
+.cash-mgt-list-row:hover {
+  background-color: #f8f9fa;
+}
+
+.cash-mgt-row-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.cash-mgt-row-item:first-child {
+  padding-left: 0;
+}
+
+.cash-mgt-row-item:last-child {
+  padding-right: 0;
+}
+
+/* List Item Styles (for table rows) */
+.cash-mgt-item-comment {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cash-mgt-item-type {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* PAY IN - Green */
+.cash-mgt-item-type.payin,
+.cash-mgt-item-type.income,
+.cash-mgt-item-type.pay-in,
+.cash-mgt-item-type.paidin,
+.cash-mgt-item-type.deposit {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+/* PAY OUT - Red */
+.cash-mgt-item-type.payout,
+.cash-mgt-item-type.expense,
+.cash-mgt-item-type.pay-out,
+.cash-mgt-item-type.paidout,
+.cash-mgt-item-type.withdrawal {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* PAYMENT - Blue */
+.cash-mgt-item-type.payment {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+/* TRANSFER - Purple */
+.cash-mgt-item-type.transfer {
+  background-color: #e2d9f3;
+  color: #4a3c6e;
+}
+
+/* ADJUSTMENT - Orange */
+.cash-mgt-item-type.adjustment {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+/* REFUND - Yellow */
+.cash-mgt-item-type.refund {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+/* UNKNOWN - Gray */
+.cash-mgt-item-type.unknown,
+.cash-mgt-item-type.other {
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
+.cash-mgt-item-currency {
+  font-size: 14px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.cash-mgt-item-amount {
+  font-size: 16px;
+  color: #1a237e;
+  white-space: nowrap;
+}
+
+.cash-mgt-item-date {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cash-mgt-list-row {
+    padding: 10px;
+    min-width: 500px;
+  }
+  
+  .cash-mgt-item-comment {
+    font-size: 13px;
+  }
+  
+  .cash-mgt-item-amount {
+    font-size: 14px;
+  }
+  
+  .cash-mgt-item-date {
+    font-size: 11px;
+  }
+}
+/* Amount colors */
+.cash-mgt-item-amount.positive {
+  color: #155724; /* Green for pay in */
+}
+
+.cash-mgt-item-amount.negative {
+  color: #721c24; /* Red for pay out */
+}
+
+/* Default amount color */
+.cash-mgt-item-amount {
+  font-size: 16px;
+  color: #1a237e; /* Default blue */
+  white-space: nowrap;
+}

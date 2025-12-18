@@ -160,6 +160,7 @@ localStorage.removeItem("userData");
         { label: "Top Selling Items", path: "/soldItems" },
         { label: "Receipts", path: "/receiptsScreen" },
         { label: "Laybyes", path: "/laybye" },
+        { label: "Pay In / Pay Out", path: "/payin_payout" },
       ],
     },
     {

@@ -1,0 +1,424 @@
+/* Cash Management List Item Styles */
+.cash-mgt-list-item {
+  display: flex;
+  background-color: white;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 4px solid #0a4da3;
+  min-width: 600px;
+}
+
+.cash-mgt-list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cash-mgt-item-icon-container {
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.cash-mgt-item-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: rgba(10, 77, 163, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cash-mgt-item-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0; /* Allows text truncation */
+}
+
+.cash-mgt-item-comment {
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+  margin-right: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 120px;
+}
+
+.cash-mgt-item-type {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.cash-mgt-item-type.payin,
+.cash-mgt-item-type.payment,
+.cash-mgt-item-type.income {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.cash-mgt-item-type.payout,
+.cash-mgt-item-type.expense {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.cash-mgt-item-type.unknown {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.cash-mgt-item-currency {
+  font-size: 14px;
+  color: #666;
+  background-color: #f8f9fa;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  min-width: 60px;
+  text-align: center;
+  margin: 0 10px;
+}
+
+.cash-mgt-item-amount {
+  font-size: 16px;
+  color: #1a237e;
+  min-width: 100px;
+  text-align: right;
+}
+
+.cash-mgt-item-date {
+  font-size: 12px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  min-width: 180px;
+  margin-left: 10px;
+}
+
+.cash-mgt-item-date::before {
+  content: "🕒";
+  margin-right: 6px;
+  font-size: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cash-mgt-list-item {
+    padding: 10px;
+    min-width: 500px;
+  }
+  
+  .cash-mgt-item-icon {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .cash-mgt-item-comment {
+    font-size: 13px;
+    min-width: 100px;
+  }
+  
+  .cash-mgt-item-amount {
+    font-size: 14px;
+    min-width: 80px;
+  }
+  
+  .cash-mgt-item-date {
+    font-size: 11px;
+    min-width: 150px;
+  }
+}
+/* Table Rows */
+.cash-mgt-list-row {
+  display: flex;
+  background-color: white;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e0e0e0;
+  min-width: 600px;
+  transition: background-color 0.2s;
+}
+
+.cash-mgt-list-row:hover {
+  background-color: #f8f9fa;
+}
+
+.cash-mgt-row-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.cash-mgt-row-item:first-child {
+  padding-left: 0;
+}
+
+.cash-mgt-row-item:last-child {
+  padding-right: 0;
+}
+
+/* List Item Styles (for table rows) */
+.cash-mgt-item-comment {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cash-mgt-item-type {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cash-mgt-item-type.payin,
+.cash-mgt-item-type.payment,
+.cash-mgt-item-type.income {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.cash-mgt-item-type.payout,
+.cash-mgt-item-type.expense {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.cash-mgt-item-type.unknown {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.cash-mgt-item-currency {
+  font-size: 14px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.cash-mgt-item-amount {
+  font-size: 16px;
+  color: #1a237e;
+  white-space: nowrap;
+}
+
+.cash-mgt-item-date {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+}
+
+/* Table Container Scroll */
+.cash-mgt-table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+.cash-mgt-receipt-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #f4f4f4;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .cash-mgt-table-container {
+    max-height: 400px;
+  }
+  
+  .cash-mgt-list-row {
+    padding: 10px;
+    min-width: 500px;
+  }
+  
+  .cash-mgt-item-comment {
+    font-size: 13px;
+  }
+  
+  .cash-mgt-item-amount {
+    font-size: 14px;
+  }
+  
+  .cash-mgt-item-date {
+    font-size: 11px;
+  }
+}
+/* Cash Management specific styles */
+.cash-mgt-list-row {
+  display: flex;
+  background-color: white;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e0e0e0;
+  min-width: 600px;
+  transition: background-color 0.2s;
+}
+
+.cash-mgt-list-row:hover {
+  background-color: #f8f9fa;
+}
+
+.cash-mgt-row-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.cash-mgt-row-item:first-child {
+  padding-left: 0;
+}
+
+.cash-mgt-row-item:last-child {
+  padding-right: 0;
+}
+
+.cash-mgt-item-comment {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cash-mgt-item-type {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cash-mgt-item-type.payin,
+.cash-mgt-item-type.payment,
+.cash-mgt-item-type.income {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.cash-mgt-item-type.payout,
+.cash-mgt-item-type.expense {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.cash-mgt-item-type.unknown {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.cash-mgt-item-currency {
+  font-size: 14px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.cash-mgt-item-amount {
+  font-size: 16px;
+  color: #1a237e;
+  white-space: nowrap;
+}
+
+.cash-mgt-item-date {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+}
+
+/* No items container */
+.no-items-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  background-color: white;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 70px;
+  height: 120px;
+  width: 120px;
+  background-color: #f5f5f5;
+  margin-bottom: 20px;
+}
+
+.no-items-text {
+  font-size: 18px;
+  color: #666;
+  margin-top: 10px;
+}
+
+/* Pagination */
+.pagination-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: white;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 20px;
+}
+
+.pagination-button {
+  background-color: darkblue;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.pagination-button.disabled {
+  background-color: #b0bec5;
+  cursor: not-allowed;
+}
+
+.page-text {
+  font-size: 16px;
+  color: #333;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cash-mgt-list-row {
+    padding: 10px;
+    min-width: 500px;
+  }
+  
+  .cash-mgt-item-comment {
+    font-size: 13px;
+  }
+  
+  .cash-mgt-item-amount {
+    font-size: 14px;
+  }
+  
+  .cash-mgt-item-date {
+    font-size: 11px;
+  }
+}

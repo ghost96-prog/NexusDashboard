@@ -472,16 +472,17 @@ const ShiftScreen = () => {
       (store) => store.storeId === item.storeId
     );
     return (
-      <ShiftListItem
-        key={index}
-        closedBy={item.createdBy}
-        shiftNumber={item.shiftNumber}
-        closingDate={item.closingDate}
-        openingDate={item.openingDate}
-        storeName={matchedStore?.storeName || "Unknown Store"}
-        amount={Number(item.expectedCash).toFixed(2)}
-        onClick={() => handleItemClick(item)}
-      />
+<ShiftListItem
+  key={index}
+  closedBy={item.createdBy}
+  shiftNumber={item.shiftNumber}
+  closingDate={item.closingDate}
+  openingDate={item.openingDate}
+  storeName={matchedStore?.storeName || "Unknown Store"}
+  amount={Number(item.expectedCash).toFixed(2)}
+  baseCurrency={item.baseCurrency || "USD"} // Add this
+  onClick={() => handleItemClick(item)}
+/>
     );
   })}
 </div>

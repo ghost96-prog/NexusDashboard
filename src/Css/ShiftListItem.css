@@ -99,14 +99,12 @@
 .ShiftDetail:first-child {
   padding-left: 0;
   color: darkblue;
-  font-weight: 600;
   font-size: 0.9em;
 }
 
 .ShiftDetail:last-child {
   padding-right: 0;
   text-align: right;
-  font-weight: 700;
   font-size: 0.9em;
   color: #28a745;
 }

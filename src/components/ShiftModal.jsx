@@ -137,8 +137,9 @@ y += 12;
         pdf.setFontSize(12);
         pdf.setTextColor(68, 68, 68);
         selectedShift.salesBreakdown.forEach(({ currency, totalAmount }) => {
-          const formattedAmount = `${currency === "USD" ? "$" : ""}${totalAmount?.toFixed(2)}`;
-          addRow(currency, formattedAmount, y);
+const formattedAmount = selectedShift.baseCurrency === "USD" 
+  ? `$${totalAmount?.toFixed(2)}`
+  : `${selectedShift.baseCurrency}${totalAmount?.toFixed(2)}`;          addRow(currency, formattedAmount, y);
           y += 7;
         });
       }
@@ -167,12 +168,20 @@ y += 12;
 
   if (!selectedShift) return null;
 
-  const formatCurrency = (value) => {
-    return `$${value?.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  };
+const formatCurrency = (value) => {
+  const formattedNumber = value?.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  
+  // Match the React Native logic
+  if (selectedShift.baseCurrency === "USD") {
+    return `$${formattedNumber}`;
+  } else {
+    // For non-USD, show the currency code
+    return `${selectedShift.baseCurrency}${formattedNumber}`;
+  }
+};
 
   return (
     <div className="modal-overlay shift-modal-overlay">
