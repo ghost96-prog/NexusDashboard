@@ -8,6 +8,8 @@ import {
   FaShoppingCart,
   FaFilter,
   FaSearch,
+  FaTimes,
+  FaBars,
 } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { DateRangePicker, defaultStaticRanges } from "react-date-range";
@@ -518,6 +520,15 @@ const TopSellingProducts = () => {
 
   return (
     <div className="topselling-container">
+       <div className="sales-summery-sidebar-toggle-wrapper">
+              <button 
+                className="sales-summery-sidebar-toggle"
+                onClick={toggleSidebar}
+                style={{ left: isSidebarOpen ? '280px' : '80px' }}
+              >
+                {isSidebarOpen ? <FaTimes /> : <FaBars />}
+              </button>
+            </div>
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       
       <div className={`topselling-content ${isSidebarOpen ? "topselling-content-shifted" : "topselling-content-collapsed"}`}>
