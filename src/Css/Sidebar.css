@@ -19,6 +19,7 @@
 
 .sidebar-open {
   left: 0;
+  
 }
 
 .sidebar-collapsed {
@@ -424,7 +425,7 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .sidebar {
-    width: 280px;
+    width: 200px;
   }
   
   .sidebar-collapsed {
