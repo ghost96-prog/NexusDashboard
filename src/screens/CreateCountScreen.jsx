@@ -354,7 +354,7 @@ const CreateCountScreen = () => {
     <div className="create-count-main-container">
       <ToastContainer position="top-right" autoClose={3000} />
       
-      <div className="create-count-toolbar">
+      {/* <div className="create-count-toolbar">
         {createCountSidebarOpen ? (
           <FaTimes className="create-count-sidebar-icon" onClick={toggleCreateCountSidebar} />
         ) : (
@@ -362,7 +362,7 @@ const CreateCountScreen = () => {
         )}
         <span className="create-count-toolbar-title">Create Inventory Count</span>
       </div>
-      
+       */}
       <Sidebar isOpen={createCountSidebarOpen} toggleSidebar={toggleCreateCountSidebar} />
       
       <div className={`create-count-content ${createCountSidebarOpen ? 'create-count-shifted' : 'create-count-collapsed'}`}>

@@ -4,10 +4,17 @@ import {
   FaBars,
   FaTimes,
   FaStore,
-  FaUser,
   FaArrowDown,
   FaArrowUp,
   FaDownload,
+  FaChartLine,
+  FaReceipt,
+  FaPercentage,
+  FaDollarSign,
+  FaBox,
+  FaShoppingCart,
+  FaExchangeAlt,
+  FaTags
 } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { DateRangePicker, defaultStaticRanges } from "react-date-range";
@@ -28,25 +35,21 @@ import {
   addMonths,
   subYears,
   addYears,
-  addHours,
 } from "date-fns";
 import enUS from "date-fns/locale/en-US";
 import "../Css/SalesSummery.css";
-import "react-date-range/dist/styles.css"; // main style file
-import "react-date-range/dist/theme/default.css"; // theme css file
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import { IoCalendar } from "react-icons/io5";
-import { Bar } from "react-chartjs-2";
-import Chart from "chart.js/auto";
-import { format } from "date-fns";
 import { useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { jwtDecode } from "jwt-decode"; // Make sure this is imported
+import { jwtDecode } from "jwt-decode";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import autoTable from "jspdf-autotable"; // ← import the function directly
+import autoTable from "jspdf-autotable";
 import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
@@ -84,14 +87,12 @@ const SalesSummery = () => {
   const [receiptsByDate, setReceiptsByDate] = useState({});
   const [receiptsLength, setReceiptsLength] = useState(0);
   const [percentageDiffProfit, setProfitPercentDiff] = useState(0);
-
   const [percentageDiffReceipts, setPercentageDiffReceipts] = useState(0);
   const [percentageDiffTotalIncome, setPercentageDiffTotalIncome] = useState(0);
   const [percentageDiffTotalCost, setPercentageDiffTotalCost] = useState(0);
 
   useEffect(() => {
-    const token = localStorage.getItem("token"); // Or sessionStorage if needed
-
+    const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Authentication token is missing.");
       return;
@@ -99,13 +100,13 @@ const SalesSummery = () => {
 
     try {
       const decoded = jwtDecode(token);
-      setEmail(decoded.email); // Extract email from token
+      setEmail(decoded.email);
     } catch (error) {
       toast.error("Invalid authentication token.");
     }
   }, []);
+
   useEffect(() => {
-    // Initially select all stores and employees
     setSelectedStores(stores);
     setSelectedEmployees(employees);
   }, [selectedOption, stores]);
@@ -115,9 +116,7 @@ const SalesSummery = () => {
       onRefresh(selectedOption, selectedStartDate, selectedEndDate);
     }
   }, [selectedStores, selectedOption, selectedStartDate, selectedEndDate]);
-  useEffect(() => {
-    console.log("Selected Option:", selectedOption);
-  }, [selectedOption]);
+
   useEffect(() => {
     if (email) {
       fetchStores();
@@ -126,8 +125,7 @@ const SalesSummery = () => {
 
   const fetchStores = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -159,14 +157,14 @@ const SalesSummery = () => {
       console.error("Error fetching stores:", error);
     }
   };
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
   const fetchAllReceiptsData = async (timeframe, startDate, endDate) => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -174,7 +172,6 @@ const SalesSummery = () => {
 
       const decoded = jwtDecode(token);
       const userEmail = decoded.email;
-      // Format the startDate and endDate as strings in ISO format
       const formattedStartDate = startDate;
       const formattedEndDate = endDate;
 
@@ -184,14 +181,15 @@ const SalesSummery = () => {
         )}`
       );
       const responseData = await response.json();
-      console.log(`Receipts for ${timeframe}:`);
+      
       if (!response.ok) {
-        const errorMessage = await response.text(); // or response.json() if you return JSON errors
+        const errorMessage = await response.text();
         toast.error(`Error: ${"User not found or invalid email."}`);
       }
+      
       const {
-        totalAmountSum, //with refunds
-        totalCostAmountSumWithoutRefunds, //without refunds
+        totalAmountSum,
+        totalCostAmountSumWithoutRefunds,
         receiptsNet,
         laybyeTotal,
         totalDiscount,
@@ -202,9 +200,8 @@ const SalesSummery = () => {
         totalCostDifferencePercentage,
         receiptsDifference,
       } = responseData;
-      //calculate profit using netsales minus the totalcosts from all receipts except the refunded
-      const calculatedProfit = netSales - totalCostAmountSumWithoutRefunds; //remember discount and refunds is removed already from server side
-      // Calculate profit and profit percentage difference
+      
+      const calculatedProfit = netSales - totalCostAmountSumWithoutRefunds;
       setProfit(calculatedProfit);
 
       const calculatedProfitPercentage =
@@ -213,22 +210,19 @@ const SalesSummery = () => {
           : ((calculatedProfit - prevProfit) / prevProfit) * 100;
       setProfitPercentDiff(calculatedProfitPercentage);
 
-      // Object to store product quantities and total prices
       const filterRefundedReceipts = receipts.filter(
         (receipt) => receipt.label === "Refunded"
       );
-      console.log("====================================");
-      console.log(filterRefundedReceipts);
-      console.log("====================================");
+      
       const totalRefunds = filterRefundedReceipts.reduce(
         (sum, receipt) => sum + receipt.totalAmountUsd,
         0
       );
-      // Helper to group receipts by date
+
       const receiptsByDate = receipts.reduce((acc, receipt) => {
         const date = convertFirestoreTimestampToDate(receipt.dateTime)
           .toISOString()
-          .split("T")[0]; // Convert to YYYY-MM-DD format
+          .split("T")[0];
         if (!acc[date]) {
           acc[date] = [];
         }
@@ -236,8 +230,6 @@ const SalesSummery = () => {
         return acc;
       }, {});
 
-      // Set the sorted employee data as an array
-      // setEmployeeData(sortedEmployeeData);
       setLaybyeTotal(laybyeTotal);
       setReceiptsByDate(receiptsByDate);
       setGrossSales(totalAmountSum);
@@ -260,17 +252,19 @@ const SalesSummery = () => {
       console.error("Error fetching receipts:", error);
     }
   };
+
   const convertFirestoreTimestampToDate = (timestamp) => {
     return new Date(
       timestamp._seconds * 1000 + timestamp._nanoseconds / 1000000
     );
   };
+
   const onRefresh = async (
     selectedOption,
     selectedStartRange,
     selectedEndRange
   ) => {
-    NProgress.start(); // 🔵 Start progress bar
+    NProgress.start();
     setIsRefreshing(true);
     await fetchAllReceiptsData(
       selectedOption,
@@ -278,7 +272,7 @@ const SalesSummery = () => {
       selectedEndRange
     )
       .then(() => {
-        NProgress.done(); // ✅ End progress bar
+        NProgress.done();
         setIsRefreshing(false);
       })
       .catch((error) => {
@@ -303,29 +297,12 @@ const SalesSummery = () => {
     }
   };
 
-  // const handleEmployeeSelect = (employee) => {
-  //   if (employee === "All Employees") {
-  //     if (selectedEmployees.length === employees.length) {
-  //       setSelectedEmployees([]);
-  //     } else {
-  //       setSelectedEmployees(employees);
-  //     }
-  //   } else {
-  //     const updatedEmployees = selectedEmployees.includes(employee)
-  //       ? selectedEmployees.filter((item) => item !== employee)
-  //       : [...selectedEmployees, employee];
-  //     setSelectedEmployees(updatedEmployees);
-  //   }
-  // };
-
   const handleClickOutside = (event) => {
     if (
       isStoreDropdownOpen &&
-      !event.target.closest(".buttonContainerStoresSummery")
+      !event.target.closest(".sales-summery-store-selector")
     ) {
       setIsStoreDropdownOpen(false);
-      console.log("Selected Stores:", selectedStores);
-
       if (selectedStores.length === 0) {
         setLaybyeTotal(0);
         setReceiptsByDate({});
@@ -340,17 +317,14 @@ const SalesSummery = () => {
         setTotalAmount(0);
         setProfit(0);
         setReceiptsLength(0);
-      } else {
-        // onRefresh(selectedOption, selectedStartDate, selectedEndDate);
       }
     }
 
     if (
       isExportDropdownOpen &&
-      !event.target.closest(".buttonContainerExportSummery")
+      !event.target.closest(".sales-summery-export-button")
     ) {
       setIsExportDropdownOpen(false);
-      console.log("Selected Export Option:");
     }
   };
 
@@ -385,9 +359,7 @@ const SalesSummery = () => {
         range.range().startDate.getTime() === startDate.getTime() &&
         range.range().endDate.getTime() === endDate.getTime()
     );
-    console.log("====================================");
-    console.log(customStaticRanges);
-    console.log("====================================");
+
     if (selectedRange) {
       if (selectedRange.label === "Today") {
         setSelectedOption("today");
@@ -430,8 +402,8 @@ const SalesSummery = () => {
     {
       label: "This Year",
       range: () => ({
-        startDate: new Date(new Date().getFullYear(), 0, 1), // January 1st of the current year
-        endDate: new Date(new Date().getFullYear(), 11, 31), // December 31st of the current year
+        startDate: new Date(new Date().getFullYear(), 0, 1),
+        endDate: new Date(new Date().getFullYear(), 11, 31),
       }),
       isSelected: () => selectedOption === "This Year",
     },
@@ -516,7 +488,6 @@ const SalesSummery = () => {
         newEndDate = addDays(selectedEndDate, 1);
     }
 
-    // Check if newEndDate is beyond end of today
     if (selectedEndDate <= new Date()) {
       setSelectedStartDate(newStartDate);
       setSelectedEndDate(newEndDate);
@@ -524,7 +495,6 @@ const SalesSummery = () => {
     }
   };
 
-  // Sample column titles – update if needed
   const tableHeaders = [
     [
       "Date",
@@ -537,17 +507,15 @@ const SalesSummery = () => {
       "Profit Margin",
     ],
   ];
+
   const getSalesSummaryRows = (receiptsByDate, laybyeTotal = 0) => {
     let rows = [];
-
     let totalGrossSales = 0;
     let totalDiscounts = 0;
     let totalRefunds = 0;
     let totalNetSales = 0;
     let totalCogs = 0;
     let totalProfit = 0;
-
-    const salesDates = Object.keys(receiptsByDate);
 
     for (const [date, dailyReceipts] of Object.entries(receiptsByDate)) {
       const grossSales = dailyReceipts.reduce(
@@ -564,16 +532,13 @@ const SalesSummery = () => {
         .reduce((sum, receipt) => sum + receipt.totalAmountUsd, 0);
 
       const netSales = grossSales - discounts - refunds;
-
       const cogs = dailyReceipts
         .filter((receipt) => receipt.label !== "Refunded")
         .reduce((sum, receipt) => sum + (receipt.totalCostUsd || 0), 0);
-
       const profit = netSales - cogs;
       const margin =
         netSales > 0 ? ((profit / netSales) * 100).toFixed(2) : "0.00";
 
-      // Accumulate totals
       totalGrossSales += grossSales;
       totalDiscounts += discounts;
       totalRefunds += refunds;
@@ -581,7 +546,6 @@ const SalesSummery = () => {
       totalCogs += cogs;
       totalProfit += profit;
 
-      // Push row
       rows.push([
         date,
         grossSales.toFixed(2),
@@ -594,33 +558,31 @@ const SalesSummery = () => {
       ]);
     }
 
-    // Laybye row (optional)
     if (laybyeTotal > 0) {
       const laybyeRow = [
         "Laybye Payments",
         laybyeTotal.toFixed(2),
         "",
-        "", // refund, discount
-        laybyeTotal.toFixed(2), // net sales
+        "",
+        laybyeTotal.toFixed(2),
         "",
         "",
-        "", // cogs, profit, margin
+        "",
       ];
       rows.push(laybyeRow);
     }
 
-    // Totals row: include laybye in gross sales, net sales, and profit margin
     const totalRow = [
       "TOTALS",
-      (totalGrossSales + laybyeTotal).toFixed(2), // gross sales include laybye
+      (totalGrossSales + laybyeTotal).toFixed(2),
       totalRefunds.toFixed(2),
       totalDiscounts.toFixed(2),
-      (totalNetSales + laybyeTotal).toFixed(2), // net sales include laybye
+      (totalNetSales + laybyeTotal).toFixed(2),
       totalCogs.toFixed(2),
       totalProfit.toFixed(2),
       totalNetSales + laybyeTotal > 0
         ? `${((totalProfit / (totalNetSales + laybyeTotal)) * 100).toFixed(2)}%`
-        : "0.00%", // profit margin adjusted to include laybye
+        : "0.00%",
     ];
 
     rows.push(totalRow);
@@ -631,7 +593,6 @@ const SalesSummery = () => {
 
   const generateCsvContent = () => {
     let csv = "SALES SUMMARY\n\n";
-
     const currentDateTime = new Date().toLocaleString("en-US", {
       year: "numeric",
       month: "long",
@@ -644,7 +605,6 @@ const SalesSummery = () => {
 
     csv += `Generated On:,${currentDateTime}\n\n`;
     csv += tableHeaders[0].join(",") + "\n";
-
     rows.forEach((row) => {
       csv += row.join(",") + "\n";
     });
@@ -682,7 +642,6 @@ const SalesSummery = () => {
     doc.setFontSize(10);
     doc.text(`Generated on: ${date}`, 14, 28);
 
-    // Correct usage when autoTable is imported directly
     autoTable(doc, {
       startY: 35,
       head: tableHeaders,
@@ -692,7 +651,6 @@ const SalesSummery = () => {
     doc.save("SalesSummary.pdf");
   };
 
-  // Function to generate the table rows based on data
   const generateRows = () => {
     let totalGrossSales = 0;
     let totalDiscounts = 0;
@@ -724,7 +682,6 @@ const SalesSummery = () => {
       const profit = netSales - cogs;
       const profitMargin = netSales > 0 ? (profit / netSales) * 100 : 0;
 
-      // Accumulate totals
       totalGrossSales += grossSales;
       totalDiscounts += discounts;
       totalRefunds += refunds;
@@ -733,422 +690,398 @@ const SalesSummery = () => {
       totalProfit += profit;
 
       return (
-        <tr key={date}>
-          <td>{date}</td>
-          <td>${grossSales.toFixed(2)}</td>
-          <td>${refunds.toFixed(2)}</td>
-          <td>${discounts.toFixed(2)}</td>
-          <td>${netSales.toFixed(2)}</td>
-          <td>${cogs.toFixed(2)}</td>
-          <td>${profit.toFixed(2)}</td>
-          <td>{profitMargin.toFixed(2)}%</td>
+        <tr key={date} className="sales-summery-table-row">
+          <td className="sales-summery-table-cell">{date}</td>
+          <td className="sales-summery-table-cell">${grossSales.toFixed(2)}</td>
+          <td className="sales-summery-table-cell sales-summery-negative">${refunds.toFixed(2)}</td>
+          <td className="sales-summery-table-cell sales-summery-negative">${discounts.toFixed(2)}</td>
+          <td className="sales-summery-table-cell sales-summery-positive">${netSales.toFixed(2)}</td>
+          <td className="sales-summery-table-cell">${cogs.toFixed(2)}</td>
+          <td className="sales-summery-table-cell sales-summery-profit">${profit.toFixed(2)}</td>
+          <td className="sales-summery-table-cell">{profitMargin.toFixed(2)}%</td>
         </tr>
       );
     });
 
-    // Optionally include laybye row
     if (laybyeTotal > 0) {
       const laybyeRow = (
-        <tr key="laybye">
-          <td>Laybye Payments</td>
-          <td>${laybyeTotal.toFixed(2)}</td>
-          <td></td>
-          <td></td>
-          <td>${laybyeTotal.toFixed(2)}</td>
-          <td></td>
-          <td></td>
-          <td></td>
+        <tr key="laybye" className="sales-summery-table-row sales-summery-laybye">
+          <td className="sales-summery-table-cell">Laybye Payments</td>
+          <td className="sales-summery-table-cell">${laybyeTotal.toFixed(2)}</td>
+          <td className="sales-summery-table-cell"></td>
+          <td className="sales-summery-table-cell"></td>
+          <td className="sales-summery-table-cell sales-summery-positive">${laybyeTotal.toFixed(2)}</td>
+          <td className="sales-summery-table-cell"></td>
+          <td className="sales-summery-table-cell"></td>
+          <td className="sales-summery-table-cell"></td>
         </tr>
       );
       rows.push(laybyeRow);
     }
 
-    // Add totals row
     rows.push(
-      <tr key="totals" style={{ fontWeight: "bold" }}>
-        <td>TOTALS</td>
-        <td>${(totalGrossSales + laybyeTotal).toFixed(2)}</td>
-        <td>${totalRefunds.toFixed(2)}</td>
-        <td>${totalDiscounts.toFixed(2)}</td>
-        <td>${(totalNetSales + laybyeTotal).toFixed(2)}</td>
-        <td>${totalCogs.toFixed(2)}</td>
-        <td>${totalProfit.toFixed(2)}</td>
-        <td>
+      <tr key="totals" className="sales-summery-table-row sales-summery-total-row">
+        <td className="sales-summery-table-cell sales-summery-total">TOTALS</td>
+        <td className="sales-summery-table-cell sales-summery-total">${(totalGrossSales + laybyeTotal).toFixed(2)}</td>
+        <td className="sales-summery-table-cell sales-summery-total sales-summery-negative">${totalRefunds.toFixed(2)}</td>
+        <td className="sales-summery-table-cell sales-summery-total sales-summery-negative">${totalDiscounts.toFixed(2)}</td>
+        <td className="sales-summery-table-cell sales-summery-total sales-summery-positive">${(totalNetSales + laybyeTotal).toFixed(2)}</td>
+        <td className="sales-summery-table-cell sales-summery-total">${totalCogs.toFixed(2)}</td>
+        <td className="sales-summery-table-cell sales-summery-total sales-summery-profit">${totalProfit.toFixed(2)}</td>
+        <td className="sales-summery-table-cell sales-summery-total">
           {totalNetSales + laybyeTotal > 0
             ? ((totalProfit / (totalNetSales + laybyeTotal)) * 100).toFixed(2)
-            : "0"}
-          %
+            : "0"}%
         </td>
       </tr>
     );
 
     return rows;
   };
+
   const percentageStyleReceipts = {
-    color: percentageDiffReceipts < 0 ? "red" : "green", // red for negative, green for positive
+    color: percentageDiffReceipts < 0 ? "#ef4444" : "#10b981",
   };
 
   const percentageStyleSales = {
-    color: percentageDiffTotalIncome < 0 ? "red" : "green", // red for negative, green for positive
+    color: percentageDiffTotalIncome < 0 ? "#ef4444" : "#10b981",
   };
 
   const percentageStyleProfit = {
-    color: percentageDiffProfit < 0 ? "red" : "green", // red for negative, green for positive
+    color: percentageDiffProfit < 0 ? "#ef4444" : "#10b981",
   };
-  const percentageDifferenceReceippts = `${percentageDiffReceipts.toFixed(2)}%`; // the percentage difference from the previous sales as per the date selected
-  const percentageDifferenceIncome = `${percentageDiffTotalIncome.toFixed(2)}%`; // the percentage difference from the previous sales as per the date selected
-  const percentageDifferenceProfit = `${percentageDiffProfit.toFixed(2)}%`; // the percentage difference from the previous sales as per the date selected
+
+  const percentageDifferenceReceipts = `${percentageDiffReceipts.toFixed(2)}%`;
+  const percentageDifferenceIncome = `${percentageDiffTotalIncome.toFixed(2)}%`;
+  const percentageDifferenceProfit = `${percentageDiffProfit.toFixed(2)}%`;
+
+const StatCard = ({ title, value, icon, percentage, isPositive, subValue, color, isCurrency = true }) => (
+  <div className="sales-summery-stat-card">
+    <div className="sales-summery-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
+      <div className="sales-summery-stat-icon-circle">
+        {icon}
+      </div>
+    </div>
+    <div className="sales-summery-stat-content">
+      <div className="sales-summery-stat-title">{title}</div>
+      <div className="sales-summery-stat-value">
+        {isCurrency ? '$' : ''}{value.toLocaleString(undefined, {
+          minimumFractionDigits: isCurrency ? 2 : 0,
+          maximumFractionDigits: isCurrency ? 2 : 0,
+        })}
+      </div>
+      <div className="sales-summery-stat-change-container">
+        <div className={`sales-summery-stat-change ${isPositive ? 'positive' : 'negative'}`}>
+          {isPositive ? <FaArrowUp /> : <FaArrowDown />}
+          <span>{percentage}</span>
+        </div>
+      </div>
+      {subValue && <div className="sales-summery-stat-subvalue">{subValue}</div>}
+    </div>
+  </div>
+);
 
   return (
-    <div className="mainContainerSalesSummery">
-      <div className="toolBar">
-        {isSidebarOpen ? (
-          <FaTimes className="sidebar-icon" onClick={toggleSidebar} />
-        ) : (
-          <FaBars className="sidebar-icon" onClick={toggleSidebar} />
-        )}
-        <span className="toolBarTitle">Sales Summary</span>
+    <div className="sales-summery-container">
+      <div className="sales-summery-sidebar-toggle-wrapper">
+        <button 
+          className="sales-summery-sidebar-toggle"
+          onClick={toggleSidebar}
+          style={{ left: isSidebarOpen ? '280px' : '80px' }}
+        >
+          {isSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
       </div>
+      
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-      <div
-        className={`content ${isSidebarOpen ? "shifted" : "collapsed"}`}
-        id="contentsContainer"
-      >
-        <div className="buttonsContainerSalesSummery">
-          <div className="buttonContainerDateSummery">
-            <div className="iconContainerBackSummery" onClick={handleBackClick}>
-              <IoIosArrowBack color="grey" className="iconLeft" />
-            </div>
-            <button
-              className="inputButtonDate"
-              onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-            >
-              <IoCalendar color="grey" className="iconRiconCalenderight" />
-
-              {selectedStartDate && selectedEndDate
-                ? `${selectedStartDate.toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })} - ${selectedEndDate.toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}`
-                : "Select Date Range"}
-            </button>
-            <div
-              className="iconContainerForwardSummery"
-              onClick={handleForwardClick}
-            >
-              <IoIosArrowForward color="grey" className="iconRight" />
+      
+      <div className={`sales-summery-content ${isSidebarOpen ? "sales-summery-content-shifted" : "sales-summery-content-collapsed"}`}>
+        {/* Toolbar */}
+        <div className="sales-summery-toolbar">
+          <div className="sales-summery-toolbar-content">
+            <h1 className="sales-summery-toolbar-title">Sales Dashboard</h1>
+            <div className="sales-summery-toolbar-subtitle">
+              Comprehensive overview of your sales performance
             </div>
           </div>
-          {isDatePickerOpen && (
-            <div ref={dateRangePickerRef} className="datePickerContainer">
-              <DateRangePicker
-                ranges={[
-                  {
+          <div className="sales-summery-toolbar-actions">
+            <button 
+              className="sales-summery-refresh-btn"
+              onClick={() => onRefresh(selectedOption, selectedStartDate, selectedEndDate)}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {/* Control Panel */}
+        <div className="sales-summery-control-panel">
+          <div className="sales-summery-date-controls">
+            <div className="sales-summery-date-navigation">
+              <button 
+                className="sales-summery-nav-btn"
+                onClick={handleBackClick}
+              >
+                <IoIosArrowBack />
+              </button>
+              <button 
+                className="sales-summery-date-range-btn"
+                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              >
+                <IoCalendar />
+                <span>
+                  {selectedStartDate.toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })} - {selectedEndDate.toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              </button>
+              <button 
+                className="sales-summery-nav-btn"
+                onClick={handleForwardClick}
+              >
+                <IoIosArrowForward />
+              </button>
+            </div>
+            
+            {isDatePickerOpen && (
+              <div ref={dateRangePickerRef} className="sales-summery-datepicker-modal">
+                <DateRangePicker
+                  ranges={[{
                     startDate: selectedStartDate,
                     endDate: selectedEndDate,
                     key: "selection",
-                  },
-                ]}
-                onChange={handleDateRangeChange}
-                moveRangeOnFirstSelection={true}
-                months={2}
-                direction="horizontal"
-                locale={enUS}
-                staticRanges={customStaticRanges}
-              />
+                  }]}
+                  onChange={handleDateRangeChange}
+                  moveRangeOnFirstSelection={true}
+                  months={2}
+                  direction="horizontal"
+                  locale={enUS}
+                  staticRanges={customStaticRanges}
+                />
+              </div>
+            )}
+          </div>
+          
+          <div className="sales-summery-filter-controls">
+            <div className="sales-summery-store-selector">
+              <button 
+                className="sales-summery-filter-btn"
+                onClick={() => {
+                  setIsStoreDropdownOpen(!isStoreDropdownOpen);
+                  setIsEmployeeDropdownOpen(false);
+                  setIsExportDropdownOpen(false);
+                }}
+              >
+                <FaStore />
+                <span>
+                  {selectedStores.length === 0
+                    ? "Select Store"
+                    : selectedStores.length === 1
+                    ? selectedStores[0].storeName
+                    : selectedStores.length === stores.length
+                    ? "All Stores"
+                    : `${selectedStores.length} stores`}
+                </span>
+              </button>
+              
+              {isStoreDropdownOpen && (
+                <div className="sales-summery-dropdown">
+                  <div className="sales-summery-dropdown-header">
+                    <span>Select Stores</span>
+                    <button 
+                      className="sales-summery-dropdown-select-all"
+                      onClick={() => handleStoreSelect("All Stores")}
+                    >
+                      {selectedStores.length === stores.length ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <div className="sales-summery-dropdown-content">
+                    {stores.map((store) => (
+                      <div
+                        className="sales-summery-dropdown-item"
+                        key={store.storeId}
+                        onClick={() => handleStoreSelect(store)}
+                      >
+                        <div className="sales-summery-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedStores.some((s) => s.storeId === store.storeId)}
+                            readOnly
+                          />
+                          <div className="sales-summery-checkbox-custom"></div>
+                        </div>
+                        <span className="sales-summery-store-name">{store.storeName}</span>
+                        <span className="sales-summery-store-location">{store.location}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-          <div className="buttonContainerStoresSummery">
-            <button
-              className="inputButtonStore"
-              onClick={() => {
-                setIsStoreDropdownOpen(!isStoreDropdownOpen);
-                setIsEmployeeDropdownOpen(false);
-                setIsExportDropdownOpen(false);
-              }}
-            >
-              {selectedStores.length === 0
-                ? "Select Store"
-                : selectedStores.length === 1
-                ? selectedStores[0].storeName
-                : selectedStores.length === stores.length
-                ? "All Stores"
-                : selectedStores.map((s) => s.storeName).join(", ")}{" "}
-              <FaStore className="icon" color="grey" />
-            </button>
-            {isStoreDropdownOpen && (
-              <div className="dropdown">
-                <div
-                  className="dropdownItem"
-                  onClick={() => handleStoreSelect("All Stores")}
-                >
-                  <div className="checkboxContainer">
-                    <input
-                      className="inputCheckBox"
-                      type="checkbox"
-                      checked={selectedStores.length === stores.length}
-                      readOnly
-                    />
-                  </div>
-                  <span className="storeName">All Stores</span>
-                </div>
-                {stores.map((store) => (
-                  <div
-                    className="dropdownItem"
-                    key={store.storeId}
-                    onClick={() => handleStoreSelect(store)}
+            
+            <div className="sales-summery-export-button">
+              <button 
+                className="sales-summery-filter-btn"
+                onClick={() => {
+                  setIsExportDropdownOpen(!isExportDropdownOpen);
+                  setIsEmployeeDropdownOpen(false);
+                  setIsStoreDropdownOpen(false);
+                }}
+              >
+                <FaDownload />
+                <span>Export</span>
+              </button>
+              
+              {isExportDropdownOpen && (
+                <div className="sales-summery-dropdown">
+                  <div 
+                    className="sales-summery-dropdown-item"
+                    onClick={() => {
+                      setIsExportDropdownOpen(false);
+                      downloadPdf();
+                    }}
                   >
-                    <div className="checkboxContainer">
-                      <input
-                        className="inputCheckBox"
-                        type="checkbox"
-                        checked={selectedStores.some(
-                          (s) => s.storeId === store.storeId
-                        )}
-                        readOnly
-                      />
-                    </div>
-                    <span className="storeName">{store.storeName}</span>
+                    <FaFilePdf color="#ef4444" />
+                    <span>Download PDF</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {/* <div className="buttonContainerEmployees">
-            <button
-              className="inputButtonEmployee"
-              onClick={() => {
-                setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen);
-                setIsStoreDropdownOpen(false);
-                setIsExportDropdownOpen(false);
-              }}
-            >
-              {selectedEmployees.length === 0
-                ? "Select Employee"
-                : selectedEmployees.length === employees.length
-                ? "All Employees"
-                : selectedEmployees.join(", ")}
-
-              <FaUser className="icon" color="grey" />
-            </button>
-            {isEmployeeDropdownOpen && (
-              <div className="dropdown">
-                <div
-                  className="dropdownItem"
-                  onClick={() => handleEmployeeSelect("All Employees")}
-                >
-                  <div className="checkboxContainer">
-                    <input
-                      className="inputCheckBox"
-                      type="checkbox"
-                      checked={selectedEmployees.length === employees.length}
-                      readOnly
-                    />
-                  </div>
-                  <span className="employeeName">All Employees</span>
-                </div>
-                {employees.map((employee) => (
-                  <div
-                    className="dropdownItem"
-                    key={employee}
-                    onClick={() => handleEmployeeSelect(employee)}
+                  <div 
+                    className="sales-summery-dropdown-item"
+                    onClick={() => {
+                      setIsExportDropdownOpen(false);
+                      downloadCsv();
+                    }}
                   >
-                    <div className="checkboxContainer">
-                      <input
-                        className="inputCheckBox"
-                        type="checkbox"
-                        checked={selectedEmployees.includes(employee)}
-                        readOnly
-                      />
-                    </div>
-                    <span className="employeeName">{employee}</span>
+                    <FaFileCsv color="#10b981" />
+                    <span>Download CSV</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div> */}
-          <div className="buttonContainerExportSummery">
-            <button
-              className="inputButtonExportSummery"
-              onClick={() => {
-                setIsExportDropdownOpen(!isExportDropdownOpen);
-                setIsEmployeeDropdownOpen(false);
-                setIsStoreDropdownOpen(false);
-              }}
-            >
-              Export
-              <FaDownload className="icon" color="grey" />
-            </button>
-            {isExportDropdownOpen && (
-              <div className="dropdown">
-                <div
-                  className="dropdownItem"
-                  onClick={() => {
-                    setIsExportDropdownOpen(false);
-                    downloadPdf();
-
-                    console.log("PDF");
-                  }}
-                >
-                  <span className="storeName">
-                    Download PDF{" "}
-                    <FaFilePdf color="red" style={{ marginRight: 8 }} />
-                  </span>
                 </div>
-                <div
-                  className="dropdownItem"
-                  onClick={() => {
-                    setIsExportDropdownOpen(false);
-                    downloadCsv();
-                    console.log("PDF");
-                  }}
-                >
-                  <span className="storeName">
-                    Download CSV{" "}
-                    <FaFileCsv color="green" style={{ marginRight: 8 }} />
-                  </span>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="salesContainerSummery">
-        <div className="salesSubContainer">
-          <h1>Gross Sales</h1>
-          <span className="amount">
-            $
-            {grossSales.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-          <span className="percentage" style={percentageStyleSales}>
-            {percentageDifferenceIncome}
-          </span>
-          {percentageDiffTotalIncome < 0 ? (
-            <FaArrowDown color="red" size={10} />
-          ) : (
-            <FaArrowUp color="green" size={10} />
+
+        {/* Stats Grid */}
+        <div className="sales-summery-stats-grid">
+          <StatCard
+            title="Gross Sales"
+            value={grossSales}
+            icon={<FaChartLine />}
+            percentage={percentageDifferenceIncome}
+            isPositive={percentageDiffTotalIncome >= 0}
+            color="#6366f1"
+          />
+          
+          {laybyeTotal > 0 && (
+            <StatCard
+              title="Laybye Payments"
+              value={laybyeTotal}
+              icon={<FaShoppingCart />}
+              percentage="-"
+              isPositive={true}
+              color="#8b5cf6"
+            />
           )}
+          
+          <StatCard
+            title="Refunds"
+            value={refunds}
+            icon={<FaExchangeAlt />}
+            percentage="-"
+            isPositive={false}
+            color="#ef4444"
+          />
+          
+          <StatCard
+            title="Discounts"
+            value={discounts}
+            icon={<FaTags />}
+            percentage="-"
+            isPositive={false}
+            color="#f59e0b"
+          />
+          
+          <StatCard
+            title="Net Sales"
+            value={totalAmount}
+            icon={<FaDollarSign />}
+            percentage={percentageDifferenceIncome}
+            isPositive={percentageDiffTotalIncome >= 0}
+            color="#10b981"
+          />
+          
+          <StatCard
+            title="COGS"
+            value={cost}
+            icon={<FaBox />}
+            percentage="-"
+            isPositive={false}
+            color="#6b7280"
+          />
+          
+          <StatCard
+            title="Profit"
+            value={profit}
+            icon={<FaChartLine />}
+            percentage={percentageDifferenceProfit}
+            isPositive={percentageDiffProfit >= 0}
+            color="#8b5cf6"
+          />
+          
+        <StatCard
+  title="Receipts"
+  value={receiptsLength}
+  icon={<FaReceipt />}
+  percentage={percentageDifferenceReceipts}
+  isPositive={percentageDiffReceipts >= 0}
+  subValue={`$${totalAmount.toFixed(2)} total`}
+  color="#6366f1"
+  isCurrency={false}  // Add this line
+/>
         </div>
 
-        {laybyeTotal > 0 && (
-          <div className="salesSubContainer">
-            <h1>Laybye Payments</h1>
-            <span className="amount">
-              $
-              {laybyeTotal.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </span>
-            <span className="percentage">-</span>
-            <FaArrowDown color="white" size={10} />
+        {/* Data Table */}
+        <div className="sales-summery-table-container">
+          <div className="sales-summery-table-header">
+            <h3>Sales Summary Details</h3>
+            <div className="sales-summery-table-actions">
+              <span className="sales-summery-table-count">
+                Showing {Object.keys(receiptsByDate).length} days
+              </span>
+            </div>
           </div>
-        )}
-
-        <div className="salesSubContainer">
-          <h1>Refunds</h1>
-          <span className="amount">
-            $
-            {refunds.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-          <span className="percentage">-</span>
-          <FaArrowDown color="white" size={10} />
+          
+          <div className="sales-summery-table-wrapper">
+            <table className="sales-summery-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Gross Sales</th>
+                  <th>Refund</th>
+                  <th>Discount</th>
+                  <th>Net Sales</th>
+                  <th>COGS</th>
+                  <th>Profit</th>
+                  <th>Profit Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {generateRows()}
+              </tbody>
+            </table>
+          </div>
         </div>
-
-        <div className="salesSubContainer">
-          <h1>Discounts</h1>
-          <span className="amount">
-            $
-            {discounts.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-          <span className="percentage">-</span>
-          <FaArrowDown color="white" size={10} />
-        </div>
-
-        <div className="salesSubContainer">
-          <h1>Net Sales</h1>
-          <span className="amount">
-            $
-            {totalAmount.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-          <span className="percentage" style={percentageStyleSales}>
-            {percentageDifferenceIncome}
-          </span>
-          {percentageDiffTotalIncome < 0 ? (
-            <FaArrowDown color="red" size={10} />
-          ) : (
-            <FaArrowUp color="green" size={10} />
-          )}
-        </div>
-
-        <div className="salesSubContainer">
-          <h1>COGS</h1>
-          <span className="amount">
-            $
-            {cost.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-          <span className="percentage">-</span>
-          <FaArrowDown color="white" size={10} />
-        </div>
-
-        <div className="salesSubContainer">
-          <h1>Profit</h1>
-          <span className="amount">
-            $
-            {profit.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-          <span className="percentage" style={percentageStyleProfit}>
-            {percentageDifferenceProfit}
-          </span>
-          {percentageDiffProfit < 0 ? (
-            <FaArrowDown color="red" size={10} />
-          ) : (
-            <FaArrowUp color="green" size={10} />
-          )}
-        </div>
+        
+        <RemainingTimeFooter />
       </div>
-
-      <div className="tableContainerSummery">
-        <table className="salesTableSales">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Gross Sales</th>
-              <th>Refund</th>
-              <th>Discount</th>
-              <th>Net Sales</th>
-              <th>Cost of Goods Sold</th>
-              <th>Profit</th>
-              <th>Profit Margin</th>
-            </tr>
-          </thead>
-          <tbody>{generateRows()}</tbody>
-        </table>
-      </div>
-      <RemainingTimeFooter />
+      
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };

@@ -318,7 +318,6 @@ const CountStockScreen = () => {
     }
   };
 
-  // Rest of your existing functions remain the same...
   const toggleCountedSidebar = () => {
     setCountedSidebarOpen(!countedSidebarOpen);
   };
@@ -651,18 +650,36 @@ const CountStockScreen = () => {
 
   return (
     <div className="counted-main-container">
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="bottom-right" autoClose={3000} />
       
-      <div className="counted-toolbar">
-        {countedSidebarOpen ? (
-          <FaTimes className="counted-sidebar-icon" onClick={toggleCountedSidebar} />
-        ) : (
-          <FaBars className="counted-sidebar-icon" onClick={toggleCountedSidebar} />
-        )}
-        <span className="counted-toolbar-title">Count Stock</span>
-        <button className="counted-back-button" onClick={handleCountedBack}>
-          <FaChevronLeft /> Back
+      {/* Sidebar Toggle Button - Added to match ProductListScreen */}
+      <div className="counted-sidebar-toggle-wrapper">
+        <button 
+          className="counted-sidebar-toggle"
+          onClick={toggleCountedSidebar}
+          style={{ left: countedSidebarOpen ? '280px' : '80px' }}
+        >
+          {countedSidebarOpen ? <FaTimes /> : <FaBars />}
         </button>
+      </div>
+      
+      {/* Toolbar - Added to match ProductListScreen */}
+      <div className="counted-toolbar">
+        <div className="counted-toolbar-content">
+          <h1 className="counted-toolbar-title">Count Stock</h1>
+          <div className="counted-toolbar-subtitle">
+            Real-time inventory count for {countedStoreName || 'selected store'}
+          </div>
+        </div>
+        <div className="counted-toolbar-actions">
+          <button 
+            className="counted-back-btn"
+            onClick={handleCountedBack}
+          >
+            <FaChevronLeft />
+            Back
+          </button>
+        </div>
       </div>
       
       <Sidebar isOpen={countedSidebarOpen} toggleSidebar={toggleCountedSidebar} />
@@ -699,6 +716,31 @@ const CountStockScreen = () => {
               <span className="counted-warning">⚠️ Products not loaded</span>
             )}
           </div>
+
+          {/* Start Section - Only show when no current item */}
+          {!countedCurrentItem && countedItems.length > 0 && (
+            <div className="counted-start-section">
+              <div className="counted-start-card">
+                <h3>Ready to Start Counting</h3>
+                <p>Begin counting items in your inventory. Click Start to begin with the first item.</p>
+                <button 
+                  className="counted-start-button"
+                  onClick={() => {
+                    if (countedItems.length > 0) {
+                      setCountedCurrentItem(countedItems[0]);
+                      setCountedCurrentQuantity(countedItems[0].expectedStock?.toString() || '');
+                    }
+                  }}
+                >
+                  Start Counting
+                </button>
+                <div className="counted-resume-text">
+                  {countedCompletedItems} items already counted
+                </div>
+              </div>
+            </div>
+          )}
+
 
           {/* Counted Items Table */}
           <div className="counted-items-section">
@@ -745,7 +787,7 @@ const CountStockScreen = () => {
                         <div className={`counted-item-difference ${(item.difference || 0) < 0 ? 'counted-negative' : (item.difference || 0) > 0 ? 'counted-positive' : ''}`}>
                           {item.difference || 0}
                         </div>
-                        <div className={`counted-item-price-difference ${(item.priceDifference || 0) < 0 ? 'counted-negative' : (item.priceDifference || 0) > 0 ? 'counted-positive' : ''}`}>
+                        <div className={`counted-item-cost-difference ${(item.priceDifference || 0) < 0 ? 'counted-negative' : (item.priceDifference || 0) > 0 ? 'counted-positive' : ''}`}>
                           ${Math.abs(item.priceDifference || 0).toFixed(2)}
                         </div>
                       </div>
@@ -759,7 +801,7 @@ const CountStockScreen = () => {
                       <div className={`counted-total-difference ${calculatedTotals.totalDifference < 0 ? 'counted-negative' : calculatedTotals.totalDifference > 0 ? 'counted-positive' : ''}`}>
                         {calculatedTotals.totalDifference}
                       </div>
-                      <div className={`counted-total-price-difference ${calculatedTotals.totalPriceDifference < 0 ? 'counted-negative' : calculatedTotals.totalPriceDifference > 0 ? 'counted-positive' : ''}`}>
+                      <div className={`counted-total-cost-difference ${calculatedTotals.totalPriceDifference < 0 ? 'counted-negative' : calculatedTotals.totalPriceDifference > 0 ? 'counted-positive' : ''}`}>
                         ${Math.abs(calculatedTotals.totalPriceDifference).toFixed(2)}
                       </div>
                     </div>

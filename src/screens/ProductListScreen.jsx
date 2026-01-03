@@ -4,98 +4,66 @@ import {
   FaBars,
   FaTimes,
   FaStore,
-  FaUser,
-  FaArrowDown,
-  FaArrowUp,
   FaDownload,
-  FaUserCircle,
+  FaSearch,
+  FaTimes as FaTimesIcon,
   FaFileAlt,
+  FaBox,
+  FaFilter,
+  FaPlus
 } from "react-icons/fa";
-import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import { DateRangePicker, defaultStaticRanges } from "react-date-range";
-import {
-  startOfToday,
-  endOfToday,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  endOfYear,
-  subDays,
-  addDays,
-  subWeeks,
-  addWeeks,
-  subMonths,
-  addMonths,
-  subYears,
-  addYears,
-  addHours,
-} from "date-fns";
-import enUS from "date-fns/locale/en-US";
+import { IoReload } from "react-icons/io5";
 import "../Css/ProductListScreen.css";
-import "react-date-range/dist/styles.css"; // main style file
-import "react-date-range/dist/theme/default.css"; // theme css file
-import { IoCalendar } from "react-icons/io5";
-import { Bar } from "react-chartjs-2";
-import Chart from "chart.js/auto";
-import { format } from "date-fns";
-import { useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ReceiptModal from "../components/ReceiptModal";
-import ReceiptListItem from "../components/ReceiptListItem";
-import { jwtDecode } from "jwt-decode"; // Make sure this is imported
+import { jwtDecode } from "jwt-decode";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
-import ProductsListItem from "../components/ProductsListItem";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
-import autoTable from "jspdf-autotable"; // ← import the function directly
-import { FaChevronDown, FaFileCsv, FaFilePdf, FaPlus } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
 import SubscriptionModal from "../components/SubscriptionModal";
+import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const ProductListScreen = () => {
-  // const stores = ["Store 1", "Store 2", "Store 3"];
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedStores, setSelectedStores] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-  const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
-  const [selectedExportOption, setSelectedExportOption] = useState("");
   const [stores, setStoreData] = useState([]);
-  const [selectedStoreName, setSelectedStoreName] = useState("");
-  const [selectedStartDate, setSelectedStartDate] = useState(startOfToday());
-  const [selectedEndDate, setSelectedEndDate] = useState(endOfToday());
-  const [selectedOption, setSelectedOption] = useState("today");
-  const [selectedRange, setSelectedRange] = useState("Today");
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [isLowStock, setIsLowStockDropdownOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const dateRangePickerRef = useRef(null);
-  const location = useLocation();
-  const [receipts, setReceipts] = useState([]);
-  const [modalProduct, setModalProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
   const [email, setEmail] = useState(null);
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [filteredItems, setFilteredItems] = useState([]);
-
+  const [displayProducts, setDisplayProducts] = useState([]); // Add this state
   const [categories, setCategories] = useState([]);
   const [selectStockOption, setSelectStockOption] = useState("All Items");
-  const [allReceipts, setAllReceipts] = useState([]);
-  const navigate = useNavigate(); // Initialize navigate
-
+  const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false);
+  const navigate = useNavigate();
   const [isSubscribedAdmin, setIsSubscribedAdmin] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
-  // Add this useEffect to fetch subscription status
+  // Add a flag to track if we have initial data
+  const [hasInitialData, setHasInitialData] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication token is missing.");
+      return;
+    }
+
+    try {
+      const decoded = jwtDecode(token);
+      setEmail(decoded.email);
+    } catch (error) {
+      toast.error("Invalid authentication token.");
+    }
+  }, []);
+
   useEffect(() => {
     if (email) {
       fetchAdminSubscriptionStatus();
@@ -103,6 +71,21 @@ const ProductListScreen = () => {
       fetchCategories();
     }
   }, [email]);
+
+  useEffect(() => {
+    if (selectedStores.length > 0) {
+      onRefresh();
+    }
+  }, [selectedStores]);
+
+  // Update displayProducts whenever filters change OR when products update
+  useEffect(() => {
+    if (products.length > 0) {
+      const filtered = applyFilters(products);
+      setDisplayProducts(filtered);
+      setHasInitialData(true);
+    }
+  }, [products, selectedStores, selectedCategories, selectStockOption, searchTerm]);
 
   const fetchAdminSubscriptionStatus = async () => {
     try {
@@ -127,115 +110,13 @@ const ProductListScreen = () => {
     }
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem("token"); // Or sessionStorage if needed
-
-    if (!token) {
-      toast.error("Authentication token is missing.");
-      return;
-    }
-
-    try {
-      const decoded = jwtDecode(token);
-      setEmail(decoded.email); // Extract email from token
-    } catch (error) {
-      toast.error("Invalid authentication token.");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedStores.length > 0) {
-      onRefresh();
-    }
-  }, [selectedStores]);
-
-  useEffect(() => {
-    setSelectedStores(stores);
-    setSelectedCategories(categories);
-  }, [selectedOption, categories, stores]);
-  useEffect(() => {
-    console.log("Selected Option:", selectedOption);
-  }, [selectedOption]);
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-  useEffect(() => {
-    if (email) {
-      fetchStores();
-      fetchCategories();
-    }
-  }, [email]);
-  // Update filteredItems whenever filters change
-  useEffect(() => {
-    const applyFilters = () => {
-      let updatedList = [...products];
-
-      // 1. Filter by Store
-      const isAllStoresSelected =
-        selectedStores.length === stores.length ||
-        selectedStores.some((store) => store.storeName === "All Stores");
-
-      if (!isAllStoresSelected && selectedStores.length > 0) {
-        const storeIds = selectedStores.map((store) => String(store.storeId));
-        updatedList = updatedList.filter((product) =>
-          storeIds.includes(String(product.storeId))
-        );
-      }
-
-      // 2. Filter by Category
-      const isAllCategoriesSelected =
-        selectedCategories.length === categories.length ||
-        selectedCategories.some((cat) => cat.categoryName === "All Categories");
-
-      if (!isAllCategoriesSelected && selectedCategories.length > 0) {
-        const selectedCategoryIds = selectedCategories.map((cat) =>
-          String(cat.categoryId)
-        );
-        updatedList = updatedList.filter((product) => {
-          const productCategoryId = String(product.categoryId || "No Category");
-          return selectedCategoryIds.includes(productCategoryId);
-        });
-      }
-
-      // 3. Filter by Stock Level
-      if (selectStockOption === "Low Stock") {
-        updatedList = updatedList.filter(
-          (product) =>
-            Number(product.stock) > 0 &&
-            Number(product.stock) <= Number(product.lowStockNotification || 0)
-        );
-      } else if (selectStockOption === "Out of Stock") {
-        updatedList = updatedList.filter(
-          (product) => Number(product.stock) <= 0
-        );
-      }
-
-      // 4. Filter by Search
-      if (searchTerm.trim() !== "") {
-        const lowerSearch = searchTerm.toLowerCase();
-        updatedList = updatedList.filter((product) =>
-          product.productName?.toLowerCase().includes(lowerSearch)
-        );
-      }
-
-      setFilteredItems(updatedList);
-    };
-
-    applyFilters();
-  }, [
-    products,
-    selectedStores,
-    selectedCategories,
-    selectStockOption,
-    searchTerm,
-    stores,
-    categories,
-  ]);
 
   const fetchStores = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -258,6 +139,11 @@ const ProductListScreen = () => {
 
       const data = await response.json();
       setStoreData(data || []);
+      
+      // Select all stores by default
+      if (data.length > 0) {
+        setSelectedStores(data);
+      }
     } catch (error) {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
@@ -267,12 +153,11 @@ const ProductListScreen = () => {
       console.error("Error fetching stores:", error);
     }
   };
+
   const fetchProducts = async () => {
     try {
-      setLoading(true);
-
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      setIsRefreshing(true);
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -287,12 +172,15 @@ const ProductListScreen = () => {
           userEmail
         )}`
       );
+      
       if (!response.ok) {
-        const errorMessage = await response.text(); // or response.json() if you return JSON errors
+        const errorMessage = await response.text();
         toast.error(`Error: ${"User not found or invalid email."}`);
+        setIsRefreshing(false);
+        return;
       }
+      
       const responseData = await response.json();
-
       const filteredProducts = responseData.data.filter(
         (product) => product.userId === userId
       );
@@ -301,57 +189,23 @@ const ProductListScreen = () => {
         a.productName.localeCompare(b.productName)
       );
 
-      // Clear previous products and set new ones
-      setProducts([]);
-
-      // Process products in chunks
-      const CHUNK_SIZE = 800;
-      const loadChunks = (chunkIndex = 0) => {
-        const start = chunkIndex * CHUNK_SIZE;
-        const end = start + CHUNK_SIZE;
-        const chunk = filteredProducts.slice(start, end);
-
-        if (chunk.length > 0) {
-          setProducts((prevProducts) => {
-            const uniqueProducts = [
-              ...prevProducts,
-              ...chunk.filter(
-                (newProduct) =>
-                  !prevProducts.some(
-                    (existingProduct) =>
-                      existingProduct.productId === newProduct.productId
-                  )
-              ),
-            ];
-            return uniqueProducts;
-          });
-
-          setTimeout(() => loadChunks(chunkIndex + 1), 50);
-        } else {
-          setLoading(false);
-        }
-      };
-
-      loadChunks();
-
-      // Update `filteredItems` only if no filters are applied
-      // if (!isFilteringActive) {
-      //   setFilteredItems(filteredProducts);
-      // }
+      // Only update products state - displayProducts will update via useEffect
+      setProducts(filteredProducts);
+      setIsRefreshing(false);
     } catch (error) {
+      setIsRefreshing(false);
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
       } else {
         toast.error("An error occurred while fetching products.");
       }
-      console.error("Error fetching receipts:", error);
+      console.error("Error fetching products:", error);
     }
   };
 
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -359,20 +213,24 @@ const ProductListScreen = () => {
 
       const decoded = jwtDecode(token);
       const userEmail = decoded.email;
-      const userId = decoded.userId;
 
       const response = await fetch(
         `https://nexuspos.onrender.com/api/categoryRouter/categories?email=${encodeURIComponent(
           userEmail
         )}`
       );
+      
       const data = await response.json();
       if (!response.ok) {
-        const errorMessage = await response.text(); // or response.json() if you return JSON errors
+        const errorMessage = await response.text();
         toast.error(`Error: ${"User not found or invalid email."}`);
+        return;
       }
+      
       if (data.success) {
         setCategories(data.data);
+        // Select all categories by default
+        setSelectedCategories(data.data);
       } else {
         console.error("Error fetching categories:", data.error);
       }
@@ -382,17 +240,18 @@ const ProductListScreen = () => {
       } else {
         toast.error("An error occurred while fetching categories.");
       }
-      console.error("Error fetching receipts:", error);
+      console.error("Error fetching categories:", error);
     }
   };
+
   const onRefresh = async () => {
-    NProgress.start(); // 🔵 Start progress bar
+    NProgress.start();
     try {
       await fetchProducts();
     } catch (error) {
       console.error(error);
     } finally {
-      NProgress.done(); // ✅ Always stop progress bar
+      NProgress.done();
     }
   };
 
@@ -411,10 +270,8 @@ const ProductListScreen = () => {
       setSelectedStores(updatedStores);
     }
   };
+
   const handleCategorySelect = (category) => {
-    console.log("====================================");
-    console.log("cattttttttttt", category);
-    console.log("====================================");
     if (category === "All Categories") {
       if (selectedCategories.length === categories.length) {
         setSelectedCategories([]);
@@ -432,48 +289,69 @@ const ProductListScreen = () => {
     }
   };
 
+  const applyFilters = (productsList) => {
+    return productsList
+      .filter(item => {
+        // Filter by store
+        if (selectedStores.length > 0 && selectedStores.length < stores.length) {
+          const storeIds = selectedStores.map(store => store.storeId);
+          if (!storeIds.includes(item.storeId)) return false;
+        }
+
+        // Filter by category
+        if (selectedCategories.length > 0 && selectedCategories.length < categories.length) {
+          const categoryIds = selectedCategories.map(cat => cat.categoryId);
+          if (!categoryIds.includes(item.categoryId)) return false;
+        }
+
+        // Filter by stock level
+        if (selectStockOption === "Low Stock") {
+          const stock = Number(item.stock || 0);
+          const lowStockLevel = Number(item.lowStockNotification || 0);
+          if (stock > lowStockLevel || stock <= 0) return false;
+        } else if (selectStockOption === "Out of Stock") {
+          const stock = Number(item.stock || 0);
+          if (stock > 0) return false;
+        }
+
+        // Filter by search term
+        if (searchTerm.trim() !== "") {
+          const lowerSearch = searchTerm.toLowerCase();
+          return item.productName?.toLowerCase().includes(lowerSearch);
+        }
+
+        return true;
+      })
+      .sort((a, b) => a.productName.localeCompare(b.productName));
+  };
+
   const handleClickOutside = (event) => {
     if (
       isStoreDropdownOpen &&
-      !event.target.closest(".buttonContainerStoresProducts")
+      !event.target.closest(".product-list-store-selector")
     ) {
       setIsStoreDropdownOpen(false);
-      console.log("Selected Stores:", selectedStores);
+    }
 
-      if (selectedStores.length === 0) {
-        setProducts([]);
-      } else {
-        // onRefresh();
-      }
+    if (
+      isCategoryDropdownOpen &&
+      !event.target.closest(".product-list-category-selector")
+    ) {
+      setIsCategoryDropdownOpen(false);
+    }
+
+    if (
+      isStockDropdownOpen &&
+      !event.target.closest(".product-list-stock-selector")
+    ) {
+      setIsStockDropdownOpen(false);
     }
 
     if (
       isExportDropdownOpen &&
-      !event.target.closest(".buttonContainerExportProducts")
+      !event.target.closest(".product-list-export-button")
     ) {
       setIsExportDropdownOpen(false);
-      console.log("Selected Export Option:");
-    }
-    if (isLowStock && !event.target.closest(".buttonContainerLowStock")) {
-      setIsLowStockDropdownOpen(false);
-      // if (selectedStores.length === 0) {
-      //   setProducts([]);
-      // } else {
-      //   onRefresh();
-      // }
-    }
-    if (
-      isCategoryDropdownOpen &&
-      !event.target.closest(".buttonContainerFilterByCategory")
-    ) {
-      setIsCategoryDropdownOpen(false);
-      console.log("Selected Category Option:");
-      if (selectedCategories.length === 0) {
-        // setFilteredItems([]);
-        // setProducts([]);
-      } else {
-        // onRefresh();
-      }
     }
   };
 
@@ -484,113 +362,11 @@ const ProductListScreen = () => {
     };
   });
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        dateRangePickerRef.current &&
-        !dateRangePickerRef.current.contains(event.target)
-      ) {
-        setIsDatePickerOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dateRangePickerRef]);
-
-  // function handleItemClick(item) {
-  //   console.log("====================================");
-  //   console.log(item);
-  //   console.log("====================================");
-  //   // setModalProduct(item);
-  // }
-  const handleToggleDropdown = () => {
-    setShowDropdown((prev) => !prev);
-  };
-
-  const handleSignOut = () => {
-    NProgress.start(); // ✅ End progress bar
-
-    localStorage.removeItem("token");
-    window.location.href = "/"; // or navigate to login using React Router
-    NProgress.done(); // ✅ End progress bar
-  };
-  // Filter receipts based on the search term
-
-  const exportToPDF = (products, selectedStore) => {
-    const doc = new jsPDF();
-
-    // Date and Time formatting
-    const dateTime = new Date().toLocaleString();
-
-    // Set the title with store name
-    doc.text(`Product List for: ${selectedStore.storeName}`, 14, 10);
-    doc.text(`Exported on: ${dateTime}`, 14, 20);
-
-    autoTable(doc, {
-      startY: 30, // Adjust starting Y position
-      head: [["Product Name", "Category", "Price", "Cost", "Stock"]],
-      body: products.map((p) => [
-        p.productName,
-        p.category || "No Category",
-        Number(p.price).toFixed(2),
-        Number(p.cost).toFixed(2),
-        p.productType === "Weight"
-          ? Number(p.stock).toFixed(2)
-          : String(p.stock),
-      ]),
-    });
-
-    doc.save(`products_for_${selectedStore.storeName}_${dateTime}.pdf`);
-  };
-
-  const exportToCSV = (products, selectedStore) => {
-    const headers = ["Product Name", "Category", "Price", "Cost", "Stock"];
-    const rows = products.map((p) => [
-      `"${p.productName}"`,
-      `"${p.category || "No Category"}"`,
-      `"${Number(p.price).toFixed(2)}"`,
-      `"${Number(p.cost).toFixed(2)}"`,
-      `"${p.productType === "Weight" ? Number(p.stock).toFixed(2) : p.stock}"`,
-    ]);
-
-    // Date and Time formatting
-    const dateTime = new Date().toLocaleString();
-
-    // Create the CSV content
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [
-        [
-          `Product List for: ${selectedStore.storeName}`,
-          `Exported on: ${dateTime}`,
-        ],
-        headers,
-        ...rows,
-      ]
-        .map((e) => e.join(","))
-        .join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `products_for_${selectedStore.storeName}_${dateTime}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
   const handleItemClick = (item) => {
     if (!isSubscribedAdmin) {
       setShowSubscriptionModal(true);
       return;
     }
-    console.log(item);
-    
     navigate("/edit-products", { state: item });
   };
 
@@ -601,316 +377,436 @@ const ProductListScreen = () => {
     }
     navigate("/create-products");
   };
+
+  const getStockStatus = (stock, lowStockNotification) => {
+    const stockNum = Number(stock || 0);
+    const lowStockNum = Number(lowStockNotification || 0);
+    
+    if (stockNum <= 0) return { text: "Out of Stock", class: "product-list-stock-out" };
+    if (stockNum <= lowStockNum) return { text: "Low Stock", class: "product-list-stock-low" };
+    return { text: "In Stock", class: "product-list-stock-normal" };
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const dateTime = new Date().toLocaleString();
+
+    doc.text(`Product List`, 14, 10);
+    doc.text(`Exported on: ${dateTime}`, 14, 20);
+
+    autoTable(doc, {
+      startY: 30,
+      head: [["Product Name", "Category", "Price", "Cost", "Stock", "Status"]],
+      body: displayProducts.map((p) => [
+        p.productName,
+        p.category || "No Category",
+        `$${Number(p.price).toFixed(2)}`,
+        `$${Number(p.cost).toFixed(2)}`,
+        p.productType === "Weight" ? Number(p.stock).toFixed(2) : p.stock,
+        getStockStatus(p.stock, p.lowStockNotification).text
+      ]),
+    });
+
+    doc.save(`products_${dateTime.replace(/[/:]/g, '-')}.pdf`);
+    setIsExportDropdownOpen(false);
+  };
+
+  const exportToCSV = () => {
+    const headers = ["Product Name", "Category", "Price", "Cost", "Stock", "Status"];
+    const rows = displayProducts.map((p) => [
+      `"${p.productName}"`,
+      `"${p.category || "No Category"}"`,
+      `"$${Number(p.price).toFixed(2)}"`,
+      `"$${Number(p.cost).toFixed(2)}"`,
+      `"${p.productType === "Weight" ? Number(p.stock).toFixed(2) : p.stock}"`,
+      `"${getStockStatus(p.stock, p.lowStockNotification).text}"`
+    ]);
+
+    const dateTime = new Date().toLocaleString();
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [
+        [`Product List`, `Exported on: ${dateTime}`],
+        headers,
+        ...rows,
+      ]
+        .map((e) => e.join(","))
+        .join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `products_${dateTime.replace(/[/:]/g, '-')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setIsExportDropdownOpen(false);
+  };
+
   return (
-    <div className="mainContainerReceipts">
-      {showDropdown && (
-        <div className="dropdownMenu">
-          <button className="signOutButton" onClick={handleSignOut}>
-            Sign Out
-          </button>
-        </div>
-      )}
-      <div className="toolBarReceipts">
-        {isSidebarOpen ? (
-          <FaTimes className="sidebar-icon" onClick={toggleSidebar} />
-        ) : (
-          <FaBars className="sidebar-icon" onClick={toggleSidebar} />
-        )}
-        <span className="toolBarTitle">Products</span>
+    <div className="product-list-container">
+      <div className="product-list-sidebar-toggle-wrapper">
+        <button 
+          className="product-list-sidebar-toggle"
+          onClick={toggleSidebar}
+          style={{ left: isSidebarOpen ? '280px' : '80px' }}
+        >
+          {isSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
       </div>
+      
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-
-      <div className="buttonsContainerProducts">
-        {/* <div className="addProductsButtonContainer">
-          <button
-            className="addProductsButton"
-            onClick={() => {
-              console.log("add product");
-            }}
-          >
-            +
-          </button>
-        </div> */}
-        <div className="buttonContainerStoresProducts">
-          <button
-            className="inputButtonStore"
-            onClick={() => {
-              setIsStoreDropdownOpen(!isStoreDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsExportDropdownOpen(false);
-            }}
-          >
-            {selectedStores.length === 0
-              ? "Select Store"
-              : selectedStores.length === 1
-              ? selectedStores[0].storeName
-              : selectedStores.length === stores.length
-              ? "All Stores"
-              : selectedStores.map((s) => s.storeName).join(", ")}{" "}
-            <FaStore className="icon" color="grey" />
-          </button>
-          {isStoreDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => handleStoreSelect("All Stores")}
-              >
-                <div className="checkboxContainer">
-                  <input
-                    className="inputCheckBox"
-                    type="checkbox"
-                    checked={selectedStores.length === stores.length}
-                    readOnly
-                  />
-                </div>
-                <span className="storeName">All Stores</span>
-              </div>
-              {stores.map((store) => (
-                <div
-                  className="dropdownItem"
-                  key={store.storeId}
-                  onClick={() => handleStoreSelect(store)}
-                >
-                  <div className="checkboxContainer">
-                    <input
-                      className="inputCheckBox"
-                      type="checkbox"
-                      checked={selectedStores.some(
-                        (s) => s.storeId === store.storeId
-                      )}
-                      readOnly
-                    />
-                  </div>
-                  <span className="storeName">{store.storeName}</span>
-                </div>
-              ))}
+      
+      <div className={`product-list-content ${isSidebarOpen ? "product-list-content-shifted" : "product-list-content-collapsed"}`}>
+        {/* Toolbar */}
+        <div className="product-list-toolbar">
+          <div className="product-list-toolbar-content">
+            <h1 className="product-list-toolbar-title">Products</h1>
+            <div className="product-list-toolbar-subtitle">
+              Manage and track your product inventory
             </div>
-          )}
-        </div>
-
-        <div className="buttonContainerFilterByCategory">
-          <button
-            className="inputButtonStore"
-            onClick={() => {
-              setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
-              setIsStoreDropdownOpen(false);
-              setIsExportDropdownOpen(false);
-            }}
-          >
-            {selectedCategories.length === 0
-              ? "Select Category"
-              : selectedCategories.length === 1
-              ? selectedCategories[0].categoryName
-              : selectedCategories.length === categories.length
-              ? "All Categories"
-              : selectedCategories.map((s) => s.categoryName).join(", ")}{" "}
-            <FaFileAlt className="icon" color="grey" />
-          </button>
-          {isCategoryDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => handleCategorySelect("All Categories")}
-              >
-                <div className="checkboxContainer">
-                  <input
-                    className="inputCheckBox"
-                    type="checkbox"
-                    checked={selectedCategories.length === categories.length}
-                    readOnly
-                  />
-                </div>
-                <span className="storeName">All Categories</span>
-              </div>
-              {categories.map((category) => (
-                <div
-                  className="dropdownItem"
-                  key={category.categoryId}
-                  onClick={() => handleCategorySelect(category)}
-                >
-                  <div className="checkboxContainer">
-                    <input
-                      className="inputCheckBox"
-                      type="checkbox"
-                      checked={selectedCategories.some(
-                        (s) => s.categoryId === category.categoryId
-                      )}
-                      readOnly
-                    />
-                  </div>
-                  <span className="storeName">{category.categoryName}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="buttonContainerLowStock">
-          <button
-            className="inputButtonLowStock"
-            onClick={() => {
-              setIsLowStockDropdownOpen(!isLowStock);
-              setIsExportDropdownOpen(false);
-              setIsEmployeeDropdownOpen(false);
-              setIsStoreDropdownOpen(false);
-            }}
-          >
-            {selectStockOption === "" ? "All Items" : selectStockOption}{" "}
-            <FaChevronDown className="icon" color="grey" />
-          </button>
-          {isLowStock && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setSelectStockOption("All Items"); // Set the selected category
-                  setIsLowStockDropdownOpen(false);
-
-                  console.log("alllll");
-                }}
-              >
-                <span className="storeName">All Stock</span>
-              </div>
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setSelectStockOption("Low Stock"); // Set the selected category
-                  setIsLowStockDropdownOpen(false);
-
-                  console.log("low");
-                }}
-              >
-                <span className="storeName">Low Stock</span>
-              </div>
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setSelectStockOption("Out of Stock"); // Set the selected category
-
-                  setIsLowStockDropdownOpen(false);
-                  console.log("out");
-                }}
-              >
-                <span className="storeName">Out Of Stock</span>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="buttonContainerExportProducts">
-          <button
-            className="inputButtonExportProducts"
-            onClick={() => {
-              setIsExportDropdownOpen(!isExportDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsStoreDropdownOpen(false);
-            }}
-          >
-            Export
-            <FaDownload className="icon" color="grey" />
-          </button>
-          {isExportDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setIsExportDropdownOpen(false);
-                  exportToPDF(filteredItems, selectedStores[0]); // Pass selected store
-                }}
-              >
-                <span className="storeName">
-                  Download PDF{" "}
-                  <FaFilePdf color="red" style={{ marginRight: 8 }} />
-                </span>
-              </div>
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setIsExportDropdownOpen(false);
-                  exportToCSV(filteredItems, selectedStores[0]); // Pass selected store
-                }}
-              >
-                <span className="storeName">
-                  Download CSV{" "}
-                  <FaFileCsv color="green" style={{ marginRight: 8 }} />
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="productsContainerProducts">
-        {/* Search Input */}
-        <div className="searchBar">
-          <div className="createProductButtonContainer">
-            <button
-              className="createProductButton"
-              onClick={handleCreateProduct}
+          </div>
+          <div className="product-list-toolbar-actions">
+            <button 
+              className="product-list-refresh-btn"
+              onClick={onRefresh}
+              disabled={isRefreshing}
             >
-              <FaPlus className="icon" />
-              Create Product
+              <IoReload />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
-          <input
-            type="text"
-            placeholder="Search Product..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="searchInput"
-          />
-          {searchTerm && (
-            <button className="clearButton" onClick={() => setSearchTerm("")}>
-              ×
-            </button>
-          )}
         </div>
-        <div className="productsSubContainer">
-          <div className="productsHeader">
-            <div className="headerItem">Product Name</div>
-            <div className="headerItem">Category</div>
-            <div className="headerItem">Price </div>
-            <div className="headerItem">Cost </div>
-            <div className="headerItem">QTY</div>
+
+        {/* Control Panel */}
+        <div className="product-list-control-panel">
+          <div className="product-list-filter-controls">
+            <div className="product-list-store-selector">
+              <button 
+                className="product-list-filter-btn"
+                onClick={() => {
+                  setIsStoreDropdownOpen(!isStoreDropdownOpen);
+                  setIsCategoryDropdownOpen(false);
+                  setIsStockDropdownOpen(false);
+                  setIsExportDropdownOpen(false);
+                }}
+              >
+                <FaStore />
+                <span>
+                  {selectedStores.length === 0
+                    ? "Select Store"
+                    : selectedStores.length === 1
+                    ? selectedStores[0].storeName
+                    : selectedStores.length === stores.length
+                    ? "All Stores"
+                    : `${selectedStores.length} stores`}
+                </span>
+              </button>
+              
+              {isStoreDropdownOpen && (
+                <div className="product-list-dropdown">
+                  <div className="product-list-dropdown-header">
+                    <span>Select Stores</span>
+                    <button 
+                      className="product-list-dropdown-select-all"
+                      onClick={() => handleStoreSelect("All Stores")}
+                    >
+                      {selectedStores.length === stores.length ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <div className="product-list-dropdown-content">
+                    {stores.map((store) => (
+                      <div
+                        className="product-list-dropdown-item"
+                        key={store.storeId}
+                        onClick={() => handleStoreSelect(store)}
+                      >
+                        <div className="product-list-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedStores.some((s) => s.storeId === store.storeId)}
+                            readOnly
+                          />
+                          <div className="product-list-checkbox-custom"></div>
+                        </div>
+                        <span className="product-list-store-name">{store.storeName}</span>
+                        <span className="product-list-store-location">{store.location}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="product-list-category-selector">
+              <button 
+                className="product-list-filter-btn"
+                onClick={() => {
+                  setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
+                  setIsStoreDropdownOpen(false);
+                  setIsStockDropdownOpen(false);
+                  setIsExportDropdownOpen(false);
+                }}
+              >
+                <FaFileAlt />
+                <span>
+                  {selectedCategories.length === 0
+                    ? "Select Category"
+                    : selectedCategories.length === 1
+                    ? selectedCategories[0].categoryName
+                    : selectedCategories.length === categories.length
+                    ? "All Categories"
+                    : `${selectedCategories.length} categories`}
+                </span>
+              </button>
+              
+              {isCategoryDropdownOpen && (
+                <div className="product-list-dropdown">
+                  <div className="product-list-dropdown-header">
+                    <span>Select Categories</span>
+                    <button 
+                      className="product-list-dropdown-select-all"
+                      onClick={() => handleCategorySelect("All Categories")}
+                    >
+                      {selectedCategories.length === categories.length ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <div className="product-list-dropdown-content">
+                    {categories.map((category) => (
+                      <div
+                        className="product-list-dropdown-item"
+                        key={category.categoryId}
+                        onClick={() => handleCategorySelect(category)}
+                      >
+                        <div className="product-list-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.some(
+                              (s) => s.categoryId === category.categoryId
+                            )}
+                            readOnly
+                          />
+                          <div className="product-list-checkbox-custom"></div>
+                        </div>
+                        <span className="product-list-category-name">{category.categoryName}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="product-list-stock-selector">
+              <button 
+                className="product-list-filter-btn"
+                onClick={() => {
+                  setIsStockDropdownOpen(!isStockDropdownOpen);
+                  setIsStoreDropdownOpen(false);
+                  setIsCategoryDropdownOpen(false);
+                  setIsExportDropdownOpen(false);
+                }}
+              >
+                <FaFilter />
+                <span>{selectStockOption}</span>
+              </button>
+              
+              {isStockDropdownOpen && (
+                <div className="product-list-dropdown">
+                  <div className="product-list-dropdown-content">
+                    <div
+                      className="product-list-dropdown-item"
+                      onClick={() => {
+                        setSelectStockOption("All Items");
+                        setIsStockDropdownOpen(false);
+                      }}
+                    >
+                      <span className="product-list-store-name">All Items</span>
+                    </div>
+                    <div
+                      className="product-list-dropdown-item"
+                      onClick={() => {
+                        setSelectStockOption("Low Stock");
+                        setIsStockDropdownOpen(false);
+                      }}
+                    >
+                      <span className="product-list-store-name">Low Stock</span>
+                    </div>
+                    <div
+                      className="product-list-dropdown-item"
+                      onClick={() => {
+                        setSelectStockOption("Out of Stock");
+                        setIsStockDropdownOpen(false);
+                      }}
+                    >
+                      <span className="product-list-store-name">Out Of Stock</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="product-list-export-button">
+              <button 
+                className="product-list-filter-btn"
+                onClick={() => {
+                  setIsExportDropdownOpen(!isExportDropdownOpen);
+                  setIsStoreDropdownOpen(false);
+                  setIsCategoryDropdownOpen(false);
+                  setIsStockDropdownOpen(false);
+                }}
+              >
+                <FaDownload />
+                <span>Export</span>
+              </button>
+              
+              {isExportDropdownOpen && (
+                <div className="product-list-export-dropdown">
+                  <div 
+                    className="product-list-export-item"
+                    onClick={exportToPDF}
+                  >
+                    <FaFilePdf color="#ef4444" />
+                    <span>Download PDF</span>
+                  </div>
+                  <div 
+                    className="product-list-export-item"
+                    onClick={exportToCSV}
+                  >
+                    <FaFileCsv color="#10b981" />
+                    <span>Download CSV</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          {filteredItems.map((item, index) => {
-            return (
-              <ProductsListItem
-                key={index}
-                lowStockNotification={item.lowStockNotification}
-                itemName={item.productName}
-                category={item.category}
-                price={Number(item.price).toFixed(2)}
-                cost={Number(item.cost).toFixed(2)}
-                stock={
-                  item.productType === "Weight"
-                    ? Number(item.stock).toFixed(2)
-                    : item.stock
-                }
-                onClick={() => handleItemClick(item)}
-              />
-            );
-          })}
         </div>
+
+        {/* Search and Create Button */}
+        <div className="product-list-search-filter">
+            
+          <button 
+            className="product-list-create-btn"
+            onClick={handleCreateProduct}
+          >
+            <FaPlus />
+            Create Product
+          </button>
+          <div className="product-list-search-container">
+            <FaSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="product-list-search-input"
+              style={{ paddingLeft: '40px' }}
+            />
+            {searchTerm && (
+              <button 
+                className="product-list-search-clear"
+                onClick={() => setSearchTerm("")}
+              >
+                <FaTimesIcon />
+              </button>
+            )}
+          </div>
+        
+        </div>
+
+        {/* Table Container - Show loading or existing data */}
+        <div className="product-list-table-container">
+          <div className="product-list-table-header">
+            <h3>Product Details</h3>
+            <span className="product-list-table-count">
+              {isRefreshing ? 'Refreshing...' : 
+               hasInitialData ? `Showing ${displayProducts.length} of ${products.length} products` : 
+               'Loading products...'}
+            </span>
+          </div>
+          
+          <div className="product-list-table-wrapper">
+            <table className="product-list-table">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Cost</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayProducts.length > 0 ? (
+                  displayProducts.map((item, index) => {
+                    const stockStatus = getStockStatus(item.stock, item.lowStockNotification);
+                    const displayStock = item.productType === "Weight" 
+                      ? Number(item.stock).toFixed(2)
+                      : item.stock;
+                    
+                    return (
+                      <tr 
+                        key={`${item.productId}-${index}`} 
+                        className="product-list-table-row"
+                        onClick={() => handleItemClick(item)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <td className="product-list-table-cell">
+                          <span style={{ fontWeight: '500' }}>
+                            {item.productName}
+                          </span>
+                        </td>
+                        <td className="product-list-table-cell">
+                          {item.category || "No Category"}
+                        </td>
+                        <td className="product-list-table-cell">
+                          ${Number(item.price).toFixed(2)}
+                        </td>
+                        <td className="product-list-table-cell">
+                          ${Number(item.cost).toFixed(2)}
+                        </td>
+                        <td className="product-list-table-cell">
+                          {displayStock}
+                        </td>
+                        <td className="product-list-table-cell">
+                          <span className={`product-list-stock-status ${stockStatus.class}`}>
+                            {stockStatus.text}
+                          </span>
+                        </td>
+                     
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="product-list-empty-state">
+                      <FaBox className="product-list-empty-icon" />
+                      <h3 className="product-list-empty-title">
+                        {isRefreshing ? 'Refreshing products...' : 
+                         hasInitialData ? 'No Products Found' : 
+                         'Loading products...'}
+                      </h3>
+                      <p className="product-list-empty-description">
+                        {searchTerm ? `No products found for "${searchTerm}"` : 
+                         hasInitialData ? "No products available for the selected filters" :
+                         "Please wait while we load your products..."}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <RemainingTimeFooter />
       </div>
+      
       <SubscriptionModal
         isOpen={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
       />
-      {modalProduct &&
-        (() => {
-          // Compute the matching store before returning JSX
-          const matchedStore = filteredItems.find(
-            (product) => product.storeId === modalProduct.storeId
-          );
-          return (
-            <ReceiptModal
-              receipt={modalProduct}
-              store={matchedStore}
-              email={email}
-              onClose={() => setModalProduct(null)}
-            />
-          );
-        })()}
-      <RemainingTimeFooter />
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };

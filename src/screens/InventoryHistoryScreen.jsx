@@ -4,23 +4,19 @@ import {
   FaBars,
   FaTimes,
   FaStore,
-  FaUser,
-  FaArrowDown,
-  FaArrowUp,
   FaDownload,
-  FaUserCircle,
+  FaSearch,
+  FaTimes as FaTimesIcon,
+  FaFilter,
+  FaArrowLeft,
+  FaArrowRight,
+  FaCalendarAlt
 } from "react-icons/fa";
-import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { IoReload } from "react-icons/io5";
 import { DateRangePicker, defaultStaticRanges } from "react-date-range";
 import {
   startOfToday,
   endOfToday,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  endOfYear,
   subDays,
   addDays,
   subWeeks,
@@ -29,41 +25,29 @@ import {
   addMonths,
   subYears,
   addYears,
-  addHours,
 } from "date-fns";
 import enUS from "date-fns/locale/en-US";
 import "../Css/InventoryHistoryScreen.css";
-import "react-date-range/dist/styles.css"; // main style file
-import "react-date-range/dist/theme/default.css"; // theme css file
-import { IoCalendar } from "react-icons/io5";
-import { Bar } from "react-chartjs-2";
-import Chart from "chart.js/auto";
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";
-import { useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ReceiptModal from "../components/ReceiptModal";
-import ReceiptListItem from "../components/ReceiptListItem";
-import { jwtDecode } from "jwt-decode"; // Make sure this is imported
+import { jwtDecode } from "jwt-decode";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
-import InventoryListItem from "../components/InventoryListItem";
 import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
-import autoTable from "jspdf-autotable"; // ← import the function directly
+import autoTable from "jspdf-autotable";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
-const InventoryHistoryScreen = () => {
-  // const stores = ["Store 1", "Store 2", "Store 3"];
 
+const InventoryHistoryScreen = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedStores, setSelectedStores] = useState([]);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-  const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
-  const [selectedExportOption, setSelectedExportOption] = useState("");
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [stores, setStoreData] = useState([]);
-  const [selectedStoreName, setSelectedStoreName] = useState("");
   const [selectedStartDate, setSelectedStartDate] = useState(startOfToday());
   const [selectedEndDate, setSelectedEndDate] = useState(endOfToday());
   const [selectedOption, setSelectedOption] = useState("today");
@@ -71,24 +55,15 @@ const InventoryHistoryScreen = () => {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const dateRangePickerRef = useRef(null);
-  const location = useLocation();
-  const [receipts, setReceipts] = useState([]);
-  const [modalReceipt, setModalReceipt] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState("All Items");
-  const [selectedTypes, setSelectedTypes] = useState([]);
-
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [email, setEmail] = useState(null);
   const [inventoryUpdates, setInventoryUpdates] = useState([]);
   const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTypes, setSelectedTypes] = useState([]);
+  const [email, setEmail] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false); // State to control dropdown visibility
 
-  const [allReceipts, setAllReceipts] = useState([]);
   useEffect(() => {
-    const token = localStorage.getItem("token"); // Or sessionStorage if needed
-
+    const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Authentication token is missing.");
       return;
@@ -96,15 +71,12 @@ const InventoryHistoryScreen = () => {
 
     try {
       const decoded = jwtDecode(token);
-      setEmail(decoded.email); // Extract email from token
+      setEmail(decoded.email);
     } catch (error) {
       toast.error("Invalid authentication token.");
     }
   }, []);
 
-  console.log("====================================");
-  console.log(email);
-  console.log("====================================");
   useEffect(() => {
     if (selectedStores.length > 0) {
       onRefreshInventory(selectedOption, selectedStartDate, selectedEndDate);
@@ -114,12 +86,11 @@ const InventoryHistoryScreen = () => {
   useEffect(() => {
     setSelectedStores(stores);
   }, [selectedOption, stores]);
-  useEffect(() => {
-    console.log("Selected Option:", selectedOption);
-  }, [selectedOption]);
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
   useEffect(() => {
     if (email) {
       fetchStores();
@@ -129,8 +100,7 @@ const InventoryHistoryScreen = () => {
 
   const fetchStores = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -153,6 +123,10 @@ const InventoryHistoryScreen = () => {
 
       const data = await response.json();
       setStoreData(data || []);
+      
+      if (data.length > 0) {
+        setSelectedStores(data);
+      }
     } catch (error) {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
@@ -162,10 +136,10 @@ const InventoryHistoryScreen = () => {
       console.error("Error fetching stores:", error);
     }
   };
+
   const fetchInventoryUpdates = async (timeframe, startDate, endDate) => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -175,12 +149,9 @@ const InventoryHistoryScreen = () => {
       const userEmail = decoded.email;
       const userId = decoded.userId;
 
-      console.log("====================================");
-      console.log(timeframe, startDate, endDate);
-      console.log("====================================");
-      // Format the startDate and endDate as strings in ISO format
       const formattedStartDate = startDate;
       const formattedEndDate = endDate;
+      
       const response = await fetch(
         `https://nexuspos.onrender.com/api/inventoryRouter/${timeframe}?startDate=${formattedStartDate}&endDate=${formattedEndDate}&email=${encodeURIComponent(
           userEmail
@@ -188,33 +159,29 @@ const InventoryHistoryScreen = () => {
       );
 
       if (!response.ok) {
-        const errorMessage = await response.text(); // or response.json() if you return JSON errors
+        const errorMessage = await response.text();
         toast.error(`Error: ${"User not found or invalid email."}`);
+        return;
       }
 
       const responseData = await response.json();
-      console.log(`Inventory for ${timeframe}: ${startDate}:${endDate}`);
 
-      // Ensure the API response contains an array of inventory updates
       if (!Array.isArray(responseData.data)) {
         console.error("Invalid API response. Expected array:", responseData);
         throw new Error("Invalid API response");
       }
 
-      // Filter inventory updates based on userId
       const filteredUpdates = responseData.data.filter(
         (update) => update.userId === userId
       );
 
-      // Process in chunks
-      const CHUNK_SIZE = 400; // Adjust this based on your preferred chunk size
+      const CHUNK_SIZE = 400;
       const loadChunks = async (chunkIndex = 0) => {
         const start = chunkIndex * CHUNK_SIZE;
         const end = start + CHUNK_SIZE;
         const chunk = filteredUpdates.slice(start, end);
 
         if (chunk.length > 0) {
-          // Avoid duplicate data by ensuring only unique updates are appended
           setInventoryUpdates((prevUpdates) => {
             const uniqueUpdates = [
               ...prevUpdates,
@@ -228,15 +195,12 @@ const InventoryHistoryScreen = () => {
             return uniqueUpdates;
           });
 
-          // Load the next chunk after a short delay to avoid blocking the UI
           setTimeout(() => loadChunks(chunkIndex + 1), 50);
         }
       };
 
-      // Start loading chunks
-      setInventoryUpdates([]); // Clear existing data before appending
+      setInventoryUpdates([]);
       loadChunks();
-
       setLoading(false);
     } catch (error) {
       if (!navigator.onLine) {
@@ -247,12 +211,12 @@ const InventoryHistoryScreen = () => {
       console.error("Error fetching receipts:", error);
     }
   };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -267,10 +231,13 @@ const InventoryHistoryScreen = () => {
           userEmail
         )}`
       );
+      
       if (!response.ok) {
-        const errorMessage = await response.text(); // or response.json() if you return JSON errors
+        const errorMessage = await response.text();
         toast.error(`Error: ${"User not found or invalid email."}`);
+        return;
       }
+      
       const responseData = await response.json();
 
       const filteredProducts = responseData.data.filter(
@@ -281,10 +248,8 @@ const InventoryHistoryScreen = () => {
         a.productName.localeCompare(b.productName)
       );
 
-      // Clear previous products and set new ones
       setProducts([]);
 
-      // Process products in chunks
       const CHUNK_SIZE = 800;
       const loadChunks = (chunkIndex = 0) => {
         const start = chunkIndex * CHUNK_SIZE;
@@ -313,49 +278,38 @@ const InventoryHistoryScreen = () => {
       };
 
       loadChunks();
-
-      // Update `filteredItems` only if no filters are applied
-      // if (!isFilteringActive) {
-      //   setFilteredItems(filteredProducts);
-      // }
     } catch (error) {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
       } else {
         toast.error("An error occurred while fetching products.");
       }
-      console.error("Error fetching receipts:", error);
+      console.error("Error fetching products:", error);
     }
   };
+
   const onRefreshInventory = async (
     selectedOptionDate,
     selectedStartRange,
     selectedEndRange
   ) => {
-    NProgress.start(); // 🔵 Start progress bar
-
+    NProgress.start();
     setIsRefreshing(true);
-    await fetchInventoryUpdates(
-      selectedOptionDate,
-      selectedStartRange,
-      selectedEndRange
-    )
-      .then(() => {
-        NProgress.done(); // ✅ End progress bar
-        setIsRefreshing(false);
-      })
-      .catch((error) => {
-        console.error(error);
-        NProgress.done(); // ✅ End progress bar
-        setIsRefreshing(false);
-      });
+    
+    try {
+      await fetchInventoryUpdates(
+        selectedOptionDate,
+        selectedStartRange,
+        selectedEndRange
+      );
+    } catch (error) {
+      console.error(error);
+    } finally {
+      NProgress.done();
+      setIsRefreshing(false);
+    }
   };
-  const convertFirestoreTimestampToISO = (timestamp) => {
-    const date = new Date(
-      timestamp._seconds * 1000 + timestamp._nanoseconds / 1000000
-    );
-    return date.toISOString();
-  };
+
   const handleStoreSelect = (store) => {
     if (store === "All Stores") {
       if (selectedStores.length === stores.length) {
@@ -375,29 +329,27 @@ const InventoryHistoryScreen = () => {
   const handleClickOutside = (event) => {
     if (
       isStoreDropdownOpen &&
-      !event.target.closest(".buttonContainerStoresInventory")
+      !event.target.closest(".inventory-history-store-selector")
     ) {
       setIsStoreDropdownOpen(false);
-      console.log("Selected Stores:", selectedStores);
-
-      if (selectedStores.length === 0) {
-        setInventoryUpdates([]);
-      } else {
-        // onRefreshInventory(selectedOption, selectedStartDate, selectedEndDate);
-      }
     }
 
     if (
       isExportDropdownOpen &&
-      !event.target.closest(".buttonContainerExportInventory")
+      !event.target.closest(".inventory-history-export-selector")
     ) {
       setIsExportDropdownOpen(false);
-      console.log("Selected Export Option:");
     }
 
-    if (isDropdownVisible && !event.target.closest(".filterDropdown")) {
-      setIsDropdownVisible(false);
-      console.log("Selected Dropdown filter Option:");
+    if (
+      isFilterDropdownOpen &&
+      !event.target.closest(".inventory-history-filter-selector")
+    ) {
+      setIsFilterDropdownOpen(false);
+    }
+
+    if (isDatePickerOpen && !event.target.closest(".datePickerContainerInventory")) {
+      setIsDatePickerOpen(false);
     }
   };
 
@@ -432,9 +384,7 @@ const InventoryHistoryScreen = () => {
         range.range().startDate.getTime() === startDate.getTime() &&
         range.range().endDate.getTime() === endDate.getTime()
     );
-    console.log("====================================");
-    console.log(customStaticRanges);
-    console.log("====================================");
+
     if (selectedRange) {
       if (selectedRange.label === "Today") {
         setSelectedOption("today");
@@ -477,8 +427,8 @@ const InventoryHistoryScreen = () => {
     {
       label: "This Year",
       range: () => ({
-        startDate: new Date(new Date().getFullYear(), 0, 1), // January 1st of the current year
-        endDate: new Date(new Date().getFullYear(), 11, 31), // December 31st of the current year
+        startDate: new Date(new Date().getFullYear(), 0, 1),
+        endDate: new Date(new Date().getFullYear(), 11, 31),
       }),
       isSelected: () => selectedOption === "This Year",
     },
@@ -563,7 +513,6 @@ const InventoryHistoryScreen = () => {
         newEndDate = addDays(selectedEndDate, 1);
     }
 
-    // Check if newEndDate is beyond end of today
     if (selectedEndDate <= new Date()) {
       setSelectedStartDate(newStartDate);
       setSelectedEndDate(newEndDate);
@@ -571,32 +520,22 @@ const InventoryHistoryScreen = () => {
     }
   };
 
-  function handleItemClick(item) {
-    setModalReceipt(item);
-  }
-  const handleToggleDropdown = () => {
-    setShowDropdown((prev) => !prev);
-  };
-  const toggleFilterType = (type) => {
-    setSelectedTypes((prevSelected) => {
-      if (prevSelected.includes(type)) {
-        return prevSelected.filter((item) => item !== type); // Remove the type if it is already selected
+  const handleFilterSelect = (type) => {
+    if (type === "All Types") {
+      if (selectedTypes.length === 6) { // 6 filter types
+        setSelectedTypes([]);
       } else {
-        return [...prevSelected, type]; // Add the type if it is not selected
+        setSelectedTypes(['Sale', 'Add', 'Refund', 'Create', 'Override', 'Stock Count']);
       }
-    });
+    } else {
+      const exists = selectedTypes.includes(type);
+      const updatedTypes = exists
+        ? selectedTypes.filter((t) => t !== type)
+        : [...selectedTypes, type];
+      setSelectedTypes(updatedTypes);
+    }
   };
-  const handleSignOut = () => {
-    NProgress.start(); // ✅ End progress bar
 
-    localStorage.removeItem("token");
-    window.location.href = "/"; // or navigate to login using React Router
-    NProgress.done(); // ✅ End progress bar
-  };
-  const storeName =
-    selectedStores && selectedStores.length > 0
-      ? selectedStores[0].storeName
-      : "Store";
   const filteredInventory = useMemo(() => {
     return inventoryUpdates
       .filter((inventory) => {
@@ -613,14 +552,34 @@ const InventoryHistoryScreen = () => {
       .sort((a, b) => new Date(b.currentDate) - new Date(a.currentDate));
   }, [inventoryUpdates, searchTerm, selectedTypes]);
 
+  const getEditTypeClass = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'sale':
+        return 'inventory-history-edit-sale';
+      case 'add':
+        return 'inventory-history-edit-add';
+      case 'refund':
+        return 'inventory-history-edit-refund';
+      case 'create':
+        return 'inventory-history-edit-create';
+      case 'override':
+        return 'inventory-history-edit-override';
+      case 'stock count':
+        return 'inventory-history-edit-count';
+      default:
+        return '';
+    }
+  };
+
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
+    const storeName = selectedStores && selectedStores.length > 0
+      ? selectedStores[0].storeName
+      : "Store";
 
-    // Title
     doc.setFontSize(18);
     doc.text("Inventory History", 14, 20);
 
-    // Subtitle with date range and store name
     doc.setFontSize(12);
     doc.text(`Store: ${storeName}`, 14, 30);
     doc.text(
@@ -632,7 +591,6 @@ const InventoryHistoryScreen = () => {
       36
     );
 
-    // Table
     autoTable(doc, {
       startY: 45,
       head: [
@@ -662,14 +620,9 @@ const InventoryHistoryScreen = () => {
         const diffLabel =
           rawDifference > 0 ? `+${difference}` : `${difference}`;
 
-        // Get price and cost from products array
         const product = products.find((p) => p.productId === item.productId);
         const price = product?.price ?? "N/A";
         const cost = product?.cost ?? "N/A";
-
-        if (!product) {
-          console.log("No product found for item:", item);
-        }
 
         return [
           format(new Date(item.currentDate), "MMM d, yyyy - hh:mm:ss a"),
@@ -687,8 +640,11 @@ const InventoryHistoryScreen = () => {
 
     doc.save("inventory-history.pdf");
   };
+
   const handleDownloadCSV = () => {
-    console.log("Sample product:", products[0]);
+    const storeName = selectedStores && selectedStores.length > 0
+      ? selectedStores[0].storeName
+      : "Store";
 
     const header = [
       "Inventory History",
@@ -718,18 +674,7 @@ const InventoryHistoryScreen = () => {
         "MMM d, yyyy - hh:mm:ss a"
       );
 
-      // Get price and cost from products array
       const product = products.find((p) => p.productId === item.productId);
-      if (!product) {
-        console.warn("Product not found:", {
-          inventoryProductId: item.productId,
-          inventoryProductName: item.productName,
-          availableProductIds: products.map((p) => p.productId),
-        });
-      } else if (product.cost === undefined) {
-        console.warn("Product found but no cost:", product);
-      }
-
       const price = product?.price || 0;
       const cost = product?.cost || 0;
 
@@ -758,317 +703,373 @@ const InventoryHistoryScreen = () => {
   };
 
   return (
-    <div className="mainContainerInventory">
-      {showDropdown && (
-        <div className="dropdownMenu">
-          <button className="signOutButton" onClick={handleSignOut}>
-            Sign Out
-          </button>
-        </div>
-      )}
-      <div className="toolBarInventory">
-        {isSidebarOpen ? (
-          <FaTimes className="sidebar-icon" onClick={toggleSidebar} />
-        ) : (
-          <FaBars className="sidebar-icon" onClick={toggleSidebar} />
-        )}
-        <span className="toolBarTitle">Inventory</span>
+    <div className="inventory-history-container">
+      <div className="inventory-history-sidebar-toggle-wrapper">
+        <button 
+          className="inventory-history-sidebar-toggle"
+          onClick={toggleSidebar}
+          style={{ left: isSidebarOpen ? '280px' : '80px' }}
+        >
+          {isSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
       </div>
+      
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-
-      <div className="buttonsContainerInventory">
-        <div className="buttonContainerDateInventory">
-          <div className="iconContainerBack" onClick={handleBackClick}>
-            <IoIosArrowBack color="grey" className="iconLeft" />
+      
+      <div className={`inventory-history-content ${isSidebarOpen ? "inventory-history-content-shifted" : "inventory-history-content-collapsed"}`}>
+        {/* Toolbar */}
+        <div className="inventory-history-toolbar">
+          <div className="inventory-history-toolbar-content">
+            <h1 className="inventory-history-toolbar-title">Inventory History</h1>
+            <div className="inventory-history-toolbar-subtitle">
+              Track inventory changes and adjustments
+            </div>
           </div>
-
-          <button
-            className="inputButtonDate"
-            onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-          >
-            <IoCalendar color="grey" className="iconRiconCalenderight" />
-            {selectedStartDate && selectedEndDate
-              ? `${selectedStartDate.toLocaleDateString("en-US", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })} - ${selectedEndDate.toLocaleDateString("en-US", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}`
-              : "Select Date Range"}
-          </button>
-
-          <div className="iconContainerForward" onClick={handleForwardClick}>
-            <IoIosArrowForward color="grey" className="iconRight" />
+          <div className="inventory-history-toolbar-actions">
+            <button 
+              className="inventory-history-refresh-btn"
+              onClick={() => onRefreshInventory(selectedOption, selectedStartDate, selectedEndDate)}
+              disabled={isRefreshing}
+            >
+              <IoReload />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
           </div>
         </div>
 
-        {isDatePickerOpen && (
-          <div
-            ref={dateRangePickerRef}
-            className="datePickerContainerInventory"
-          >
-            <DateRangePicker
-              ranges={[
-                {
-                  startDate: selectedStartDate,
-                  endDate: selectedEndDate,
-                  key: "selection",
-                },
-              ]}
-              onChange={handleDateRangeChange}
-              moveRangeOnFirstSelection={true}
-              months={2}
-              direction="horizontal"
-              locale={enUS}
-              staticRanges={customStaticRanges}
-            />
-          </div>
-        )}
-        <div className="buttonContainerStoresInventory">
-          <button
-            className="inputButtonStore"
-            onClick={() => {
-              setIsStoreDropdownOpen(!isStoreDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsExportDropdownOpen(false);
-            }}
-          >
-            {selectedStores.length === 0
-              ? "Select Store"
-              : selectedStores.length === 1
-              ? selectedStores[0].storeName
-              : selectedStores.length === stores.length
-              ? "All Stores"
-              : selectedStores.map((s) => s.storeName).join(", ")}{" "}
-            <FaStore className="icon" color="grey" />
-          </button>
-          {isStoreDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => handleStoreSelect("All Stores")}
+        {/* Control Panel */}
+        <div className="inventory-history-control-panel">
+          <div className="inventory-history-filter-controls">
+          
+            <div className="inventory-history-date-selector">
+                            <div className="inventory-history-date-nav">
+
+               <button 
+                  className="inventory-history-date-nav-btn"
+                  onClick={handleBackClick}
+                >
+                  <FaArrowLeft />
+                </button>
+                </div>
+              <button 
+                className="inventory-history-date-btn"
+                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
               >
-                <div className="checkboxContainer">
-                  <input
-                    className="inputCheckBox"
-                    type="checkbox"
-                    checked={selectedStores.length === stores.length}
-                    readOnly
+                <FaCalendarAlt />
+                <span>
+                  {selectedStartDate && selectedEndDate
+                    ? `${format(selectedStartDate, "MMM d, yyyy")} - ${format(selectedEndDate, "MMM d, yyyy")}`
+                    : "Select Date Range"}
+                </span>
+              </button>
+              <div className="inventory-history-date-nav">
+               
+                <button 
+                  className="inventory-history-date-nav-btn"
+                  onClick={handleForwardClick}
+                >
+                  <FaArrowRight />
+                </button>
+              </div>
+              
+              {isDatePickerOpen && (
+                <div
+                  ref={dateRangePickerRef}
+                  className="datePickerContainerInventory"
+                >
+                  <DateRangePicker
+                    ranges={[
+                      {
+                        startDate: selectedStartDate,
+                        endDate: selectedEndDate,
+                        key: "selection",
+                      },
+                    ]}
+                    onChange={handleDateRangeChange}
+                    moveRangeOnFirstSelection={true}
+                    months={2}
+                    direction="horizontal"
+                    locale={enUS}
+                    staticRanges={customStaticRanges}
                   />
                 </div>
-                <span className="storeName">All Stores</span>
-              </div>
-              {stores.map((store) => (
-                <div
-                  className="dropdownItem"
-                  key={store.storeId}
-                  onClick={() => handleStoreSelect(store)}
-                >
-                  <div className="checkboxContainer">
-                    <input
-                      className="inputCheckBox"
-                      type="checkbox"
-                      checked={selectedStores.some(
-                        (s) => s.storeId === store.storeId
-                      )}
-                      readOnly
-                    />
+              )}
+            </div>
+  <div className="inventory-history-store-selector">
+              <button 
+                className="inventory-history-filter-btn"
+                onClick={() => {
+                  setIsStoreDropdownOpen(!isStoreDropdownOpen);
+                  setIsExportDropdownOpen(false);
+                  setIsFilterDropdownOpen(false);
+                }}
+              >
+                <FaStore />
+                <span>
+                  {selectedStores.length === 0
+                    ? "Select Store"
+                    : selectedStores.length === 1
+                    ? selectedStores[0].storeName
+                    : selectedStores.length === stores.length
+                    ? "All Stores"
+                    : `${selectedStores.length} stores`}
+                </span>
+              </button>
+              
+              {isStoreDropdownOpen && (
+                <div className="inventory-history-dropdown">
+                  <div className="inventory-history-dropdown-header">
+                    <span>Select Stores</span>
+                    <button 
+                      className="inventory-history-dropdown-select-all"
+                      onClick={() => handleStoreSelect("All Stores")}
+                    >
+                      {selectedStores.length === stores.length ? "Deselect All" : "Select All"}
+                    </button>
                   </div>
-                  <span className="storeName">{store.storeName}</span>
+                  <div className="inventory-history-dropdown-content">
+                    {stores.map((store) => (
+                      <div
+                        className="inventory-history-dropdown-item"
+                        key={store.storeId}
+                        onClick={() => handleStoreSelect(store)}
+                      >
+                        <div className="inventory-history-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedStores.some((s) => s.storeId === store.storeId)}
+                            readOnly
+                          />
+                          <div className="inventory-history-checkbox-custom"></div>
+                        </div>
+                        <span className="inventory-history-store-name">{store.storeName}</span>
+                        <span className="inventory-history-store-location">{store.location}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="buttonContainerExportInventory">
-          <button
-            className="inputButtonExportInventory"
-            onClick={() => {
-              setIsExportDropdownOpen(!isExportDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsStoreDropdownOpen(false);
-            }}
-          >
-            Export
-            <FaDownload className="icon" color="grey" />
-          </button>
-          {isExportDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
+            <div className="inventory-history-filter-selector">
+              <button 
+                className="inventory-history-filter-btn"
                 onClick={() => {
-                  handleDownloadPDF();
+                  setIsFilterDropdownOpen(!isFilterDropdownOpen);
+                  setIsStoreDropdownOpen(false);
                   setIsExportDropdownOpen(false);
-
-                  console.log("PDF");
                 }}
               >
-                <span className="storeName">
-                  Download PDF{" "}
-                  <FaFilePdf color="red" style={{ marginRight: 8 }} />
-                </span>{" "}
-              </div>
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  handleDownloadCSV();
+                <FaFilter />
+                <span>
+                  {selectedTypes.length === 0
+                    ? "Filter by Type"
+                    : selectedTypes.length === 6
+                    ? "All Types"
+                    : `${selectedTypes.length} types`}
+                </span>
+              </button>
+              
+              {isFilterDropdownOpen && (
+                <div className="inventory-history-dropdown">
+                  <div className="inventory-history-dropdown-header">
+                    <span>Filter by Edit Type</span>
+                    <button 
+                      className="inventory-history-dropdown-select-all"
+                      onClick={() => handleFilterSelect("All Types")}
+                    >
+                      {selectedTypes.length === 6 ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <div className="inventory-history-dropdown-content">
+                    {['Sale', 'Add', 'Refund', 'Create', 'Override', 'Stock Count'].map((type) => (
+                      <div
+                        className="inventory-history-dropdown-item"
+                        key={type}
+                        onClick={() => handleFilterSelect(type)}
+                      >
+                        <div className="inventory-history-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedTypes.includes(type)}
+                            readOnly
+                          />
+                          <div className="inventory-history-checkbox-custom"></div>
+                        </div>
+                        <span className="inventory-history-filter-name">{type}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
-                  setIsExportDropdownOpen(false);
-                  console.log("PDF");
+            <div className="inventory-history-export-selector">
+              <button 
+                className="inventory-history-filter-btn"
+                onClick={() => {
+                  setIsExportDropdownOpen(!isExportDropdownOpen);
+                  setIsStoreDropdownOpen(false);
+                  setIsFilterDropdownOpen(false);
                 }}
               >
-                <span className="storeName">
-                  Download PDF{" "}
-                  <FaFileCsv color="green" style={{ marginRight: 8 }} />
-                </span>{" "}
-              </div>
+                <FaDownload />
+                <span>Export</span>
+              </button>
+              
+              {isExportDropdownOpen && (
+                <div className="inventory-history-export-dropdown">
+                  <div 
+                    className="inventory-history-export-item"
+                    onClick={handleDownloadPDF}
+                  >
+                    <FaFilePdf color="#ef4444" />
+                    <span>Download PDF</span>
+                  </div>
+                  <div 
+                    className="inventory-history-export-item"
+                    onClick={handleDownloadCSV}
+                  >
+                    <FaFileCsv color="#10b981" />
+                    <span>Download CSV</span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
 
-      <div className="InventoryContainerInventory">
-        {/* Search Input */}
-        <div className="searchBarInventory">
-          <div className="searchInputWrapperInventory">
+        {/* Search Bar */}
+        <div className="inventory-history-search-filter">
+          <div className="inventory-history-search-container">
+            <FaSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
-              placeholder="Search Product..."
+              placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="searchInput"
+              className="inventory-history-search-input"
+              style={{ paddingLeft: '40px' }}
             />
             {searchTerm && (
-              <button className="clearButton" onClick={() => setSearchTerm("")}>
-                ×
+              <button 
+                className="inventory-history-search-clear"
+                onClick={() => setSearchTerm("")}
+              >
+                <FaTimesIcon />
               </button>
             )}
           </div>
-          {/* Filter Dropdown */}
-          <div className="filterContainer">
-            {/* Button to toggle the visibility of the filter dropdown */}
-            <button
-              className="filteringbutton"
-              onClick={() => setIsDropdownVisible(!isDropdownVisible)}
-            >
-              {isDropdownVisible ? "Hide Filters" : "Show Filters"}
-              <FaArrowDown color="grey" size={10} />
-            </button>
+        </div>
 
-            {/* Dropdown container */}
-            <div
-              className={`filterDropdown ${isDropdownVisible ? "show" : ""}`}
-            >
-              <label>
-                <input
-                  type="checkbox"
-                  value="Sale"
-                  checked={selectedTypes.includes("Sale")}
-                  onChange={(e) => toggleFilterType(e.target.value)}
-                />
-                Sale
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  value="Add"
-                  checked={selectedTypes.includes("Add")}
-                  onChange={(e) => toggleFilterType(e.target.value)}
-                />
-                Add
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  value="Refund"
-                  checked={selectedTypes.includes("Refund")}
-                  onChange={(e) => toggleFilterType(e.target.value)}
-                />
-                Refund
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  value="Create"
-                  checked={selectedTypes.includes("Create")}
-                  onChange={(e) => toggleFilterType(e.target.value)}
-                />
-                Create
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  value="Override"
-                  checked={selectedTypes.includes("Override")}
-                  onChange={(e) => toggleFilterType(e.target.value)}
-                />
-                Override
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  value="Stock Count"
-                  checked={selectedTypes.includes("Stock Count")}
-                  onChange={(e) => toggleFilterType(e.target.value)}
-                />
-                Stock Count
-              </label>
-            </div>
+        {/* Table Container */}
+        <div className="inventory-history-table-container">
+          <div className="inventory-history-table-header">
+            <h3>Inventory History Details</h3>
+            <span className="inventory-history-table-count">
+              {isRefreshing ? 'Refreshing...' : 
+               filteredInventory.length > 0 ? `Showing ${filteredInventory.length} records` : 
+               loading ? 'Loading...' : 'No records found'}
+            </span>
+          </div>
+          
+          <div className="inventory-history-table-wrapper">
+            <table className="inventory-history-table">
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Product Name</th>
+                  <th>Edited By</th>
+                  <th>Type of Edit</th>
+                  <th>Stock Before</th>
+                  <th>Adjustment</th>
+                  <th>Stock After</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredInventory.length > 0 ? (
+                  filteredInventory.map((item, index) => {
+                    const matchedStore = stores.find(
+                      (store) => store.storeId === item.storeId
+                    );
+                    const formattedStockBefore =
+                      item.productType === "Weight" || item.productType === ""
+                        ? parseFloat(item.stockBefore).toFixed(2)
+                        : parseFloat(item.stockBefore);
+                    const formattedStockAfter =
+                      item.productType === "Weight" || item.productType === ""
+                        ? parseFloat(item.stockAfter).toFixed(2)
+                        : parseFloat(item.stockAfter);
+                    const difference = formattedStockAfter - formattedStockBefore;
+                    
+                    return (
+                      <tr 
+                        key={`${item.id || item.productId}-${index}`} 
+                        className="inventory-history-table-row"
+                      >
+                        <td className="inventory-history-table-cell">
+                          {format(new Date(item.currentDate), "MMM d, yyyy - hh:mm a")}
+                        </td>
+                        <td className="inventory-history-table-cell">
+                          <span style={{ fontWeight: '500' }}>
+                            {item.productName || item.itemName}
+                          </span>
+                         
+                        </td>
+                        <td className="inventory-history-table-cell">
+                          {item.createdBy}
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>
+                            {item.roleOfEditor}
+                          </div>
+                        </td>
+                        <td className="inventory-history-table-cell">
+                          <span className={`inventory-history-edit-badge ${getEditTypeClass(item.typeOfEdit)}`}>
+                            {item.typeOfEdit || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="inventory-history-table-cell">
+                          {formattedStockBefore}
+                        </td>
+                        <td className="inventory-history-table-cell">
+                          <span className={`inventory-history-adjustment ${
+                            difference >= 0 ? 'inventory-history-adjustment-positive' : 'inventory-history-adjustment-negative'
+                          }`}>
+                            {difference >= 0 ? `+${difference.toFixed(2)}` : `${difference.toFixed(2)}`}
+                          </span>
+                        </td>
+                        <td className="inventory-history-table-cell">
+                          {formattedStockAfter}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="inventory-history-empty-state">
+                      <div className="inventory-history-empty-icon">
+                        <FaTimes />
+                      </div>
+                      <h3 className="inventory-history-empty-title">
+                        {loading ? 'Loading inventory history...' : 
+                         searchTerm ? `No results for "${searchTerm}"` : 
+                         'No Inventory Records Found'}
+                      </h3>
+                      <p className="inventory-history-empty-description">
+                        {searchTerm ? 'Try adjusting your search or filters' :
+                         'No inventory changes found for the selected period and filters'}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-        <div className="InventorySubContainer">
-          <div className="inventoryHeader">
-            <div className="headerItem">Date</div>
-            <div className="headerItem">Product Name</div>
-            <div className="headerItem">Edited By</div>
-            <div className="headerItem">Type of Edit</div>
-            <div className="headerItem">Stock Before</div>
-            <div className="headerItem">Adjustment</div>
-            <div className="headerItem">Stock After</div>
-          </div>
-          {filteredInventory.map((item, index) => {
-            const matchedStore = stores.find(
-              (store) => store.storeId === item.storeId
-            );
-            const formattedStockBefore =
-              item.productType === "Weight" || item.productType === ""
-                ? parseFloat(item.stockBefore).toFixed(2)
-                : parseFloat(item.stockBefore);
-            const formattedStockAfter =
-              item.productType === "Weight" || item.productType === ""
-                ? parseFloat(item.stockAfter).toFixed(2)
-                : parseFloat(item.stockAfter);
-            const difference = formattedStockAfter - formattedStockBefore;
-            const differenceColor = difference < 0 ? "red" : "green";
-
-            return (
-              <InventoryListItem
-                key={index}
-                itemName={item.productName}
-                date={item.currentDate}
-                storeName={matchedStore?.storeName || "Unknown Store"}
-                stockBefore={formattedStockBefore}
-                stockAfter={formattedStockAfter}
-                difference={difference}
-                productType={item.productType}
-                createdBy={item.createdBy}
-                roleofeditor={item.roleOfEditor}
-                typeofedit={item.typeOfEdit}
-                differenceColor={differenceColor}
-                totalSales={Number(item.totalAmountUsd * item.rate).toFixed(2)}
-                onClick={() => handleItemClick(item)}
-              />
-            );
-          })}
-        </div>
+        
+        <RemainingTimeFooter />
       </div>
-      <RemainingTimeFooter />
-
-      <ToastContainer position="top-right" autoClose={3000} />
+      
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };

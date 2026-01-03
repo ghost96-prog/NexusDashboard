@@ -5,6 +5,8 @@ import {
   FaListAlt,
   FaChartPie,
   FaSignOutAlt,
+  FaBars,
+  FaTimes
 } from "react-icons/fa";
 import "../Css/Sidebar.css";
 import { FaChartColumn } from "react-icons/fa6";
@@ -13,8 +15,9 @@ import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
+import { FiChevronRight, FiChevronLeft } from "react-icons/fi";
 
-const Sidebar = ({ isOpen }) => {
+const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [clickedItem, setClickedItem] = useState(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -25,6 +28,7 @@ const Sidebar = ({ isOpen }) => {
   const timeoutRef = useRef(null);
   const [email, setEmail] = useState(null);
   const [companyName, setCompanyName] = useState(null);
+  const [userInitial, setUserInitial] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -36,12 +40,14 @@ const Sidebar = ({ isOpen }) => {
     try {
       const decoded = jwtDecode(token);
       console.log(decoded);
-      setEmail(decoded.email || "user@example.com");
-      // You can set company name from token or use default
+      const userEmail = decoded.email || "user@example.com";
+      setEmail(userEmail);
+      setUserInitial(userEmail.charAt(0).toUpperCase());
       setCompanyName(decoded.companyName || "COMPANY NAME");
     } catch (error) {
       console.error("Error decoding token:", error);
       setEmail("user@example.com");
+      setUserInitial("U");
       setCompanyName("COMPANY NAME");
     }
   }, []);
@@ -50,10 +56,10 @@ const Sidebar = ({ isOpen }) => {
     NProgress.start();
 
     // Clear all auth related data
-// Remove specific items
-localStorage.removeItem("token");
-localStorage.removeItem("inventoryCounts");
-localStorage.removeItem("userData");
+    localStorage.removeItem("token");
+    localStorage.removeItem("inventoryCounts");
+    localStorage.removeItem("userData");
+    
     // Reset toast counters
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith("toastCounter_")) {
@@ -68,7 +74,7 @@ localStorage.removeItem("userData");
     setTimeout(() => {
       NProgress.done();
       navigate("/loginBackOffice");
-      window.location.reload(); // Optional: to ensure clean state
+      window.location.reload();
     }, 300);
   };
 
@@ -83,7 +89,7 @@ localStorage.removeItem("userData");
       setClickedItem(null);
     }
 
-    const itemRect = event.target.closest(".listItem").getBoundingClientRect();
+    const itemRect = event.target.closest(".sidebar-list-item").getBoundingClientRect();
     setHoveredItem({ index, top: itemRect.top, left: itemRect.right });
     clearTimeout(timeoutRef.current);
   };
@@ -112,7 +118,7 @@ localStorage.removeItem("userData");
     } else {
       setClickedItem(index);
       const itemRect = event.target
-        .closest(".listItem")
+        .closest(".sidebar-list-item")
         .getBoundingClientRect();
       setHoveredItem({ index, top: itemRect.top, left: itemRect.right });
     }
@@ -127,7 +133,6 @@ localStorage.removeItem("userData");
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Close submenus when clicking outside
       if (submenuRef.current && !submenuRef.current.contains(event.target)) {
         if (!showLogoutModal) {
           setHoveredItem(null);
@@ -135,7 +140,6 @@ localStorage.removeItem("userData");
         }
       }
       
-      // Close logout modal when clicking outside
       if (showLogoutModal && logoutModalRef.current && !logoutModalRef.current.contains(event.target)) {
         setShowLogoutModal(false);
         setHoveredItem(null);
@@ -153,8 +157,10 @@ localStorage.removeItem("userData");
   // Menu items configuration
   const menuItems = [
     {
-      icon: <FaChartLine className="icon" size={15} color="darkblue" />,
+      icon: <FaChartLine className="sidebar-icon" size={18} color="#6366f1"/>,
       label: "Reports",
+      color: "#6366f1",
+      gradient: "linear-gradient(135deg, #6366f1, #8b5cf6)",
       subItems: [
         { label: "Sales Summary", path: "/salesSummery" },
         { label: "Top Selling Items", path: "/soldItems" },
@@ -164,26 +170,35 @@ localStorage.removeItem("userData");
       ],
     },
     {
-      icon: <FaListAlt className="icon" size={15} color="green" />,
+      icon: <FaListAlt className="sidebar-icon" size={18} color="#10b981"/>,
       label: "Items List",
+      color: "#10b981",
+      gradient: "linear-gradient(135deg, #10b981, #34d399)",
       subItems: [{ label: "Products", path: "/products" }],
     },
     {
-      icon: <FaChartColumn className="icon" size={15} color="purple" />,
-      label: "Inventory Management",
+      icon: <FaChartColumn className="sidebar-icon" size={18} color="#8b5cf6"/>,
+      label: "Inventory",
+      color: "#8b5cf6",
+      gradient: "linear-gradient(135deg, #8b5cf6, #a78bfa)",
       subItems: [
         { label: "Inventory History", path: "/inventory" },
         { label: "Inventory Value", path: "/inventory-value" },
-        { label: "Inventory Counts", path: "/counts" },],
+        { label: "Inventory Counts", path: "/counts" },
+      ],
     },
     {
-      icon: <FaChartPie className="icon" size={15} color="red" />,
+      icon: <FaChartPie className="sidebar-icon" size={18} color="#f59e0b"/>,
       label: "Shifts",
+      color: "#f59e0b",
+      gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)",
       subItems: [{ label: "Shifts Reports", path: "/shifts" }],
     },
     {
-      icon: <FaSignOutAlt className="icon" size={15} color="#dc3545" />,
+      icon: <FaSignOutAlt className="sidebar-icon" size={18} color="#ef4444"/>,
       label: "Sign Out",
+      color: "#ef4444",
+      gradient: "linear-gradient(135deg, #ef4444, #f87171)",
       isSignOut: true,
     },
   ];
@@ -199,66 +214,111 @@ localStorage.removeItem("userData");
     <>
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="modal-overlay">
-          <div className="logout-modal" ref={logoutModalRef}>
-            <div className="logout-modal-header">
-              <span className="logout-modal-icon">🚪</span>
-              <h3 className="logout-modal-title">Confirm Logout</h3>
+        <div className="sidebar-modal-overlay">
+          <div className="sidebar-logout-modal" ref={logoutModalRef}>
+            <div className="sidebar-logout-modal-header">
+              <div className="sidebar-logout-modal-icon">
+                <FaSignOutAlt size={24} />
+              </div>
+              <h3 className="sidebar-logout-modal-title">Confirm Logout</h3>
             </div>
-            <div className="logout-modal-content">
-              <p className="logout-modal-message">
-                Are you sure you want to logout?
+            <div className="sidebar-logout-modal-content">
+              <p className="sidebar-logout-modal-message">
+                Are you sure you want to logout from your account?
               </p>
-              <div className="logout-modal-user">
-                <span className="user-email">{email || "user@example.com"}</span>
-                <span className="company-name">{companyName || "COMPANY NAME"}</span>
+              <div className="sidebar-logout-modal-user">
+                <div className="sidebar-user-avatar">
+                  {userInitial}
+                </div>
+                <div className="sidebar-user-info">
+                  <span className="sidebar-user-email">{email || "user@example.com"}</span>
+                  <span className="sidebar-company-name">{companyName || "COMPANY NAME"}</span>
+                </div>
               </div>
             </div>
-            <div className="logout-modal-actions">
+            <div className="sidebar-logout-modal-actions">
               <button 
-                className="logout-modal-cancel"
+                className="sidebar-logout-modal-cancel"
                 onClick={handleLogoutCancel}
               >
                 Cancel
               </button>
               <button 
-                className="logout-modal-confirm"
+                className="sidebar-logout-modal-confirm"
                 onClick={handleLogoutConfirm}
               >
-                Yes, Logout
+                Logout
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div className={`sidebar ${isOpen ? "open" : "collapsed"}`}>
+      <div className={`sidebar ${isOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
+        {/* Hamburger Menu Toggle */}
+        {/* <div className="sidebar-toggle-container">
+          <button 
+            className="sidebar-toggle-btn"
+            onClick={toggleSidebar}
+          >
+            {isOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        </div> */}
+        
         <div className="sidebar-header">
-          <FaUserCircle className="user" />
-          {isOpen && <span className="userEmailside">{email || "user@example.com"}</span>}
+          <div className="sidebar-user-avatar-container">
+            <div className="sidebar-user-avatar-large">
+              {userInitial}
+            </div>
+            {isOpen && (
+              <div className="sidebar-user-info">
+                <span className="sidebar-user-email">{email || "user@example.com"}</span>
+                <span className="sidebar-user-role">Admin</span>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="line"></div>
-        <div className="listItemsContainer">
-          <ul className="unorderedListContainer">
+        
+        <div className="sidebar-divider"></div>
+        
+        <div className="sidebar-nav">
+          <ul className="sidebar-nav-list">
             {menuItems.map((item, index) => (
               <li
                 key={index}
-                className={`listItem ${clickedItem === index ? "active" : ""}`}
+                className={`sidebar-list-item ${clickedItem === index ? "sidebar-item-active" : ""}`}
+                style={{ '--item-color': item.color }}
                 onMouseEnter={(e) => handleMouseEnter(index, e)}
                 onMouseLeave={handleMouseLeave}
                 onClick={(e) => handleItemClick(index, e)}
               >
-                {item.icon}
-                {isOpen && <span className="labelside">{item.label}</span>}
-                {isOpen && item.subItems && (
-                  <span className="arrow-icon">
-                    {shouldShowSubmenu(index) ? "▲" : "▼"}
-                  </span>
+                <div className="sidebar-item-icon">
+                  {item.icon}
+                </div>
+                {isOpen && (
+                  <>
+                    <span className="sidebar-item-label">{item.label}</span>
+                    {item.subItems && (
+                      <span className="sidebar-item-arrow">
+                        {shouldShowSubmenu(index) ? <FiChevronLeft /> : <FiChevronRight />}
+                      </span>
+                    )}
+                  </>
                 )}
               </li>
             ))}
           </ul>
         </div>
+        
+        {isOpen && (
+          <div className="sidebar-footer">
+            <div className="sidebar-version">v2.0.1</div>
+            <div className="sidebar-status">
+              <div className="sidebar-status-dot"></div>
+              <span>Online</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Submenus for regular items */}
@@ -268,7 +328,7 @@ localStorage.removeItem("userData");
           !item.isSignOut && (
             <div
               key={`submenu-${index}`}
-              className="subRoutes"
+              className="sidebar-submenu"
               ref={submenuRef}
               style={{
                 top: hoveredItem?.top,
@@ -281,12 +341,19 @@ localStorage.removeItem("userData");
                 }
               }}
             >
+              <div className="sidebar-submenu-header" style={{ background: item.gradient }}>
+                <span className="sidebar-submenu-title">{item.label}</span>
+                {/* <div className="sidebar-submenu-icon">
+                  {item.icon}
+                </div> */}
+              </div>
               {item.subItems.map((subItem, subIndex) => (
                 <div
                   key={subIndex}
-                  className="subItem"
+                  className="sidebar-submenu-item"
                   onClick={() => handleSubItemClick(subItem.path)}
                 >
+                  <div className="sidebar-submenu-item-dot"></div>
                   {subItem.label}
                 </div>
               ))}

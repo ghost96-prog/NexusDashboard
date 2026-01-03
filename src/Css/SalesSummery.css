@@ -1,654 +1,814 @@
-/* Apply to entire app */
-* {
-  font-family: 'Poppins', sans-serif;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Sales Summary Container */
+.sales-summery-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow-x: hidden;
+  position: relative;
 }
 
-/* Or be more specific */
-body {
-  font-family: 'Poppins', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Sidebar Toggle Button */
+.sales-summery-sidebar-toggle-wrapper {
+  position: fixed;
+  top: 16px;
+  z-index: 1001;
 }
 
-
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-}
-.mainContainerSalesSummery {
-  background-color: aliceblue;
-  min-height: 130vh;
-  width: 100%;
-  flex-direction: column;
+.sales-summery-sidebar-toggle {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+}
+
+.sales-summery-sidebar-toggle:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+  transform: scale(1.05);
+}
+
+/* Toolbar Styling */
+.sales-summery-toolbar {
+  width: 100%;
+  height: 70px;
+  background: white;
+  position: relative;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  border-radius: 12px;
+}
+
+.sales-summery-toolbar-content {
+  flex: 1;
+}
+
+.sales-summery-toolbar-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.sales-summery-toolbar-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.sales-summery-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sales-summery-refresh-btn {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sales-summery-refresh-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.sales-summery-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Main Content Area */
+.sales-summery-content {
+  margin-top: 0;
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sales-summery-content-shifted {
+  margin-left: 280px;
+}
+
+.sales-summery-content-collapsed {
+  margin-left: 80px;
+}
+
+@media (max-width: 768px) {
+  .sales-summery-content-shifted,
+  .sales-summery-content-collapsed {
+    margin-left: 0;
+  }
+  
+  .sales-summery-sidebar-toggle {
+    left: 16px !important;
+  }
+}
+
+/* Control Panel */
+.sales-summery-control-panel {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sales-summery-date-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.sales-summery-date-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.sales-summery-nav-btn {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.sales-summery-nav-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.sales-summery-date-range-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  justify-content: center;
+}
+
+.sales-summery-date-range-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.sales-summery-datepicker-modal {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+}
+
+.sales-summery-filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sales-summery-store-selector,
+.sales-summery-export-button {
+  position: relative;
+}
+
+.sales-summery-filter-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.sales-summery-filter-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+/* Dropdown Styles */
+.sales-summery-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 240px;
+  border: 1px solid #e2e8f0;
   overflow: hidden;
 }
 
-.toolBar {
-  width: 100%;
-  height: 50px;
-  padding: 5px 10px;
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
-  color: white;
-  position: fixed;
-  margin-bottom: 30px;
-  z-index: 1000;
+.sales-summery-dropdown-header {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  box-sizing: border-box;
-  border-bottom: 1px solid #ddd;
+  background: #f8fafc;
+}
+
+.sales-summery-dropdown-header span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.sales-summery-dropdown-select-all {
+  background: none;
+  border: none;
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.sales-summery-dropdown-select-all:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.sales-summery-dropdown-content {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.sales-summery-dropdown-item {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sales-summery-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.sales-summery-dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.sales-summery-checkbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sales-summery-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.sales-summery-checkbox-custom {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.sales-summery-checkbox input:checked + .sales-summery-checkbox-custom {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.sales-summery-checkbox input:checked + .sales-summery-checkbox-custom::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.sales-summery-store-name {
+  font-size: 14px;
+  color: #1e293b;
+  flex: 1;
+}
+
+.sales-summery-store-location {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Stats Grid - Circular Layout */
+/* Stats Grid - Smaller Circular Layout */
+.sales-summery-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.sales-summery-stat-card {
+  background: white;
+  border-radius: 50%;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  aspect-ratio: 1/1;
+  min-height: 140px;
+  position: relative;
+}
+
+.sales-summery-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  border-color: #cbd5e1;
+}
+
+.sales-summery-stat-icon-container {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.sales-summery-stat-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: 2px solid;
+}
+
+.sales-summery-stat-content {
+  width: 100%;
+}
+
+.sales-summery-stat-title {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.sales-summery-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.sales-summery-stat-change-container {
+  margin-bottom: 2px;
+}
+
+.sales-summery-stat-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.sales-summery-stat-change.positive {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.sales-summery-stat-change.negative {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.sales-summery-stat-subvalue {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 2px;
+}
+.sales-summery-stat-change-container {
+  margin-bottom: 4px;
+}
+
+.sales-summery-stat-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.sales-summery-stat-change.positive {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.sales-summery-stat-change.negative {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.sales-summery-stat-subvalue {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+
+/* Table Container */
+.sales-summery-table-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
   overflow: hidden;
 }
 
-.salesContainerSummery {
-  left: 90px;
-  min-height: auto;
-  width: 90%;
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+.sales-summery-table-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.sales-summery-table-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.sales-summery-table-actions {
+  display: flex;
+  align-items: center;
   gap: 16px;
-  padding: 16px;
+}
+
+.sales-summery-table-count {
+  font-size: 13px;
+  color: #64748b;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 6px 12px;
   border-radius: 8px;
-  overflow: visible;
-  margin-bottom: 20px;
-}
-
-.salesSubContainer {
-  background-color: white;
-  min-height: 120px;
-  width: 100%;
-  aspect-ratio: 1/1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #40a578;
-  border-radius: 50%;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 16px;
-  transition: all 0.2s ease;
-}
-
-.salesSubContainer:hover {
-  transform: scale(1.05);
-  cursor: pointer;
-}
-
-.salesSubContainer h1 {
-  font-size: 0.8em;
-  margin-bottom: 8px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-
-
-.salesSubContainer .percentage {
-  font-size: 0.7em;
-  text-align: center;
-  margin: 4px 0;
-  flex-shrink: 0;
-}
-
-/* Mobile and Tablet adjustments */
-@media (min-width: 280px) and (max-width: 499px) {
-  .salesContainerSummery {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    width: 92%;
-    left: 2.5%;
-    padding: 12px;
-  }
-  
-  .salesSubContainer {
-    min-height: 100px;
-    padding: 12px;
-  }
-  
-  .salesSubContainer h1 {
-    font-size: 0.7em;
-  }
-  
-  .salesSubContainer .amount {
-    font-size: 1.1em;
-  }
-  
-  .salesSubContainer .percentage {
-    font-size: 0.6em;
-  }
-}
-
-@media (min-width: 500px) and (max-width: 799px) {
-  .salesContainerSummery {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    width: 92%;
-    left: 2.5%;
-    padding: 14px;
-  }
-  
-  .salesSubContainer {
-    min-height: 110px;
-  }
-}
-
-@media (min-width: 800px) and (max-width: 1199px) {
-  .salesContainerSummery {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-}
-
-@media (min-width: 1200px) {
-  .salesContainerSummery {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 20px;
-  }
-  
-  .salesSubContainer {
-    min-height: 130px;
-  }
-  
-  .salesSubContainer h1 {
-    font-size: 16px;
-  }
-  
-  .salesSubContainer .amount {
-    font-size: 20px;
-  }
-}
-
-.tableContainerSummery {
-  background-color: white;
-  left: 90px;
-  height: 400px;
-  width: 90%;
-  margin-top: 20px;
-  border-radius: 8px;
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: space-evenly;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 5px;
-  overflow-y: auto;
-  overflow-x: auto;
-}
-.salesTableSales {
-  top: 0;
-  width: 100%;
-  border-collapse: collapse;
-  /* margin: 20px 0; */
-  font-size: 0.8em;
-  text-align: left;
-  background-color: white;
-  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
-}
-
-.salesTableSales td {
-  padding: 10px;
-  border: 0.8px solid #f8fafc;
-  color: black;
-  background-color: #f8fafc;
-}
-
-.salesTableSales th {
-  position: sticky;
-  top: 0;
-  padding: 12px 15px;
-  color: white;
-}
-
-.salesTableSales tbody tr:nth-of-type(even) {
-  background-color: #f9f9f9;
-}
-.graphSubContainer {
-  background-color: red;
-  top: 20px;
-  left: 50px;
-  bottom: 5px;
-  height: 90%;
-  right: 0;
-  width: 90%;
-  border-radius: 8px;
-
-  background-color: white;
-  bottom: 0;
-  position: absolute;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: space-evenly;
-  font-size: 0.8em;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  overflow-y: auto;
-  overflow-x: auto;
-}
-.tableSubContainer {
-  background-color: #eef7ff;
-  top: 20px;
-  left: 2.5%;
-  bottom: 5px;
-  height: 90%;
-  right: 0;
-  width: 95%;
-  border-radius: 8px;
-  background-color: white;
-  bottom: 0;
-  position: absolute;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: space-evenly;
-  font-size: 0.8em;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  /* padding: 5px; */
-  overflow-y: auto;
-  overflow-x: auto;
-}
-
-.salesSubContainer {
-  background-color: white;
-  min-height: 100px;
-  min-width: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-evenly;
-  color: #40a578;
-  border-radius: 50%;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 10px;
-}
-.salesSubContainer:hover {
-  min-height: 130px;
-  min-width: 130px;
-  transform: scale(0.98);
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.salesSubContainer h1 {
-  flex-grow: 1; /* Let the title grow to take available space */
-  font-size: 0.8em; /* Adjust font size dynamically */
-}
-
-.salesSubContainer .amount {
-  flex-grow: 1; /* Let the spans grow to take available space */
-  font-size: 1.5em; /* Adjust font size dynamically */
-  text-align: center; /* Center align the text */
-  color: rgb(61, 55, 82);
   font-weight: 500;
 }
-.salesSubContainer .percentage {
-  flex-grow: 1; /* Let the spans grow to take available space */
-  font-size: 0.6em; /* Adjust font size dynamically */
-  text-align: center; /* Center align the text */
+
+.sales-summery-table-wrapper {
+  overflow-x: auto;
 }
 
-.buttonsContainerSalesSummery {
-  position: relative;
-  left: 90px;
-  min-height: 50px;
-  width: 90%;
-  margin-bottom: 10px;
-  margin-top: 60px;
-  padding: 5px;
-  border-radius: 8px;
-  background-color: white;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-evenly;
-}
-
-.buttonContainerDateSummery {
-  position: relative;
-  display: flex;
-  width: 30%;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-evenly;
-  background-color: white;
-}
-.buttonContainerExportSummery {
-  position: relative;
-  width: 20%;
-  flex-direction: row;
-}
-
-.inputButtonExportSummery {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.sales-summery-table {
   width: 100%;
-  height: 40px;
-  padding: 10px 10px;
-  color: black;
-  border: none;
-  border-radius: 5px;
-
-  border-left: 1px solid lightgrey;
-  border-right: 1px solid lightgrey;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  position: relative;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1000px;
 }
 
-.inputButtonDate {
-  display: flex;
-  align-items: center;
-  padding: 8px 20px;
-  border: 1px solid #d4ebf8;
-  border-radius: 8px;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-
-  cursor: pointer;
-}
-.inputButtonStore {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 40px;
-  padding: 10px 20px;
-  /* font-size: 0.8em; */
-  color: black;
-  border: none;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  cursor: pointer;
-  position: relative;
-}
-/* .inputButtonEmployee {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 85%;
-  height: 40px;
-  padding: 10px 20px;
-  font-size: 0.7em;
-  color: black;
-  border: none;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  cursor: pointer;
-  position: absolute;
-  top: 5px;
-} */
-.inputButtonExportSummery:hover,
-.inputButtonDate:hover,
-.iconContainerBackSummery:hover,
-.iconContainerForwardSummery:hover,
-.inputButtonStore:hover,
-.inputButtonEmployee:hover {
-  background-color: #eef7ff;
+.sales-summery-table th {
+  background: #f8fafc;
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
 }
 
-.inputButtonExport {
-  width: 100%;
-  /* left: 75%; */
-}
-/* styles.css */
-
-.inputButtonEmployee {
-  left: 65%;
-}
-.iconContainerBackSummery {
-  align-items: center;
-  justify-content: center;
-  display: flex;
-  border-radius: 50px;
-  margin: 5px;
-  height: 40px;
-  width: 40px;
-  background-color: #e4fbff;
-  cursor: pointer;
-}
-.iconLeft {
-  position: relative;
-}
-.iconContainerForwardSummery {
-  align-items: center;
-  justify-content: center;
-  display: flex;
-  border-radius: 50px;
-  margin: 5px;
-
-  height: 40px;
-  width: 40px;
-  background-color: #e4fbff;
-  cursor: pointer;
-}
-.buttonContainerDateSummery :hover {
-  background-color: #eef7ff;
+.sales-summery-table td {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: #475569;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
 }
 
-.iconRight {
-  position: relative;
-}
-.content {
-  transition: margin-left 0.3s ease;
-  flex: 1;
-  margin-top: 50px;
+.sales-summery-table-row:hover {
+  background: #f8fafc;
 }
 
-/* .content.collapsed {
-  margin-left: 0;
+.sales-summery-table-cell {
+  transition: all 0.2s ease;
 }
 
-.content.shifted {
-  margin-left: 250px;
-} */
-
-.sidebar-icon {
-  left: 30px;
-  cursor: pointer;
-  position: absolute;
-  font-size: 1rem;
+.sales-summery-positive {
+  color: #10b981;
+  font-weight: 600;
 }
 
-.toolBarTitle {
-  margin-left: 5%;
-  top: 30%;
-  position: absolute;
-  font-size: 1rem;
-}
-/* src/Css/SalesSummery.css */
-.dropdown {
-  position: absolute;
-  top: 50px;
-  left: 0;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  z-index: 1001;
-  min-width: 50%;
-  overflow-wrap: break-word; /* Add this line */
-  padding: 10px; /* Add some padding */
-  box-sizing: border-box; /* Ensure padding is included in width calculation */
+.sales-summery-negative {
+  color: #ef4444;
+  font-weight: 600;
 }
 
-.dropdownItem {
-  display: flex;
-  flex-direction: row;
-  color: black;
-  padding: 10px;
-  cursor: pointer;
-  font-size: 0.8em;
-  transition: 0.5s all;
-  left: 70px;
+.sales-summery-profit {
+  color: #8b5cf6;
+  font-weight: 700;
 }
 
-.dropdownItem:hover {
-  background-color: #f0f0f0;
-}
-.iconCalender {
-  position: absolute;
-  left: 0px;
-}
-/* Ensure dropdowns don't get cut off */
-.buttonContainerEmployees {
-  top: 0;
-  left: 45%;
-  width: 200px;
-  position: absolute;
-  transition: 0.5s all;
-}
-.dropdownMenu {
-  position: absolute;
-  top: 40px; /* adjust if needed */
-  right: 25px;
-  height: 40px;
-  background-color: white;
-  border: 1px solid lightblue;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 1001;
-}
-.buttonContainerStoresSummery {
-  width: 20%;
-  position: relative;
-  transition: 0.5s all;
-}
-.checkboxContainer {
-  /* position: absolute; */
-  margin-right: 10px;
-}
-.inputCheckBox {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  width: 20px;
-  height: 20px;
-  border: 2px solid #ccc;
-  border-radius: 5px;
-  outline: none;
-  cursor: pointer;
-  transition: background-color 0.3s, border-color 0.3s; /* Animation transition */
+.sales-summery-laybye {
+  background: rgba(139, 92, 246, 0.05);
 }
 
-.inputCheckBox:checked {
-  background-color: darkblue;
-  border-color: white;
+.sales-summery-total-row {
+  background: #f8fafc;
+  border-top: 2px solid #e2e8f0;
 }
 
-.datePickerContainer {
-  position: absolute;
-  top: 50px; /* Adjust based on your layout */
-  left: 0;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 10px;
-  z-index: 1000; /* Ensure it appears above other elements */
-  transition: 0.5s, all; /* Animation transition */
-  max-width: 100%; /* Ensure it doesn't overflow */
-  box-sizing: border-box; /* Include padding in the width calculation */
+.sales-summery-total {
+  font-weight: 700;
+  color: #1e293b;
 }
-/* Mobile and Tablet adjustments */
 
-@media (min-width: 280px) and (max-width: 499px) {
-  .buttonsContainerSalesSummery {
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .sales-summery-control-panel {
     flex-direction: column;
-    width: 92%;
-    left: 2.5%;
-    align-items: center;
-    gap: 16px; /* Add more space vertically if needed */
+    align-items: stretch;
   }
-  .buttonContainerDateSummery {
-    align-items: center;
-    width: 100%;
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-evenly;
-  }
-  .tableContainerSummery {
-    width: 92%;
-    left: 2.5%;
-  }
-  .salesContainerSummery {
-    width: 92%;
-    left: 2.5%;
-  }
-  .receiptsContainerFiscal {
-    overflow-y: auto;
-    overflow-x: auto;
-  }
-  .datePickerContainer {
-    width: 95%; /* Even wider for small screens */
-    top: 70px; /* Further adjust top positioning */
-    left: 2.5%; /* Adjust horizontal centering */
-    overflow-x: auto; /* Enable horizontal scrolling */
-    white-space: nowrap; /* Prevent wrapping of content */
-  }
-  .buttonContainerStoresSummery {
+  
+  .sales-summery-date-controls,
+  .sales-summery-filter-controls {
     width: 100%;
   }
-  .buttonContainerExportSummery {
-    width: 100%;
+  
+  .sales-summery-date-navigation {
+    justify-content: center;
+  }
+  
+  .sales-summery-filter-controls {
+    justify-content: center;
+  }
+  
+  .sales-summery-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
 }
-@media (min-width: 500px) and (max-width: 799px) {
-  .buttonsContainerSalesSummery {
+
+@media (max-width: 768px) {
+  .sales-summery-content {
+    padding: 16px;
+  }
+  
+  .sales-summery-toolbar {
+    height: 60px;
+    padding: 0 16px;
+    margin-bottom: 16px;
+  }
+  
+  .sales-summery-toolbar-title {
+    font-size: 18px;
+  }
+  
+  .sales-summery-toolbar-subtitle {
+    display: none;
+  }
+  
+  .sales-summery-stats-grid {
+    grid-template-columns: repeat(3, 1fr); /* Changed from 2 to 3 columns */
+    gap: 8px; /* Reduced gap */
+  }
+  
+  .sales-summery-stat-card {
+    padding: 10px; /* Reduced padding */
+    min-height: 100px; /* Much smaller height */
+    border-radius: 50%;
+  }
+  
+  .sales-summery-stat-value {
+    font-size: 14px; /* Smaller font */
+    margin-bottom: 4px;
+  }
+  
+  .sales-summery-stat-icon-container {
+    width: 32px; /* Much smaller */
+    height: 32px;
+    margin-bottom: 4px;
+  }
+  
+  .sales-summery-stat-icon-circle {
+    width: 24px; /* Much smaller */
+    height: 24px;
+    font-size: 12px; /* Smaller icon */
+  }
+  
+  .sales-summery-stat-title {
+    font-size: 10px; /* Smaller title */
+    margin-bottom: 2px;
+  }
+  
+  .sales-summery-stat-change {
+    font-size: 9px; /* Smaller change indicator */
+    padding: 1px 4px;
+  }
+  
+  .sales-summery-table-header {
+    padding: 16px;
     flex-direction: column;
-    width: 93%;
-    left: 2.5%;
-    align-items: center;
-    gap: 16px; /* Add more space vertically if needed */
+    gap: 12px;
+    align-items: stretch;
   }
-  .buttonContainerDateSummery {
-    align-items: center;
-    width: 100%;
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-evenly;
+}
+
+@media (max-width: 480px) {
+  .sales-summery-date-range-btn {
+    min-width: 180px;
   }
-  .salesContainerSummery {
-    width: 92%;
-    left: 2.5%;
+  
+  .sales-summery-filter-btn {
+    min-width: 120px;
+    padding: 10px 12px;
+    font-size: 13px;
   }
-  .tableContainerSummery {
-    width: 92%;
-    left: 2.5%;
+  
+  .sales-summery-dropdown {
+    min-width: 200px;
   }
-  .receiptsContainerFiscal {
-    overflow-y: auto;
-    overflow-x: auto;
+  
+  .sales-summery-stats-grid {
+    grid-template-columns: repeat(3, 1fr); /* Keep 3 columns on small phones */
+    gap: 6px; /* Even tighter gap */
   }
-  .datePickerContainer {
-    width: 95%; /* Even wider for small screens */
-    top: 70px; /* Further adjust top positioning */
-    left: 2.5%; /* Adjust horizontal centering */
-    overflow-x: auto; /* Enable horizontal scrolling */
-    white-space: nowrap; /* Prevent wrapping of content */
+  
+  .sales-summery-stat-card {
+    padding: 8px; /* Minimal padding */
+    min-height: 90px; /* Very compact */
   }
-  .buttonContainerStoresSummery {
-    width: 100%;
+  
+  .sales-summery-stat-value {
+    font-size: 13px;
   }
-  .buttonContainerExportSummery {
-    width: 100%;
+  
+  .sales-summery-stat-icon-container {
+    width: 28px;
+    height: 28px;
   }
+  
+  .sales-summery-stat-icon-circle {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+}
+
+/* Extra small phones - adjust further for very small screens */
+@media (max-width: 360px) {
+  .sales-summery-stats-grid {
+    grid-template-columns: repeat(2, 1fr); /* Switch to 2 columns on very small screens */
+    gap: 6px;
+  }
+  
+  .sales-summery-stat-card {
+    min-height: 95px;
+    padding: 8px;
+  }
+  
+  .sales-summery-stat-value {
+    font-size: 12px;
+  }
+}
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sales-summery-stat-card {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.sales-summery-stat-card:nth-child(2) { animation-delay: 0.1s; }
+.sales-summery-stat-card:nth-child(3) { animation-delay: 0.2s; }
+.sales-summery-stat-card:nth-child(4) { animation-delay: 0.3s; }
+.sales-summery-stat-card:nth-child(5) { animation-delay: 0.4s; }
+.sales-summery-stat-card:nth-child(6) { animation-delay: 0.5s; }
+.sales-summery-stat-card:nth-child(7) { animation-delay: 0.6s; }
+.sales-summery-stat-card:nth-child(8) { animation-delay: 0.7s; }
+
+/* Custom Scrollbar */
+.sales-summery-table-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.sales-summery-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.sales-summery-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.sales-summery-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.sales-summery-dropdown-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sales-summery-dropdown-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.sales-summery-dropdown-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
 }

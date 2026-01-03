@@ -1,704 +1,876 @@
-body {
-  margin: 0;
-  padding: 0;
-  font-family: "Poppins", sans-serif;
+/* Top Selling Products Container */
+.topselling-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow-x: hidden;
+  position: relative;
 }
-.mainContainersoldItems {
-  background-color: lavender;
-  height: 130vh;
+
+/* Main Content Area */
+.topselling-content {
+  margin-top: 0;
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.topselling-content-shifted {
+  margin-left: 280px;
+}
+
+.topselling-content-collapsed {
+  margin-left: 80px;
+}
+
+@media (max-width: 768px) {
+  .topselling-content-shifted,
+  .topselling-content-collapsed {
+    margin-left: 0;
+  }
+}
+
+/* Toolbar Styling */
+.topselling-toolbar {
   width: 100%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-evenly;
-  color: white;
-  overflow: hidden;
-}
-
-.toolBarsoldItems {
-  width: 100%;
-  height: 50px;
-  padding: 5px 10px;
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
-  color: white;
-  position: fixed;
-  margin-bottom: 70px;
-
-  z-index: 1000;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  box-sizing: border-box;
-  border-bottom: 1px solid #ddd;
-  overflow: hidden;
-}
-
-.toolBarLeft {
+  height: 70px;
+  background: white;
+  position: relative;
+  z-index: 900;
   display: flex;
   align-items: center;
-  gap: 10px;
+  padding: 0 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  border-radius: 12px;
+}
+
+.topselling-toolbar-content {
   flex: 1;
-  min-width: 0;
 }
 
-.logoImage {
-  height: 28px;
-  width: 28px;
-  object-fit: contain;
-  flex-shrink: 0;
+.topselling-toolbar-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.2;
 }
 
-.toolBarTitle {
-  font-size: 0.8em;
-  font-weight: bold;
-  color: #fff;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.topselling-toolbar-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
 }
 
-.toolBarRight {
+.topselling-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topselling-refresh-btn {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
-  margin-left: auto; /* This pushes it to the far right */
 }
 
-.userEmail {
-  font-size: 0.8em;
-  color: #fff;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.topselling-refresh-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
-/* Tooltip styling */
-.userIconWrapper {
+
+.topselling-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Control Panel */
+.topselling-control-panel {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topselling-date-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   position: relative;
+}
+
+.topselling-date-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.topselling-nav-btn {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.topselling-nav-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.topselling-date-range-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  justify-content: center;
+}
+
+.topselling-date-range-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.topselling-datepicker-modal {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+}
+
+.topselling-filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topselling-store-selector,
+.topselling-export-button {
+  position: relative;
+}
+
+.topselling-filter-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.topselling-filter-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+/* Dropdown Styles */
+.topselling-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 240px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.topselling-dropdown-header {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.topselling-dropdown-header span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.topselling-dropdown-select-all {
+  background: none;
+  border: none;
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.topselling-dropdown-select-all:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.topselling-dropdown-content {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.topselling-dropdown-item {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.topselling-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.topselling-dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.topselling-checkbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.topselling-checkbox input {
+  position: absolute;
+  opacity: 0;
   cursor: pointer;
 }
 
-.userTooltip {
-  display: none;
+.topselling-checkbox-custom {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.topselling-checkbox input:checked + .topselling-checkbox-custom {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.topselling-checkbox input:checked + .topselling-checkbox-custom::after {
+  content: '✓';
   position: absolute;
-  right: 20px;
-  background-color: #333;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   color: white;
-  font-size: 0.8em;
-  padding: 4px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-  z-index: 999;
+  font-size: 12px;
+  font-weight: bold;
 }
 
-.userIconWrapper:hover .userTooltip {
-  display: block;
-  transition: 0.5s all;
+.topselling-store-name {
+  font-size: 14px;
+  color: #1e293b;
+  flex: 1;
 }
-.userIcon {
-  height: 24px;
-  width: 24px;
+
+.topselling-store-location {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Stats Grid - Circular Layout */
+.topselling-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+  justify-items: center; /* Center items in their grid cells */
+}
+
+.topselling-stat-card {
+  background: white;
   border-radius: 50%;
-  object-fit: cover;
-  color: white;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  height: 180px;
+  width: 180px;
+  max-width: 100%; /* Prevent overflow */
 }
 
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .toolBarTitle {
-    font-size: 0.8em;
-    left: 30px;
-  }
+.topselling-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  border-color: #cbd5e1;
+}
 
-  .userEmail {
-    display: none; /* Hide email on small screens */
+.topselling-stat-icon-container {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.topselling-stat-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border: 2px solid;
+}
+
+.topselling-stat-content {
+  width: 100%;
+}
+
+.topselling-stat-title {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.topselling-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.topselling-stat-subvalue {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Search and Filter Bar */
+.topselling-search-filter {
+  background: white;
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topselling-search-container {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.topselling-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 16px;
+}
+
+.topselling-search-input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #475569;
+  transition: all 0.2s ease;
+}
+
+.topselling-search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.topselling-clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topselling-clear-search:hover {
+  color: #475569;
+}
+
+.topselling-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topselling-filter-icon {
+  color: #64748b;
+  font-size: 16px;
+}
+
+.topselling-filter-select {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #475569;
+  background: white;
+  cursor: pointer;
+  min-width: 160px;
+  transition: all 0.2s ease;
+}
+
+.topselling-filter-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Table Container */
+.topselling-table-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.topselling-table-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.topselling-table-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.topselling-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topselling-table-count {
+  font-size: 13px;
+  color: #64748b;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.topselling-table-wrapper {
+  overflow-x: auto;
+}
+
+.topselling-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1000px;
+}
+
+.topselling-table th {
+  background: #f8fafc;
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.topselling-table td {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: #475569;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+}
+
+.topselling-table-row:hover {
+  background: #f8fafc;
+}
+
+.topselling-table-cell {
+  transition: all 0.2s ease;
+}
+
+.topselling-profit {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.topselling-total-row {
+  background: #f8fafc;
+  border-top: 2px solid #e2e8f0;
+}
+
+.topselling-total {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Profit Margin Visualization */
+.topselling-margin-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topselling-margin-value {
+  min-width: 50px;
+  text-align: right;
+}
+
+.topselling-margin-bar {
+  flex: 1;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.topselling-margin-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Responsive Design */
+/* Responsive Design - UPDATED */
+@media (max-width: 1024px) {
+  .topselling-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  
+  .topselling-stat-card {
+    height: 160px;
+    width: 160px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .topselling-content {
+    padding: 16px;
+  }
+  
+  .topselling-toolbar {
+    height: 60px;
+    padding: 0 16px;
+    margin-bottom: 16px;
+  }
+  
+  .topselling-toolbar-title {
+    font-size: 18px;
+  }
+  
+  .topselling-toolbar-subtitle {
+    display: none;
+  }
+  
+  .topselling-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    justify-content: center; /* Center the grid itself */
+    gap: 12px;
+  }
+  
+  .topselling-stat-card {
+    height: 140px;
+    width: 140px;
+    padding: 14px;
+  }
+  
+  .topselling-stat-value {
+    font-size: 18px;
+  }
+  
+  .topselling-stat-icon-container {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .topselling-stat-icon-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .topselling-table-header {
+    padding: 16px;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .topselling-filter-select {
+    min-width: 140px;
   }
 }
 
 @media (max-width: 480px) {
-  .toolBarTitle {
-    font-size: 0.8em;
+  .topselling-stats-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on very small phones */
+    justify-content: center;
+    gap: 12px;
   }
-
-  .logoImage {
-    height: 24px;
-    width: 24px;
+  
+  .topselling-stat-card {
+    height: 130px;
+    width: 130px;
+    padding: 12px;
   }
-
-  .toolBar {
-    padding: 8px 12px;
+  
+  .topselling-stat-title {
+    font-size: 12px;
   }
-}
-.searchInputWrapper {
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  width: 50%;
-}
-
-.clearButton {
-  position: relative;
-  border: none;
-  font-size: 30px;
-  cursor: pointer;
-  color: #888;
-}
-
-.clearButton:hover {
-  color: #000;
-}
-
-.filterDropdown {
-  width: 20%;
-  margin: 5px;
-  display: flex;
-}
-
-.filterSelect {
-  padding: 8px;
-  font-size: 14px;
-  border: 1px solid lightblue;
-  border-radius: 4px;
-}
-
-/* Totals Row Styling */
-.TotalsoldRow {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr;
-  gap: 15px;
-  background-color: #f8f9fa;
-  font-weight: bold;
-  padding: 16px 20px;
-  color: darkblue;
-  border-top: 2px solid #e9ecef;
-  min-width: 790px; /* MUST match soldHeader min-width */
-  margin-top: 10px;
-  border-radius: 0 0 8px 8px;
-  align-items: center;
-}
-
-.TotalsoldRow .headerItem {
-  text-align: left;
-  font-size: 0.85em;
-  font-weight: 700;
-  color: #333;
-  padding: 0 5px;
-}
-
-.TotalsoldRow .headerItem:nth-child(4), /* Total Sales */
-.TotalsoldRow .headerItem:nth-child(5), /* Total Cost */
-.TotalsoldRow .headerItem:nth-child(6) { /* Profit */
-  color: #333;
-  font-weight: 800;
-}
-
-.TotalsoldRow .headerItem:nth-child(5) { /* Total Cost */
-  color: #dc3545;
-}
-.totalItem {
-  flex: 1;
-  text-align: center;
-}
-
-.soldItemsContainersoldItems {
-  background-color: white;
-  height: 80%;
-  width: 70%;
-  left: 90px;
-  position: relative;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-evenly;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 5px;
-  border-radius: 8px;
-  overflow-y: auto;
-  overflow-x: auto;
-}
-.salesTable {
-  top: 0;
-  width: 100%;
-  border-collapse: collapse;
-  /* margin: 20px 0; */
-  font-size: 0.8em;
-  text-align: left;
-  background-color: white;
-}
-
-.salesTable td {
-  padding: 5px 10px;
-  border: 1px solid #ddd;
-  color: black;
-}
-
-.salesTable th {
-  background-color: #f4f4f4;
-  position: sticky;
-  top: 0;
-  padding: 12px 15px;
-  border: 1px solid #ddd;
-  color: black;
-}
-
-.salesTable tbody tr:nth-of-type(even) {
-  background-color: #f9f9f9;
-}
-.SoldDetails {
-  min-width: 600px; /* Adjust based on your expected minimum layout */
-  display: flex;
-}
-.soldHeader {
-  display: flex;
-  border-bottom: 2px solid #fff;
-  padding: 10px;
-  font-weight: 400;
-  font-size: 0.8em;
-  min-width: 790px; /* Adjust based on your expected minimum layout */
-
-  margin: 0; /* Ensure no margins */
-  background: linear-gradient(to right, darkblue, #5694e6, darkblue);
-}
-.tableSubContainer {
-  background-color: #eef7ff;
-  top: 20px;
-  left: 2.5%;
-  bottom: 5px;
-  height: 90%;
-  right: 0;
-  width: 95%;
-  border-radius: 8px;
-  background-color: white;
-  bottom: 0;
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-evenly;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  /* padding: 5px; */
-  overflow-y: auto;
-  overflow-x: auto;
-}
-
-.buttonsContainersoldItems {
-  margin-top: 60px;
-  margin-bottom: 10px;
-
-  position: relative;
-  min-height: 50px;
-  width: 90%;
-  left: 90px;
-  border-radius: 8px;
-  background-color: white;
-  padding: 5px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-evenly;
-}
-.buttonContainerDatesoldItems {
-  position: relative;
-  display: flex;
-  width: 30%;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-evenly;
-  background-color: white;
-}
-
-.buttonContainerExport {
-  position: relative;
-  width: 20%;
-  flex-direction: row;
-}
-.buttonContainerExportsoldItems {
-  position: relative;
-  width: 20%;
-  flex-direction: row;
-}
-.inputButtonExportsoldItems {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 40px;
-  padding: 10px 10px;
-  color: black;
-  border: none;
-  border-radius: 5px;
-
-  border-left: 1px solid lightgrey;
-  border-right: 1px solid lightgrey;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  position: relative;
-}
-
-.inputButtonDate {
-  display: flex;
-  align-items: center;
-  padding: 8px 20px;
-  border: 1px solid #d4ebf8;
-  border-radius: 8px;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-
-  cursor: pointer;
-}
-.inputButtonStore {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 40px;
-  padding: 10px 20px;
-  font-size: 0.8em;
-  color: black;
-  border: none;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  cursor: pointer;
-  position: relative;
-}
-.inputButtonExportsoldItems:hover,
-.inputButtonDate:hover,
-.inputButtonStore:hover,
-.iconContainerBack:hover,
-.iconContainerForward:hover,
-.inputButtonEmployee:hover {
-  background-color: #eef7ff;
-}
-
-.iconContainerBack:hover,
-.iconContainerForward:hover {
-  background-color: #eef7ff;
-  height: 45px;
-  width: 45px;
-  transition: 0.2s all;
-}
-
-.searchBarSoldItems {
-  padding: 12px 20px;
-  background: #f9f9f9;
-  border-bottom: 1px solid #ddd;
-  flex-direction: row;
-  display: flex;
-  justify-content: space-evenly;
-  align-items: center;
-}
-
-.searchInput {
-  width: 100%;
-  max-width: 200px;
-  padding: 8px 12px;
-  font-size: 0.8em;
-  border: 1px solid lightblue;
-  border-radius: 4px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.searchInput:focus {
-  border-color: #007bff; /* Change to your desired focus color */
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-  outline: none;
-}
-
-.iconContainerBack {
-  align-items: center;
-  justify-content: center;
-  display: flex;
-  border-radius: 50px;
-  margin: 5px;
-  height: 40px;
-  width: 40px;
-  background-color: #e4fbff;
-  cursor: pointer;
-}
-.iconLeft {
-  position: relative;
-}
-.iconContainerForward {
-  align-items: center;
-  justify-content: center;
-  display: flex;
-  border-radius: 50px;
-  margin: 5px;
-
-  height: 40px;
-  width: 40px;
-  background-color: #e4fbff;
-  cursor: pointer;
-}
-.buttonContainerDatesoldItems :hover {
-  background-color: #eef7ff;
-}
-
-.iconRight {
-  position: relative;
-}
-
-.content {
-  transition: margin-left 0.3s ease;
-  flex: 1;
-  margin-top: 50px;
-}
-
-/* .content.collapsed {
-  margin-left: 0;
-}
-
-.content.shifted {
-  margin-left: 250px;
-} */
-
-.sidebar-icon {
-  left: 30px;
-  cursor: pointer;
-  position: absolute;
-  font-size: 1rem;
-}
-
-/* src/Css/SalesSummery.css */
-.dropdown {
-  position: absolute;
-  top: 50px;
-  left: 0;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  z-index: 1000;
-  min-width: 50%;
-  overflow-wrap: break-word; /* Add this line */
-  padding: 10px; /* Add some padding */
-  box-sizing: border-box; /* Ensure padding is included in width calculation */
-}
-
-.dropdownItem {
-  display: flex;
-  flex-direction: row;
-  color: black;
-  padding: 10px;
-  cursor: pointer;
-  font-size: 0.8em;
-  transition: 0.5s all;
-  left: 70px;
-}
-
-.dropdownItem:hover {
-  background-color: #f0f0f0;
-}
-.iconCalender {
-  position: absolute;
-  left: 0px;
-}
-/* Ensure dropdowns don't get cut off */
-.buttonContainerEmployees {
-  top: 0;
-  left: 45%;
-  width: 200px;
-  position: absolute;
-  transition: 0.5s all;
-}
-.buttonContainerStoressoldItems {
-  width: 20%;
-  position: relative;
-  transition: 0.5s all;
-}
-.checkboxContainer {
-  /* position: absolute; */
-  margin-right: 10px;
-}
-
-.inputCheckBox {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  width: 20px;
-  height: 20px;
-  border: 2px solid #ccc;
-  border-radius: 5px;
-  outline: none;
-  cursor: pointer;
-  transition: background-color 0.3s, border-color 0.3s; /* Animation transition */
-}
-
-.inputCheckBox:checked {
-  background-color: darkblue;
-  border-color: white;
-}
-
-.datePickerContainersoldItems {
-  position: absolute;
-  top: 50px; /* Adjust based on your layout */
-  left: 0;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 10px;
-  z-index: 1000; /* Ensure it appears above other elements */
-  transition: 0.5s, all; /* Animation transition */
-  max-width: 100%; /* Ensure it doesn't overflow */
-  box-sizing: border-box; /* Include padding in the width calculation */
-}
-.dropdownMenu {
-  position: absolute;
-  top: 40px; /* adjust if needed */
-  right: 25px;
-  height: 40px;
-  background-color: white;
-  border: 1px solid lightblue;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 1001;
-}
-
-.signOutButton {
-  justify-content: center;
-  align-items: center;
-  border: none;
-  width: 100%;
-  height: 100%;
-  background-color: white;
-  color: green;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-
-  font-weight: bold;
-  cursor: pointer;
-}
-.signOutButton:hover {
-  background-color: lightblue;
-}
-/* Mobile and Tablet adjustments */
-@media (min-width: 900px) {
-  .buttonsContainersoldItems {
-    flex-direction: row;
-    align-items: center;
-    width: 85%;
-    left: 90px;
-
-    gap: 16px; /* Add more space vertically if needed */
+  
+  .topselling-stat-value {
+    font-size: 16px;
   }
-  .buttonContainerDatesoldItems {
-    align-items: center;
-    width: 100%;
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-evenly;
+  
+  .topselling-stat-icon-container {
+    width: 45px;
+    height: 45px;
   }
-  .datePickerContainersoldItems {
-    width: 90%; /* Take up more width on smaller screens */
-    top: 60px; /* Adjust top positioning to avoid overlap */
-    left: 5%; /* Center the picker horizontally */
-    overflow-x: auto; /* Enable horizontal scrolling */
-    white-space: nowrap; /* Prevent wrapping of content */
+  
+  .topselling-stat-icon-circle {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
   }
-  .buttonContainerStoressoldItems {
-    width: 100%;
+  
+  .topselling-date-range-btn {
+    min-width: 180px;
   }
-  .buttonContainerExportsoldItems {
-    width: 100%;
+  
+  .topselling-filter-btn {
+    min-width: 120px;
+    padding: 10px 12px;
+    font-size: 13px;
   }
-  .soldItemsContainersoldItems {
-    width: 80%;
-    overflow-y: auto;
-    overflow-x: auto;
+  
+  .topselling-dropdown {
+    min-width: 200px;
   }
-}
-
-@media (min-width: 280px) and (max-width: 499px) {
-  .buttonsContainersoldItems {
+  
+  .topselling-margin-container {
     flex-direction: column;
-    width: 92%;
-    left: 2.5%;
-
-    align-items: center;
-    gap: 16px; /* Add more space vertically if needed */
+    align-items: flex-start;
+    gap: 6px;
   }
-  .buttonContainerDatesoldItems {
-    align-items: center;
-    width: 100%;
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-evenly;
-  }
-
-  /* .salesContainerSummery {
-    width: 75%;
-    left: 70px;
-  } */
-  .soldItemsContainersoldItems {
-    width: 92%;
-    left: 2.5%;
-    overflow-y: auto;
-    overflow-x: auto;
-  }
-  .datePickerContainersoldItems {
-    width: 95%; /* Even wider for small screens */
-    top: 70px; /* Further adjust top positioning */
-    left: 2.5%; /* Adjust horizontal centering */
-    overflow-x: auto; /* Enable horizontal scrolling */
-    white-space: nowrap; /* Prevent wrapping of content */
-  }
-  .buttonContainerStoressoldItems {
-    width: 100%;
-  }
-  .buttonContainerExportsoldItems {
+  
+  .topselling-margin-bar {
     width: 100%;
   }
 }
-@media (min-width: 500px) and (max-width: 799px) {
-  .buttonsContainersoldItems {
-    flex-direction: column;
-    width: 92%;
-    left: 2.5%;
-    align-items: center;
-    gap: 16px; /* Add more space vertically if needed */
-  }
-  .buttonContainerDatesoldItems {
-    align-items: center;
-    width: 100%;
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-evenly;
-  }
-  /* .salesContainerSummery {
-    width: 85%;
-  } */
 
-  .soldItemsContainersoldItems {
-    overflow-y: auto;
-    overflow-x: auto;
-    width: 92%;
-    left: 2.5%;
+/* For extra small screens (below 360px) */
+@media (max-width: 360px) {
+  .topselling-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
-  .datePickerContainersoldItems {
-    width: 95%; /* Even wider for small screens */
-    top: 70px; /* Further adjust top positioning */
-    left: 2.5%; /* Adjust horizontal centering */
-    overflow-x: auto; /* Enable horizontal scrolling */
-    white-space: nowrap; /* Prevent wrapping of content */
+  
+  .topselling-stat-card {
+    height: 120px;
+    width: 120px;
+    padding: 10px;
   }
-  .buttonContainerStoressoldItems {
-    width: 100%;
+  
+  .topselling-stat-icon-container {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 8px;
   }
-  .buttonContainerExportsoldItems {
-    width: 100%;
+  
+  .topselling-stat-icon-circle {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
+  
+  .topselling-stat-title {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  
+  .topselling-stat-value {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  
+  .topselling-stat-subvalue {
+    font-size: 10px;
+  }
+}
+
+/* Ensure cards don't overflow on small screens */
+.topselling-stat-card {
+  box-sizing: border-box; /* Include padding in width/height */
+}
+
+/* Animation for stat cards */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.topselling-stat-card {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.topselling-stat-card:nth-child(2) { animation-delay: 0.1s; }
+.topselling-stat-card:nth-child(3) { animation-delay: 0.2s; }
+.topselling-stat-card:nth-child(4) { animation-delay: 0.3s; }
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.topselling-stat-card {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.topselling-stat-card:nth-child(2) { animation-delay: 0.1s; }
+.topselling-stat-card:nth-child(3) { animation-delay: 0.2s; }
+.topselling-stat-card:nth-child(4) { animation-delay: 0.3s; }
+
+/* Custom Scrollbar */
+.topselling-table-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.topselling-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.topselling-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.topselling-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.topselling-dropdown-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.topselling-dropdown-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.topselling-dropdown-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
 }

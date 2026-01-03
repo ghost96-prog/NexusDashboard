@@ -1,100 +1,86 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import {
   FaBars,
   FaTimes,
   FaStore,
-  FaUser,
   FaArrowDown,
   FaArrowUp,
   FaDownload,
-  FaUserCircle,
-  FaCat,
+  FaChartLine,
+  FaBox,
+  FaDollarSign,
+  FaPercentage,
+  FaTags,
+  FaSearch,
+  FaFilter,
   FaFileAlt,
+  FaFire,
+  FaExclamationTriangle,
+  FaCheckCircle
 } from "react-icons/fa";
-import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import { DateRangePicker, defaultStaticRanges } from "react-date-range";
-import {
-  startOfToday,
-  endOfToday,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  endOfYear,
-  subDays,
-  addDays,
-  subWeeks,
-  addWeeks,
-  subMonths,
-  addMonths,
-  subYears,
-  addYears,
-  addHours,
-} from "date-fns";
-import enUS from "date-fns/locale/en-US";
-import "../Css/ProductValueScreen.css";
-import "react-date-range/dist/styles.css"; // main style file
-import "react-date-range/dist/theme/default.css"; // theme css file
-import { IoCalendar } from "react-icons/io5";
-import { Bar } from "react-chartjs-2";
-import Chart from "chart.js/auto";
-import { format } from "date-fns";
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import { useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ReceiptModal from "../components/ReceiptModal";
-import ReceiptListItem from "../components/ReceiptListItem";
-import { jwtDecode } from "jwt-decode"; // Make sure this is imported
+import { jwtDecode } from "jwt-decode";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
-import ProductsListItem from "../components/ProductsListItem";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import autoTable from "jspdf-autotable"; // ← import the function directly
-import { FaChevronDown, FaFile, FaFileCsv, FaFilePdf } from "react-icons/fa6";
-import ProductsValueListItem from "../components/ProductValueListItem";
+import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
+import "../Css/ProductValueScreen.css";
+
+// StatCard component moved outside to prevent re-renders
+const StatCard = React.memo(({ title, value, icon, percentage, isPositive, subValue, color, isCurrency = true }) => (
+  <div className="product-value-stat-card">
+    <div className="product-value-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
+      <div className="product-value-stat-icon-circle">
+        {icon}
+      </div>
+    </div>
+    <div className="product-value-stat-content">
+      <div className="product-value-stat-title">{title}</div>
+      <div className="product-value-stat-value">
+        {isCurrency ? '$' : ''}{value}
+      </div>
+      <div className="product-value-stat-change-container">
+        {percentage && percentage !== "-" && (
+          <div className={`product-value-stat-change ${isPositive ? 'positive' : 'negative'}`}>
+            {isPositive ? <FaArrowUp /> : <FaArrowDown />}
+            <span>{percentage}</span>
+          </div>
+        )}
+      </div>
+      {subValue && <div className="product-value-stat-subvalue">{subValue}</div>}
+    </div>
+  </div>
+));
 
 const ProductValueScreen = () => {
-  // const stores = ["Store 1", "Store 2", "Store 3"];
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedStores, setSelectedStores] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-  const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
-  const [selectedExportOption, setSelectedExportOption] = useState("");
+  const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false);
   const [stores, setStoreData] = useState([]);
-  const [selectedStoreName, setSelectedStoreName] = useState("");
-  const [selectedStartDate, setSelectedStartDate] = useState(startOfToday());
-  const [selectedEndDate, setSelectedEndDate] = useState(endOfToday());
-  const [selectedOption, setSelectedOption] = useState("today");
-  const [selectedRange, setSelectedRange] = useState("Today");
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [isLowStock, setIsLowStockDropdownOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const dateRangePickerRef = useRef(null);
-  const location = useLocation();
-  const [receipts, setReceipts] = useState([]);
-  const [modalProduct, setModalProduct] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [email, setEmail] = useState(null);
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [filteredItems, setFilteredItems] = useState([]);
-
   const [categories, setCategories] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectStockOption, setSelectStockOption] = useState("All Items");
-  const [allReceipts, setAllReceipts] = useState([]);
+  const [email, setEmail] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const location = useLocation();
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token"); // Or sessionStorage if needed
-
+    const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Authentication token is missing.");
       return;
@@ -102,11 +88,23 @@ const ProductValueScreen = () => {
 
     try {
       const decoded = jwtDecode(token);
-      setEmail(decoded.email); // Extract email from token
+      setEmail(decoded.email);
     } catch (error) {
       toast.error("Invalid authentication token.");
     }
   }, []);
+
+  useEffect(() => {
+    if (email) {
+      fetchStores();
+      fetchCategories();
+    }
+  }, [email]);
+
+  useEffect(() => {
+    setSelectedStores(stores);
+    setSelectedCategories(categories);
+  }, [stores, categories]);
 
   useEffect(() => {
     if (selectedStores.length > 0) {
@@ -114,93 +112,80 @@ const ProductValueScreen = () => {
     }
   }, [selectedStores]);
 
+  // Debounced search effect
   useEffect(() => {
-    setSelectedStores(stores);
-    setSelectedCategories(categories);
-  }, [selectedOption, stores, categories]);
-  useEffect(() => {
-    console.log("Selected Option:", selectedOption);
-  }, [selectedOption]);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      applyFilters();
+    }, 300); // 300ms debounce delay
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm, selectedStores, selectedCategories, selectStockOption, products]);
+
+  const applyFilters = useCallback(() => {
+    let updatedList = [...products];
+
+    const isAllStoresSelected =
+      selectedStores.length === stores.length ||
+      selectedStores.some((store) => store.storeName === "All Stores");
+
+    if (!isAllStoresSelected && selectedStores.length > 0) {
+      const storeIds = selectedStores.map((store) => String(store.storeId));
+      updatedList = updatedList.filter((product) =>
+        storeIds.includes(String(product.storeId))
+      );
+    }
+
+    const isAllCategoriesSelected =
+      selectedCategories.length === categories.length ||
+      selectedCategories.some((cat) => cat.categoryName === "All Categories");
+
+    if (!isAllCategoriesSelected && selectedCategories.length > 0) {
+      const selectedCategoryIds = selectedCategories.map((cat) =>
+        String(cat.categoryId)
+      );
+      updatedList = updatedList.filter((product) => {
+        const productCategoryId = String(product.categoryId || "No Category");
+        return selectedCategoryIds.includes(productCategoryId);
+      });
+    }
+
+    if (selectStockOption === "Low Stock") {
+      updatedList = updatedList.filter(
+        (product) =>
+          Number(product.stock) > 0 &&
+          Number(product.stock) <= Number(product.lowStockNotification || 0)
+      );
+    } else if (selectStockOption === "Out of Stock") {
+      updatedList = updatedList.filter(
+        (product) => Number(product.stock) <= 0
+      );
+    }
+
+    if (searchTerm.trim() !== "") {
+      const lowerSearch = searchTerm.toLowerCase();
+      updatedList = updatedList.filter((product) =>
+        product.productName?.toLowerCase().includes(lowerSearch)
+      );
+    }
+
+    setFilteredItems(updatedList);
+  }, [products, selectedStores, selectedCategories, selectStockOption, searchTerm, stores, categories]);
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-  useEffect(() => {
-    if (email) {
-      fetchStores();
-      fetchCategories();
-    }
-  }, [email]);
-  // Update filteredItems whenever filters change
-  useEffect(() => {
-    const applyFilters = () => {
-      let updatedList = [...products];
-
-      // 1. Filter by Store
-      const isAllStoresSelected =
-        selectedStores.length === stores.length ||
-        selectedStores.some((store) => store.storeName === "All Stores");
-
-      if (!isAllStoresSelected && selectedStores.length > 0) {
-        const storeIds = selectedStores.map((store) => String(store.storeId));
-        updatedList = updatedList.filter((product) =>
-          storeIds.includes(String(product.storeId))
-        );
-      }
-
-      // 2. Filter by Category
-      const isAllCategoriesSelected =
-        selectedCategories.length === categories.length ||
-        selectedCategories.some((cat) => cat.categoryName === "All Categories");
-
-      if (!isAllCategoriesSelected && selectedCategories.length > 0) {
-        const selectedCategoryIds = selectedCategories.map((cat) =>
-          String(cat.categoryId)
-        );
-        updatedList = updatedList.filter((product) => {
-          const productCategoryId = String(product.categoryId || "No Category");
-          return selectedCategoryIds.includes(productCategoryId);
-        });
-      }
-
-      // 3. Filter by Stock Level
-      if (selectStockOption === "Low Stock") {
-        updatedList = updatedList.filter(
-          (product) =>
-            Number(product.stock) > 0 &&
-            Number(product.stock) <= Number(product.lowStockNotification || 0)
-        );
-      } else if (selectStockOption === "Out of Stock") {
-        updatedList = updatedList.filter(
-          (product) => Number(product.stock) <= 0
-        );
-      }
-
-      // 4. Filter by Search
-      if (searchTerm.trim() !== "") {
-        const lowerSearch = searchTerm.toLowerCase();
-        updatedList = updatedList.filter((product) =>
-          product.productName?.toLowerCase().includes(lowerSearch)
-        );
-      }
-
-      setFilteredItems(updatedList);
-    };
-
-    applyFilters();
-  }, [
-    products,
-    selectedStores,
-    selectedCategories,
-    selectStockOption,
-    searchTerm,
-    stores,
-    categories,
-  ]);
 
   const fetchStores = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -232,12 +217,13 @@ const ProductValueScreen = () => {
       console.error("Error fetching stores:", error);
     }
   };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setIsRefreshing(true);
 
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -252,12 +238,14 @@ const ProductValueScreen = () => {
           userEmail
         )}`
       );
+      
       if (!response.ok) {
-        const errorMessage = await response.text(); // or response.json() if you return JSON errors
+        const errorMessage = await response.text();
         toast.error(`Error: ${"User not found or invalid email."}`);
+        return;
       }
+      
       const responseData = await response.json();
-
       const filteredProducts = responseData.data.filter(
         (product) => product.userId === userId
       );
@@ -266,10 +254,7 @@ const ProductValueScreen = () => {
         a.productName.localeCompare(b.productName)
       );
 
-      // Clear previous products and set new ones
       setProducts([]);
-
-      // Process products in chunks
       const CHUNK_SIZE = 800;
       const loadChunks = (chunkIndex = 0) => {
         const start = chunkIndex * CHUNK_SIZE;
@@ -294,29 +279,26 @@ const ProductValueScreen = () => {
           setTimeout(() => loadChunks(chunkIndex + 1), 50);
         } else {
           setLoading(false);
+          setIsRefreshing(false);
         }
       };
 
       loadChunks();
-
-      // Update `filteredItems` only if no filters are applied
-      // if (!isFilteringActive) {
-      //   setFilteredItems(filteredProducts);
-      // }
     } catch (error) {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
       } else {
         toast.error("An error occurred while fetching products.");
       }
-      console.error("Error fetching receipts:", error);
+      console.error("Error fetching products:", error);
+      setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -331,11 +313,13 @@ const ProductValueScreen = () => {
           userEmail
         )}`
       );
+      
       const data = await response.json();
       if (!response.ok) {
-        const errorMessage = await response.text(); // or response.json() if you return JSON errors
         toast.error(`Error: ${"User not found or invalid email."}`);
+        return;
       }
+      
       if (data.success) {
         setCategories(data.data);
       } else {
@@ -347,17 +331,20 @@ const ProductValueScreen = () => {
       } else {
         toast.error("An error occurred while fetching categories.");
       }
-      console.error("Error fetching receipts:", error);
+      console.error("Error fetching categories:", error);
     }
   };
+
   const onRefresh = async () => {
-    NProgress.start(); // 🔵 Start progress bar
+    NProgress.start();
+    setIsRefreshing(true);
     try {
       await fetchProducts();
     } catch (error) {
       console.error(error);
     } finally {
-      NProgress.done(); // ✅ Always stop progress bar
+      NProgress.done();
+      setIsRefreshing(false);
     }
   };
 
@@ -376,10 +363,8 @@ const ProductValueScreen = () => {
       setSelectedStores(updatedStores);
     }
   };
+
   const handleCategorySelect = (category) => {
-    console.log("====================================");
-    console.log("cattttttttttt", category);
-    console.log("====================================");
     if (category === "All Categories") {
       if (selectedCategories.length === categories.length) {
         setSelectedCategories([]);
@@ -400,44 +385,30 @@ const ProductValueScreen = () => {
   const handleClickOutside = (event) => {
     if (
       isStoreDropdownOpen &&
-      !event.target.closest(".buttonContainerStoresProducts")
+      !event.target.closest(".product-value-store-selector")
     ) {
       setIsStoreDropdownOpen(false);
-      console.log("Selected Stores:", selectedStores);
-
-      if (selectedStores.length === 0) {
-        setProducts([]);
-      } else {
-        // onRefresh();
-      }
     }
 
     if (
       isExportDropdownOpen &&
-      !event.target.closest(".buttonContainerExportValue")
+      !event.target.closest(".product-value-export-button")
     ) {
       setIsExportDropdownOpen(false);
-      console.log("Selected Export Option:");
     }
-    if (isLowStock && !event.target.closest(".buttonContainerLowStock")) {
-      setIsLowStockDropdownOpen(false);
-      // if (selectedStores.length === 0) {
-      //   setProducts([]);
-      // } else {
-      //   onRefresh();
-      // }
-    }
+
     if (
       isCategoryDropdownOpen &&
-      !event.target.closest(".buttonContainerFilterByCategory")
+      !event.target.closest(".product-value-category-selector")
     ) {
       setIsCategoryDropdownOpen(false);
-      console.log("Selected Category Option:");
-      // if (selectedCategories.length === 0) {
-      //   setProducts([]);
-      // } else {
-      //   onRefresh();
-      // }
+    }
+
+    if (
+      isStockDropdownOpen &&
+      !event.target.closest(".product-value-stock-selector")
+    ) {
+      setIsStockDropdownOpen(false);
     }
   };
 
@@ -448,42 +419,7 @@ const ProductValueScreen = () => {
     };
   });
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        dateRangePickerRef.current &&
-        !dateRangePickerRef.current.contains(event.target)
-      ) {
-        setIsDatePickerOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dateRangePickerRef]);
-
-  function handleItemClick(item) {
-    console.log("====================================");
-    console.log(item);
-    console.log("====================================");
-    // setModalProduct(item);
-  }
-  const handleToggleDropdown = () => {
-    setShowDropdown((prev) => !prev);
-  };
-
-  const handleSignOut = () => {
-    NProgress.start(); // ✅ End progress bar
-
-    localStorage.removeItem("token");
-    window.location.href = "/"; // or navigate to login using React Router
-    NProgress.done(); // ✅ End progress bar
-  };
-  // Filter receipts based on the search term
-
-  const calculateValues = (item) => {
+  const calculateValues = useCallback((item) => {
     if (parseFloat(item.stock) === 0) {
       return { retailValue: 0, costValue: 0, potentialValue: 0, margin: 0 };
     }
@@ -491,12 +427,18 @@ const ProductValueScreen = () => {
     const retailValue = item.price * item.stock;
     const costValue = item.cost * item.stock;
     const potentialValue = retailValue - costValue;
-    const margin = (potentialValue / retailValue) * 100;
+    const margin = retailValue > 0 ? (potentialValue / retailValue) * 100 : 0;
 
     return { retailValue, costValue, potentialValue, margin };
-  };
+  }, []);
 
-  const calculateSums = () => {
+  const getMarginLevel = useCallback((margin) => {
+    if (margin >= 50) return { level: "high", icon: <FaFire />, color: "#10b981", bgColor: "rgba(16, 185, 129, 0.1)" };
+    if (margin >= 25) return { level: "moderate", icon: <FaCheckCircle />, color: "#3b82f6", bgColor: "rgba(59, 130, 246, 0.1)" };
+    return { level: "low", icon: <FaExclamationTriangle />, color: "#ef4444", bgColor: "rgba(239, 68, 68, 0.1)" };
+  }, []);
+
+  const calculateSums = useMemo(() => {
     let totalRetailValue = 0;
     let totalCostValue = 0;
     let totalPotentialValue = 0;
@@ -508,10 +450,7 @@ const ProductValueScreen = () => {
       totalPotentialValue += potentialValue;
     });
 
-    const totalMargin =
-      totalRetailValue !== 0
-        ? (totalPotentialValue / totalRetailValue) * 100
-        : 0;
+    const totalMargin = totalRetailValue > 0 ? (totalPotentialValue / totalRetailValue) * 100 : 0;
 
     return {
       totalRetailValue,
@@ -519,57 +458,40 @@ const ProductValueScreen = () => {
       totalPotentialValue,
       totalMargin,
     };
-  };
+  }, [filteredItems, calculateValues]);
 
-  const formatNumberShort = (number) => {
-    if (number >= 1_000_000) return `$${(number / 1_000_000).toFixed(1)}m`;
-    if (number >= 100_000) return `$${(number / 1_000).toFixed(0)}k`;
-
-    return `$${number.toLocaleString("en-US", {
+  const formatNumberShort = useCallback((number) => {
+    if (number >= 1_000_000) return `${(number / 1_000_000).toFixed(1)}m`;
+    if (number >= 100_000) return `${(number / 1_000).toFixed(0)}k`;
+    
+    return number.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })}`;
-  };
-  const { totalRetailValue, totalCostValue, totalPotentialValue, totalMargin } =
-    calculateSums();
-  const exportToPDF = (items, storeName) => {
+    });
+  }, []);
+
+  const exportToPDF = (items) => {
     const doc = new jsPDF();
     const now = new Date();
     const formattedDate = now.toLocaleString("en-US");
+    const storeName = selectedStores.length === 1 ? selectedStores[0].storeName : "Multiple Stores";
+    const { totalRetailValue, totalCostValue, totalPotentialValue, totalMargin } = calculateSums;
 
-    const {
-      totalRetailValue,
-      totalCostValue,
-      totalPotentialValue,
-      totalMargin,
-    } = calculateSums();
-
-    // Header
     doc.setFontSize(16);
     doc.text("Inventory Total Value", 14, 20);
     doc.setFontSize(11);
     doc.text(`Store: ${storeName}`, 14, 28);
     doc.text(`Generated: ${formattedDate}`, 14, 34);
 
-    // Table headers and body
     const head = [
-      [
-        "Product Name",
-        "QTY",
-        "Retail Value",
-        "Cost Value",
-        "Toal Profit",
-        "Profit Margin",
-      ],
+      ["Product Name", "QTY", "Retail Value", "Cost Value", "Total Profit", "Profit Margin"]
     ];
+    
     const body = items.map((item) => {
-      const { retailValue, costValue, potentialValue, margin } =
-        calculateValues(item);
+      const { retailValue, costValue, potentialValue, margin } = calculateValues(item);
       return [
         item.productName,
-        item.productType === "Weight"
-          ? parseFloat(item.stock).toFixed(2)
-          : item.stock,
+        item.productType === "Weight" ? parseFloat(item.stock).toFixed(2) : item.stock,
         `$${retailValue.toFixed(2)}`,
         `$${costValue.toFixed(2)}`,
         `$${potentialValue.toFixed(2)}`,
@@ -577,7 +499,6 @@ const ProductValueScreen = () => {
       ];
     });
 
-    // Add totals row
     const totalRow = [
       "TOTAL",
       "",
@@ -588,18 +509,18 @@ const ProductValueScreen = () => {
     ];
     body.push(totalRow);
 
-    autoTable(doc, {
+    window.jspdf.jsPDF.autoTable(doc, {
       head,
       body,
       startY: 40,
       theme: "striped",
-      headStyles: { fillColor: [22, 160, 133] }, // Teal headers
+      headStyles: { fillColor: [22, 160, 133] },
       willDrawCell: function (data) {
         const isTotalsRow = data.row.index === body.length - 1;
         if (isTotalsRow) {
-          data.cell.styles.fillColor = [46, 204, 113]; // Green background
-          data.cell.styles.textColor = [255, 255, 255]; // White text
-          data.cell.styles.fontStyle = "bold"; // Bold text
+          data.cell.styles.fillColor = [46, 204, 113];
+          data.cell.styles.textColor = [255, 255, 255];
+          data.cell.styles.fontStyle = "bold";
         }
       },
     });
@@ -607,41 +528,24 @@ const ProductValueScreen = () => {
     doc.save(`Inventory_Total_Value_${storeName}.pdf`);
   };
 
-  const exportToCSV = (items, storeName) => {
+  const exportToCSV = (items) => {
     const now = new Date();
     const formattedDate = now.toLocaleString("en-US");
-    const {
-      totalRetailValue,
-      totalCostValue,
-      totalPotentialValue,
-      totalMargin,
-    } = calculateSums();
+    const storeName = selectedStores.length === 1 ? selectedStores[0].storeName : "Multiple Stores";
+    const { totalRetailValue, totalCostValue, totalPotentialValue, totalMargin } = calculateSums;
 
     let csvContent = `Inventory Total Value\n`;
     csvContent += `Store:,${storeName}\nGenerated:,${formattedDate}\n\n`;
-    csvContent += "Product Name,QTY,Retail Value,Cost Value,Profit Margin\n";
+    csvContent += "Product Name,QTY,Retail Value,Cost Value,Total Profit,Profit Margin\n";
 
     items.forEach((item) => {
-      const { retailValue, costValue, potentialValue, margin } =
-        calculateValues(item);
-      const quantity =
-        item.productType === "Weight"
-          ? parseFloat(item.stock).toFixed(2)
-          : item.stock;
+      const { retailValue, costValue, potentialValue, margin } = calculateValues(item);
+      const quantity = item.productType === "Weight" ? parseFloat(item.stock).toFixed(2) : item.stock;
 
-      csvContent += `${item.productName},${quantity},${retailValue.toFixed(
-        2
-      )},${costValue.toFixed(2)},${potentialValue.toFixed(2)},${margin.toFixed(
-        2
-      )}%\n`;
+      csvContent += `${item.productName},${quantity},$${retailValue.toFixed(2)},$${costValue.toFixed(2)},$${potentialValue.toFixed(2)},${margin.toFixed(2)}%\n`;
     });
 
-    // Add totals row
-    csvContent += `TOTAL,,${totalRetailValue.toFixed(
-      2
-    )},${totalCostValue.toFixed(2)},${totalPotentialValue.toFixed(
-      2
-    )},${totalMargin.toFixed(2)}%\n`;
+    csvContent += `TOTAL,,$${totalRetailValue.toFixed(2)},$${totalCostValue.toFixed(2)},$${totalPotentialValue.toFixed(2)},${totalMargin.toFixed(2)}%\n`;
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -653,310 +557,248 @@ const ProductValueScreen = () => {
     document.body.removeChild(link);
   };
 
+  const { totalRetailValue, totalCostValue, totalPotentialValue, totalMargin } = calculateSums;
+
   return (
-    <div className="mainContainerReceipts">
-      {showDropdown && (
-        <div className="dropdownMenu">
-          <button className="signOutButton" onClick={handleSignOut}>
-            Sign Out
-          </button>
-        </div>
-      )}
-      <div className="toolBarReceipts">
-        {isSidebarOpen ? (
-          <FaTimes className="sidebar-icon" onClick={toggleSidebar} />
-        ) : (
-          <FaBars className="sidebar-icon" onClick={toggleSidebar} />
-        )}
-        <span className="toolBarTitle">Inventory Total Value</span>
+    <div className="product-value-container">
+      <div className="product-value-sidebar-toggle-wrapper">
+        <button 
+          className="product-value-sidebar-toggle"
+          onClick={toggleSidebar}
+          style={{ left: isSidebarOpen ? '280px' : '80px' }}
+        >
+          {isSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
       </div>
+      
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-      <div className="buttonsContainerValue">
-        {/* <div className="addProductsButtonContainer">
-          <button
-            className="addProductsButton"
-            onClick={() => {
-              console.log("add product");
-            }}
-          >
-            +
-          </button>
-        </div> */}
-        <div className="buttonContainerStoresProducts">
-          <button
-            className="inputButtonStore"
-            onClick={() => {
-              setIsStoreDropdownOpen(!isStoreDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsExportDropdownOpen(false);
-            }}
-          >
-            {selectedStores.length === 0
-              ? "Select Store"
-              : selectedStores.length === 1
-              ? selectedStores[0].storeName
-              : selectedStores.length === stores.length
-              ? "All Stores"
-              : selectedStores.map((s) => s.storeName).join(", ")}{" "}
-            <FaStore className="icon" color="grey" />
-          </button>
-          {isStoreDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => handleStoreSelect("All Stores")}
-              >
-                <div className="checkboxContainer">
-                  <input
-                    className="inputCheckBox"
-                    type="checkbox"
-                    checked={selectedStores.length === stores.length}
-                    readOnly
-                  />
-                </div>
-                <span className="storeName">All Stores</span>
-              </div>
-              {stores.map((store) => (
-                <div
-                  className="dropdownItem"
-                  key={store.storeId}
-                  onClick={() => handleStoreSelect(store)}
-                >
-                  <div className="checkboxContainer">
-                    <input
-                      className="inputCheckBox"
-                      type="checkbox"
-                      checked={selectedStores.some(
-                        (s) => s.storeId === store.storeId
-                      )}
-                      readOnly
-                    />
-                  </div>
-                  <span className="storeName">{store.storeName}</span>
-                </div>
-              ))}
+      
+      <div className={`product-value-content ${isSidebarOpen ? "product-value-content-shifted" : "product-value-content-collapsed"}`}>
+        <div className="product-value-toolbar">
+          <div className="product-value-toolbar-content">
+            <h1 className="product-value-toolbar-title">Inventory Value Dashboard</h1>
+            <div className="product-value-toolbar-subtitle">
+              Comprehensive overview of your inventory value and profit margins
             </div>
-          )}
-        </div>
-
-        <div className="buttonContainerFilterByCategory">
-          <button
-            className="inputButtonStore"
-            onClick={() => {
-              setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
-              setIsStoreDropdownOpen(false);
-              setIsExportDropdownOpen(false);
-            }}
-          >
-            {selectedCategories.length === 0
-              ? "Select Category"
-              : selectedCategories.length === 1
-              ? selectedCategories[0].categoryName
-              : selectedCategories.length === categories.length
-              ? "All Categories"
-              : selectedCategories.map((s) => s.categoryName).join(", ")}{" "}
-            <FaFileAlt className="icon" color="grey" />
-          </button>
-          {isCategoryDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => handleCategorySelect("All Categories")}
-              >
-                <div className="checkboxContainer">
-                  <input
-                    className="inputCheckBox"
-                    type="checkbox"
-                    checked={selectedCategories.length === categories.length}
-                    readOnly
-                  />
-                </div>
-                <span className="storeName">All Categories</span>
-              </div>
-              {categories.map((category) => (
-                <div
-                  className="dropdownItem"
-                  key={category.categoryId}
-                  onClick={() => handleCategorySelect(category)}
-                >
-                  <div className="checkboxContainer">
-                    <input
-                      className="inputCheckBox"
-                      type="checkbox"
-                      checked={selectedCategories.some(
-                        (s) => s.categoryId === category.categoryId
-                      )}
-                      readOnly
-                    />
-                  </div>
-                  <span className="storeName">{category.categoryName}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="buttonContainerLowStock">
-          <button
-            className="inputButtonLowStock"
-            onClick={() => {
-              setIsLowStockDropdownOpen(!isLowStock);
-              setIsExportDropdownOpen(false);
-              setIsEmployeeDropdownOpen(false);
-              setIsStoreDropdownOpen(false);
-            }}
-          >
-            {selectStockOption === "" ? "All Items" : selectStockOption}{" "}
-            <FaChevronDown className="icon" color="grey" />
-          </button>
-          {isLowStock && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setSelectStockOption("All Items"); // Set the selected category
-                  setIsLowStockDropdownOpen(false);
-
-                  console.log("alllll");
-                }}
-              >
-                <span className="storeName">All Stock</span>
-              </div>
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setSelectStockOption("Low Stock"); // Set the selected category
-                  setIsLowStockDropdownOpen(false);
-
-                  console.log("low");
-                }}
-              >
-                <span className="storeName">Low Stock</span>
-              </div>
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setSelectStockOption("Out of Stock"); // Set the selected category
-
-                  setIsLowStockDropdownOpen(false);
-                  console.log("out");
-                }}
-              >
-                <span className="storeName">Out Of Stock</span>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="buttonContainerExportValue">
-          <button
-            className="inputButtonExportValue"
-            onClick={() => {
-              setIsExportDropdownOpen(!isExportDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsStoreDropdownOpen(false);
-            }}
-          >
-            Export
-            <FaDownload className="icon" color="grey" />
-          </button>
-          {isExportDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setIsExportDropdownOpen(false);
-                  exportToPDF(filteredItems, selectedStores[0].storeName); // Pass selected store
-                }}
-              >
-                <span className="storeName">
-                  Download PDF{" "}
-                  <FaFilePdf color="red" style={{ marginRight: 8 }} />
-                </span>
-              </div>
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setIsExportDropdownOpen(false);
-                  exportToCSV(filteredItems, selectedStores[0].storeName); // Pass selected store
-                }}
-              >
-                <span className="storeName">
-                  Download CSV{" "}
-                  <FaFileCsv color="green" style={{ marginRight: 8 }} />
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="valueContainerSummery">
-        <div className="valueSubContainer">
-          <h1>Retail Value</h1>
-          <span className="amount">{formatNumberShort(totalRetailValue)}</span>
-        </div>
-        <div className="valueSubContainer">
-          <h1>Cost Value</h1>
-          <span className="amount">{formatNumberShort(totalCostValue)}</span>
-        </div>
-        <div className="valueSubContainer">
-          <h1>Total Profit</h1>
-          <span className="amount">
-            {formatNumberShort(totalPotentialValue)}
-          </span>
-        </div>
-        <div className="valueSubContainer">
-          <h1>Profit Margin</h1>
-          <span className="amount">{totalMargin.toFixed(2)}%</span>
-        </div>
-      </div>
-
-      <div className="productsContainerProductsValue">
-        {/* Search Input */}
-        <div className="searchBar">
-          <input
-            type="text"
-            placeholder="Search Product..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="searchInput"
-          />
-          {searchTerm && (
-            <button className="clearButton" onClick={() => setSearchTerm("")}>
-              ×
-            </button>
-          )}
-        </div>
-        <div className="productsSubContainer">
-          <div className="productsvalueHeader">
-            <div className="headerItem">Product Name</div>
-            <div className="headerItem">QTY</div>
-            <div className="headerItem">Retail Value</div>
-            <div className="headerItem">Cost Value</div>
-            <div className="headerItem">Profit Margin</div>
           </div>
-
-          {filteredItems.map((item, index) => {
-            const { retailValue, costValue, margin } = calculateValues(item);
-            return (
-              <ProductsValueListItem
-                key={index}
-                itemName={item.productName}
-                quantity={
-                  item.productType === "Weight"
-                    ? parseFloat(item.stock).toFixed(2)
-                    : item.stock
-                }
-                retailValue={retailValue.toFixed(2)}
-                costValue={costValue.toFixed(2)}
-                margin={`${margin.toFixed(2)}%`}
-                onClick={() => handleItemClick(item)}
-              />
-            );
-          })}
+          <div className="product-value-toolbar-actions">
+            <button 
+              className="product-value-refresh-btn"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
-      </div>
-      <RemainingTimeFooter />
 
-      <ToastContainer position="top-right" autoClose={3000} />
+        <div className="product-value-control-panel">
+          <div className="product-value-search-control">
+            <div className="product-value-search-wrapper">
+              <FaSearch className="product-value-search-icon" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="product-value-search-input"
+              />
+              {searchTerm && (
+                <button 
+                  className="product-value-search-clear"
+                  onClick={() => setSearchTerm("")}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <div className="product-value-filter-controls">
+            <div className="product-value-store-selector">
+              <button 
+                className="product-value-filter-btn"
+                onClick={() => {
+                  setIsStoreDropdownOpen(!isStoreDropdownOpen);
+                  setIsCategoryDropdownOpen(false);
+                  setIsExportDropdownOpen(false);
+                  setIsStockDropdownOpen(false);
+                }}
+              >
+                <FaStore />
+                <span>
+                  {selectedStores.length === 0
+                    ? "Select Store"
+                    : selectedStores.length === 1
+                    ? selectedStores[0].storeName
+                    : selectedStores.length === stores.length
+                    ? "All Stores"
+                    : `${selectedStores.length} stores`}
+                </span>
+              </button>
+              
+              {isStoreDropdownOpen && (
+                <div className="product-value-dropdown">
+                  <div className="product-value-dropdown-header">
+                    <span>Select Stores</span>
+                    <button 
+                      className="product-value-dropdown-select-all"
+                      onClick={() => handleStoreSelect("All Stores")}
+                    >
+                      {selectedStores.length === stores.length ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <div className="product-value-dropdown-content">
+                    {stores.map((store) => (
+                      <div
+                        className="product-value-dropdown-item"
+                        key={store.storeId}
+                        onClick={() => handleStoreSelect(store)}
+                      >
+                        <div className="product-value-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedStores.some((s) => s.storeId === store.storeId)}
+                            readOnly
+                          />
+                          <div className="product-value-checkbox-custom"></div>
+                        </div>
+                        <span className="product-value-store-name">{store.storeName}</span>
+                        <span className="product-value-store-location">{store.location}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+        
+          </div>
+        </div>
+
+        <div className="product-value-stats-grid">
+          <StatCard
+            title="Retail Value"
+            value={formatNumberShort(totalRetailValue)}
+            icon={<FaDollarSign />}
+            percentage="-"
+            isPositive={true}
+            color="#6366f1"
+          />
+          
+          <StatCard
+            title="Cost Value"
+            value={formatNumberShort(totalCostValue)}
+            icon={<FaBox />}
+            percentage="-"
+            isPositive={false}
+            color="#ef4444"
+          />
+          
+          <StatCard
+            title="Total Profit"
+            value={formatNumberShort(totalPotentialValue)}
+            icon={<FaChartLine />}
+            percentage="-"
+            isPositive={totalPotentialValue >= 0}
+            color="#10b981"
+          />
+          
+          <StatCard
+            title="Profit Margin"
+            value={`${totalMargin.toFixed(2)}%`}
+            icon={<FaPercentage />}
+            percentage="-"
+            isPositive={totalMargin >= 0}
+            color="#8b5cf6"
+          />
+        </div>
+
+        <div className="product-value-table-container">
+          <div className="product-value-table-header">
+            <h3>Inventory Value Details</h3>
+            <div className="product-value-table-actions">
+              <span className="product-value-table-count">
+                Showing {filteredItems.length} products
+              </span>
+            </div>
+          </div>
+          
+          <div className="product-value-table-wrapper">
+            <table className="product-value-table">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>QTY</th>
+                  <th>Retail Value</th>
+                  <th>Cost Value</th>
+                  <th>Total Profit</th>
+                  <th>Profit Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredItems.map((item, index) => {
+                  const { retailValue, costValue, potentialValue, margin } = calculateValues(item);
+                  const marginLevel = getMarginLevel(margin);
+                  
+                  return (
+                    <tr key={index} className="product-value-table-row">
+                      <td className="product-value-table-cell">{item.productName}</td>
+                      <td className="product-value-table-cell">
+                        {item.productType === "Weight" ? parseFloat(item.stock).toFixed(2) : item.stock}
+                      </td>
+                      <td className="product-value-table-cell product-value-bold">${retailValue.toFixed(2)}</td>
+                      <td className="product-value-table-cell product-value-bold">${costValue.toFixed(2)}</td>
+                      <td className="product-value-table-cell product-value-profit product-value-bold">
+                        ${potentialValue.toFixed(2)}
+                      </td>
+                      <td className="product-value-table-cell">
+                        <div className="product-value-margin-badge" style={{ 
+                          color: marginLevel.color, 
+                          backgroundColor: marginLevel.bgColor 
+                        }}>
+                          <span className="product-value-margin-icon">{marginLevel.icon}</span>
+                          <span className="product-value-margin-text">{margin.toFixed(2)}%</span>
+                          <span className="product-value-margin-label">{marginLevel.level}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                
+                {filteredItems.length > 0 && (
+                  <tr className="product-value-table-row product-value-total-row">
+                    <td className="product-value-table-cell product-value-total-bold">TOTAL</td>
+                    <td className="product-value-table-cell product-value-total-bold"></td>
+                    <td className="product-value-table-cell product-value-total-bold">
+                      ${totalRetailValue.toFixed(2)}
+                    </td>
+                    <td className="product-value-table-cell product-value-total-bold">
+                      ${totalCostValue.toFixed(2)}
+                    </td>
+                    <td className="product-value-table-cell product-value-total-bold product-value-profit">
+                      ${totalPotentialValue.toFixed(2)}
+                    </td>
+                    <td className="product-value-table-cell product-value-total-bold">
+                      <div className="product-value-margin-badge product-value-total-margin" style={{ 
+                        color: getMarginLevel(totalMargin).color, 
+                        backgroundColor: getMarginLevel(totalMargin).bgColor 
+                      }}>
+                        <span className="product-value-margin-icon">{getMarginLevel(totalMargin).icon}</span>
+                        <span className="product-value-margin-text">{totalMargin.toFixed(2)}%</span>
+                        <span className="product-value-margin-label">{getMarginLevel(totalMargin).level}</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <RemainingTimeFooter />
+      </div>
+      
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };

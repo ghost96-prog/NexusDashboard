@@ -4,11 +4,26 @@ import {
   FaBars,
   FaTimes,
   FaStore,
-  FaUser,
   FaArrowDown,
   FaArrowUp,
   FaDownload,
-  FaUserCircle,
+  FaChartLine,
+  FaReceipt,
+  FaPercentage,
+  FaDollarSign,
+  FaBox,
+  FaShoppingCart,
+  FaExchangeAlt,
+  FaTags,
+  FaUser,
+  FaCalendar,
+  FaMoneyBill,
+  FaCreditCard,
+  FaCheckCircle,
+  FaClock,
+  FaExclamationTriangle,
+  FaSearch,
+  FaTimes as FaTimesIcon
 } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { DateRangePicker, defaultStaticRanges } from "react-date-range";
@@ -29,42 +44,28 @@ import {
   addMonths,
   subYears,
   addYears,
-  addHours,
   isAfter,
 } from "date-fns";
 import enUS from "date-fns/locale/en-US";
 import "../Css/LaybyeScreen.css";
-import "react-date-range/dist/styles.css"; // main style file
-import "react-date-range/dist/theme/default.css"; // theme css file
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import { IoCalendar } from "react-icons/io5";
-import { Bar } from "react-chartjs-2";
-import Chart from "chart.js/auto";
-import { format } from "date-fns";
 import { useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ReceiptModal from "../components/ReceiptModal";
-import ReceiptListItem from "../components/ReceiptListItem";
-import { jwtDecode } from "jwt-decode"; // Make sure this is imported
+import { jwtDecode } from "jwt-decode";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
-import ShiftListItem from "../components/ShiftListItem";
-import ShiftModal from "../components/ShiftModal";
-import LaybyeListItem from "../components/LaybyeListItem";
 import PaymentsScreen from "./PaymentsScreen";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
 const LaybyeScreen = () => {
-  // const stores = ["Store 1", "Store 2", "Store 3"];
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedStores, setSelectedStores] = useState([]);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-  const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
-  const [selectedExportOption, setSelectedExportOption] = useState("");
   const [stores, setStoreData] = useState([]);
-  const [selectedStoreName, setSelectedStoreName] = useState("");
   const [selectedStartDate, setSelectedStartDate] = useState(startOfToday());
   const [selectedEndDate, setSelectedEndDate] = useState(endOfToday());
   const [selectedOption, setSelectedOption] = useState("today");
@@ -73,22 +74,25 @@ const LaybyeScreen = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const dateRangePickerRef = useRef(null);
   const location = useLocation();
-  const [receipts, setReceipts] = useState([]);
-  const [modalShift, setModalShift] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
   const [email, setEmail] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [paymentsData, setPaymentsData] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedLaybye, setSelectedLaybye] = useState(null);
   const [selectedLaybyeData, setSelectedLaybyeData] = useState(null);
-
   const [laybyes, setLaybyes] = useState([]);
-  useEffect(() => {
-    const token = localStorage.getItem("token"); // Or sessionStorage if needed
+  
+  // Stats data
+  const [totalLaybyes, setTotalLaybyes] = useState(0);
+  const [totalValue, setTotalValue] = useState(0);
+  const [totalPaid, setTotalPaid] = useState(0);
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [paidLaybyes, setPaidLaybyes] = useState(0);
+  const [pendingLaybyes, setPendingLaybyes] = useState(0);
+  const [overdueLaybyes, setOverdueLaybyes] = useState(0);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Authentication token is missing.");
       return;
@@ -96,45 +100,18 @@ const LaybyeScreen = () => {
 
     try {
       const decoded = jwtDecode(token);
-      setEmail(decoded.email); // Extract email from token
+      setEmail(decoded.email);
     } catch (error) {
       toast.error("Invalid authentication token.");
     }
   }, []);
 
   useEffect(() => {
-    if (modalVisible) {
-      // Push a new state to the history stack
-      window.history.pushState({ modal: true }, "");
-
-      // Handle the back button
-      const handlePopState = () => {
-        setModalVisible(false);
-      };
-
-      window.addEventListener("popstate", handlePopState);
-
-      // Cleanup
-      return () => {
-        window.removeEventListener("popstate", handlePopState);
-      };
+    if (email) {
+      fetchStores();
     }
-  }, [modalVisible]);
+  }, [email]);
 
-  const fetchDepositsandPayments = async () => {
-    setLoading(true);
-    try {
-      await fetchDepositsOnlineAndSetToRealm();
-      await fetchPaymentsOnlineAndSetToRealm();
-    } catch (err) {
-      console.error(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  console.log("====================================");
-  console.log(email);
-  console.log("====================================");
   useEffect(() => {
     if (selectedStores.length > 0) {
       onRefresh();
@@ -144,22 +121,14 @@ const LaybyeScreen = () => {
   useEffect(() => {
     setSelectedStores(stores);
   }, [selectedOption, stores]);
-  useEffect(() => {
-    console.log("Selected Option:", selectedOption);
-  }, [selectedOption]);
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-  useEffect(() => {
-    if (email) {
-      fetchStores();
-    }
-  }, [email]);
 
   const fetchStores = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -191,10 +160,10 @@ const LaybyeScreen = () => {
       console.error("Error fetching stores:", error);
     }
   };
+
   const fetchPaymentsOnlineAndSetToRealm = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -215,80 +184,86 @@ const LaybyeScreen = () => {
       }
 
       const responsedata = await response.json();
-      setPaymentsData(responsedata.data); // Set payments data to state
-      const depositLaybyes = responsedata.data.filter(
+      setPaymentsData(responsedata.data || []);
+      const depositLaybyes = (responsedata.data || []).filter(
         (payment) => payment.type === "Deposit"
       );
-      setLaybyes(depositLaybyes); // Set laybyes state with filtered data
+      setLaybyes(depositLaybyes);
+      calculateStats(depositLaybyes, responsedata.data || []);
     } catch (error) {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
       } else {
-        toast.error("An error occurred while fetching stores.");
+        toast.error("An error occurred while fetching laybyes.");
       }
-      console.error("Error fetching stores:", error);
+      console.error("Error fetching laybyes:", error);
     }
   };
 
-  const fetchDepositsOnlineAndSetToRealm = async () => {
-    try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
+  const calculateStats = (laybyesData, paymentsData) => {
+    let total = 0;
+    let totalValueSum = 0;
+    let totalPaidSum = 0;
+    let totalBalanceSum = 0;
+    let paidCount = 0;
+    let pendingCount = 0;
+    let overdueCount = 0;
 
-      if (!token) {
-        toast.error("Authentication token is missing.");
-        return;
-      }
-
-      const decoded = jwtDecode(token);
-      const userEmail = decoded.email;
-
-      const response = await fetch(
-        `https://nexuspos.onrender.com/api/laybyeRouter/laybyes?email=${encodeURIComponent(
-          userEmail
-        )}`
+    laybyesData.forEach(item => {
+      let totalPaid = parseFloat(item.deposit) || 0;
+      const paymentsForLaybye = paymentsData.filter(
+        (payment) =>
+          payment.laybyeId === item.id && payment.refunded !== "REFUNDED"
       );
 
-      if (!response.ok) {
-        const errorMessage = await response.text();
-        toast.error("User not found or invalid email.");
-        return;
-      }
+      paymentsForLaybye.forEach((payment) => {
+        totalPaid +=
+          payment.type === "Deposit"
+            ? parseFloat(payment.deposit)
+            : parseFloat(payment.amount);
+      });
 
-      const responsedata = await response.json();
-      console.log("====================================");
-      console.log("data", responsedata);
-      console.log("====================================");
-    } catch (error) {
-      if (!navigator.onLine) {
-        toast.error("No internet connection. Please check your network.");
+      const totalBill = parseFloat(item.totalBill) || 0;
+      const balance = totalBill - totalPaid;
+      const isOverdue = item.finalPaymentDate && 
+        isAfter(new Date(), new Date(item.finalPaymentDate)) && 
+        balance > 0;
+
+      total++;
+      totalValueSum += totalBill;
+      totalPaidSum += totalPaid;
+      totalBalanceSum += balance;
+
+      if (balance === 0) {
+        paidCount++;
+      } else if (isOverdue) {
+        overdueCount++;
+        pendingCount++;
       } else {
-        toast.error("An error occurred while fetching stores.");
+        pendingCount++;
       }
-      console.error("Error fetching stores:", error);
-    }
-  };
-
-  const formatNumber = (number) => {
-    if (number === 0) return "$0";
-    const formattedNumber = number.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
     });
-    return `$${formattedNumber}`;
+
+    setTotalLaybyes(total);
+    setTotalValue(totalValueSum);
+    setTotalPaid(totalPaidSum);
+    setTotalBalance(totalBalanceSum);
+    setPaidLaybyes(paidCount);
+    setPendingLaybyes(pendingCount);
+    setOverdueLaybyes(overdueCount);
   };
 
   const onRefresh = async () => {
     setIsRefreshing(true);
-    NProgress.start(); // 🔵 Start progress bar
-    await fetchDepositsandPayments()
+    NProgress.start();
+    await fetchPaymentsOnlineAndSetToRealm()
       .then(() => {
-        NProgress.done(); // ✅ End progress bar
+        NProgress.done();
         setIsRefreshing(false);
       })
       .catch((error) => {
         console.error(error);
-        NProgress.done(); // ✅ End progress bar
-
+        NProgress.done();
         setIsRefreshing(false);
       });
   };
@@ -312,24 +287,16 @@ const LaybyeScreen = () => {
   const handleClickOutside = (event) => {
     if (
       isStoreDropdownOpen &&
-      !event.target.closest(".buttonContainerStoreslaybyes")
+      !event.target.closest(".laybye-screen-store-selector")
     ) {
       setIsStoreDropdownOpen(false);
-      console.log("Selected Stores:", selectedStores);
-
-      if (selectedStores.length === 0) {
-        setLaybyes([]);
-      } else {
-        // onRefresh(selectedOption, selectedStartDate, selectedEndDate);
-      }
     }
 
     if (
       isExportDropdownOpen &&
-      !event.target.closest(".buttonContainerExportlaybyes")
+      !event.target.closest(".laybye-screen-export-button")
     ) {
       setIsExportDropdownOpen(false);
-      console.log("Selected Export Option:");
     }
   };
 
@@ -356,19 +323,6 @@ const LaybyeScreen = () => {
     };
   }, [dateRangePickerRef]);
 
-  function handleItemClick(item) {
-    console.log("open receipt", item);
-    setModalShift(item);
-  }
-
-  const handleLaybyePress = (laybye) => {
-    setSelectedLaybye(laybye);
-    setModalVisible(true);
-  };
-  const handleToggleDropdown = () => {
-    setShowDropdown((prev) => !prev);
-  };
-  // Helper function to calculate late payment fee
   const calculateLatePayment = (
     totalBill,
     totalPaid,
@@ -380,12 +334,13 @@ const LaybyeScreen = () => {
       const isLate = isAfter(currentDate, new Date(finalPaymentDate));
       if (isLate) {
         const overdueAmount = totalBill - totalPaid;
-        const lateFee = overdueAmount * 0.05; // 5% late fee
+        const lateFee = overdueAmount * 0.05;
         return lateFee;
       }
     }
     return 0;
   };
+
   const handleNavigatePayLaybye = (item) => {
     const formattedItem = {
       ...item,
@@ -401,25 +356,6 @@ const LaybyeScreen = () => {
     setModalVisible(true);
   };
 
-  //   const handleNavigatePayLaybye = (item) => {
-  //     const formattedItem = {
-  //       ...item,
-  //       date: new Date(item.date).toISOString(),
-  //       finalPaymentDate: new Date(item.finalPaymentDate).toISOString(),
-  //     };
-  //     navigation.navigate("Payments", {
-  //       laybyeData: formattedItem,
-  //       paymentsData: paymentsData,
-  //     });
-  //   };
-  const handleSignOut = () => {
-    NProgress.start(); // ✅ End progress bar
-
-    localStorage.removeItem("token");
-    window.location.href = "/"; // or navigate to login using React Router
-    NProgress.done(); // ✅ End progress bar
-  };
-  // Filter laybyes based on the search term
   const filteredLaybyes = laybyes
     .filter((item) => {
       const nameMatch = item.customerName
@@ -427,7 +363,6 @@ const LaybyeScreen = () => {
         .includes(searchTerm.toLowerCase());
 
       let totalPaid = parseFloat(item.deposit) || 0;
-
       const paymentsForLaybye = paymentsData.filter(
         (payment) =>
           payment.laybyeId === item.id && payment.refunded !== "REFUNDED"
@@ -447,216 +382,446 @@ const LaybyeScreen = () => {
           ? true
           : filterStatus === "paid"
           ? balance === 0
-          : balance > 0;
+          : filterStatus === "pending"
+          ? balance > 0
+          : true;
 
       return nameMatch && statusMatch;
     })
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  return (
-    <div className="mainContainerlaybyes">
-      {showDropdown && (
-        <div className="dropdownMenu">
-          <button className="signOutButton" onClick={handleSignOut}>
-            Sign Out
-          </button>
+  const StatCard = ({ title, value, icon, percentage, isPositive, subValue, color, isCurrency = true }) => (
+    <div className="laybye-screen-stat-card">
+      <div className="laybye-screen-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
+        <div className="laybye-screen-stat-icon-circle">
+          {icon}
         </div>
-      )}
-      <div className="toolBarlaybyes">
-        {isSidebarOpen ? (
-          <FaTimes className="sidebar-icon" onClick={toggleSidebar} />
-        ) : (
-          <FaBars className="sidebar-icon" onClick={toggleSidebar} />
+      </div>
+      <div className="laybye-screen-stat-content">
+        <div className="laybye-screen-stat-title">{title}</div>
+        <div className="laybye-screen-stat-value">
+          {isCurrency ? '$' : ''}{value.toLocaleString(undefined, {
+            minimumFractionDigits: isCurrency ? 2 : 0,
+            maximumFractionDigits: isCurrency ? 2 : 0,
+          })}
+        </div>
+        {percentage && (
+          <div className="laybye-screen-stat-change-container">
+            <div className={`laybye-screen-stat-change ${isPositive ? 'positive' : 'negative'}`}>
+              {isPositive ? <FaArrowUp /> : <FaArrowDown />}
+              <span>{percentage}</span>
+            </div>
+          </div>
         )}
-        <span className="toolBarTitle">Laybyes</span>
+        {subValue && <div className="laybye-screen-stat-subvalue">{subValue}</div>}
       </div>
-      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+    </div>
+  );
 
-      <div className="buttonsContainerLaybyes">
-        <div className="buttonContainerStoreslaybyes">
-          <button
-            className="inputButtonStore"
-            onClick={() => {
-              setIsStoreDropdownOpen(!isStoreDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsExportDropdownOpen(false);
-            }}
-          >
-            {selectedStores.length === 0
-              ? "Select Store"
-              : selectedStores.length === 1
-              ? selectedStores[0].storeName
-              : selectedStores.length === stores.length
-              ? "All Stores"
-              : selectedStores.map((s) => s.storeName).join(", ")}{" "}
-            <FaStore className="icon" color="grey" />
-          </button>
-          {isStoreDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => handleStoreSelect("All Stores")}
-              >
-                <div className="checkboxContainer">
-                  <input
-                    className="inputCheckBox"
-                    type="checkbox"
-                    checked={selectedStores.length === stores.length}
-                    readOnly
-                  />
-                </div>
-                <span className="storeName">All Stores</span>
-              </div>
-              {stores.map((store) => (
-                <div
-                  className="dropdownItem"
-                  key={store.storeId}
-                  onClick={() => handleStoreSelect(store)}
-                >
-                  <div className="checkboxContainer">
-                    <input
-                      className="inputCheckBox"
-                      type="checkbox"
-                      checked={selectedStores.some(
-                        (s) => s.storeId === store.storeId
-                      )}
-                      readOnly
-                    />
-                  </div>
-                  <span className="storeName">{store.storeName}</span>
-                </div>
-              ))}
-            </div>
-          )}
+  const renderLaybyeCard = (item) => {
+    let totalPaid = parseFloat(item.deposit) || 0;
+    const paymentsForLaybye = paymentsData.filter(
+      (payment) =>
+        payment.laybyeId === item.id && payment.refunded !== "REFUNDED"
+    );
+
+    paymentsForLaybye.forEach((payment) => {
+      totalPaid +=
+        payment.type === "Deposit"
+          ? parseFloat(payment.deposit)
+          : parseFloat(payment.amount);
+    });
+
+    const totalBill = parseFloat(item.totalBill) || 0;
+    const balance = totalBill - totalPaid;
+    const progressPercentage = totalBill > 0 ? (totalPaid / totalBill) * 100 : 0;
+    
+    const isOverdue = item.finalPaymentDate && 
+      isAfter(new Date(), new Date(item.finalPaymentDate)) && 
+      balance > 0;
+    
+    const lateFee = calculateLatePayment(
+      totalBill,
+      totalPaid,
+      balance,
+      item.finalPaymentDate
+    );
+
+    let status = "paid";
+    let statusText = "Paid";
+    if (balance > 0) {
+      if (isOverdue) {
+        status = "unpaid";
+        statusText = "Overdue";
+      } else {
+        status = "pending";
+        statusText = "Pending";
+      }
+    }
+
+    return (
+      <div 
+        key={item.id} 
+        className="laybye-screen-laybye-card"
+        onClick={() => handleNavigatePayLaybye(item)}
+      >
+        <div className="laybye-screen-laybye-header">
+          <h4 className="laybye-screen-customer-name">{item.customerName}</h4>
+          <span className={`laybye-screen-payment-status ${status}`}>
+            {statusText}
+          </span>
         </div>
-
-        {/* <div className="buttonContainerExportlaybyes">
-          <button
-            className="inputButtonExportlaybyes"
-            onClick={() => {
-              setIsExportDropdownOpen(!isExportDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsStoreDropdownOpen(false);
-            }}
-          >
-            Export
-            <FaDownload className="icon" color="grey" />
-          </button>
-          {isExportDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setIsExportDropdownOpen(false);
-                  console.log("PDF");
-                }}
-              >
-                <span className="storeName">PDF</span>
-              </div>
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setIsExportDropdownOpen(false);
-                  console.log("PDF");
-                }}
-              >
-                <span className="storeName">CSV</span>
-              </div>
-            </div>
-          )}
-        </div> */}
-      </div>
-
-      <div className="laybyesContainerLaybyes">
-        {/* Search Input */}
-        <div className="searchBar">
-          <input
-            type="text"
-            placeholder="Search Customer..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="searchInput"
-          />
-          {searchTerm && (
-            <button className="clearButton" onClick={() => setSearchTerm("")}>
-              ×
-            </button>
-          )}
-          <div className="filterDropdownlaybye">
-            <select
-              className="filterSelect"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="all">All Laybyes</option>
-              <option value="pending">Pending</option>
-              <option value="paid">Paid Up</option>
-            </select>
+        
+        <div className="laybye-screen-laybye-details">
+          <div className="laybye-screen-detail-item">
+            <span className="laybye-screen-detail-label">Total Bill</span>
+            <span className="laybye-screen-detail-value">${totalBill.toFixed(2)}</span>
+          </div>
+          <div className="laybye-screen-detail-item">
+            <span className="laybye-screen-detail-label">Paid</span>
+            <span className="laybye-screen-detail-value" style={{ color: '#10b981' }}>
+              ${totalPaid.toFixed(2)}
+            </span>
+          </div>
+          <div className="laybye-screen-detail-item">
+            <span className="laybye-screen-detail-label">Balance</span>
+            <span className="laybye-screen-detail-value" style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>
+              ${balance.toFixed(2)}
+            </span>
+          </div>
+          <div className="laybye-screen-detail-item">
+            <span className="laybye-screen-detail-label">Due Date</span>
+            <span className="laybye-screen-detail-value">
+              {item.finalPaymentDate ? new Date(item.finalPaymentDate).toLocaleDateString() : "N/A"}
+            </span>
           </div>
         </div>
-        <div className="laybyeSubContainer">
-          {filteredLaybyes.map((item) => {
-            let totalPaid = item.deposit;
-            const paymentsForLaybye = paymentsData.filter(
-              (payment) =>
-                payment.laybyeId === item.id && payment.refunded !== "REFUNDED"
-            );
 
-            paymentsForLaybye.forEach((payment) => {
-              totalPaid +=
-                payment.type === "Deposit" ? payment.deposit : payment.amount;
-            });
+        <div className="laybye-screen-laybye-progress">
+          <div className="laybye-screen-progress-bar">
+            <div 
+              className="laybye-screen-progress-fill" 
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+          <div className="laybye-screen-progress-text">
+            <span>${totalPaid.toFixed(2)} paid</span>
+            <span>${totalBill.toFixed(2)} total</span>
+          </div>
+        </div>
 
-            const balance = parseFloat(item.totalBill) - totalPaid;
+        {lateFee > 0 && (
+          <div className="laybye-screen-detail-item" style={{ marginBottom: '12px' }}>
+            <span className="laybye-screen-detail-label">Late Fee</span>
+            <span className="laybye-screen-detail-value" style={{ color: '#ef4444' }}>
+              ${lateFee.toFixed(2)}
+            </span>
+          </div>
+        )}
 
-            const latePayment = calculateLatePayment(
-              parseFloat(item.totalBill),
-              totalPaid,
-              balance,
-              item.finalPaymentDate
-            );
-
-            return (
-              <LaybyeListItem
-                key={item.id}
-                itemName={item.customerName}
-                date={new Date(item.date).toLocaleString()}
-                nextPaymentDate={
-                  item.finalPaymentDate
-                    ? new Date(item.finalPaymentDate).toLocaleDateString()
-                    : "N/A"
-                }
-                totalBill={parseFloat(item.totalBill)}
-                totalPaid={totalPaid}
-                balance={balance}
-                latePayment={latePayment}
-                paymentStatus={balance > 0 ? "Unpaid" : "Paid"}
-                onClick={() => handleNavigatePayLaybye(item)}
-              />
-            );
-          })}
-        </div>{" "}
+      
       </div>
+    );
+  };
+
+  return (
+    <div className="laybye-screen-container">
+      <div className="laybye-screen-sidebar-toggle-wrapper">
+        <button 
+          className="laybye-screen-sidebar-toggle"
+          onClick={toggleSidebar}
+          style={{ left: isSidebarOpen ? '280px' : '80px' }}
+        >
+          {isSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
+      </div>
+      
+      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+      
+      <div className={`laybye-screen-content ${isSidebarOpen ? "laybye-screen-content-shifted" : "laybye-screen-content-collapsed"}`}>
+        {/* Toolbar */}
+        <div className="laybye-screen-toolbar">
+          <div className="laybye-screen-toolbar-content">
+            <h1 className="laybye-screen-toolbar-title">Laybyes Dashboard</h1>
+            <div className="laybye-screen-toolbar-subtitle">
+              Manage and track customer laybyes
+            </div>
+          </div>
+          <div className="laybye-screen-toolbar-actions">
+            <button 
+              className="laybye-screen-refresh-btn"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {/* Control Panel */}
+        <div className="laybye-screen-control-panel">
+          <div className="laybye-screen-date-controls">
+            <div className="laybye-screen-date-navigation">
+              <button 
+                className="laybye-screen-nav-btn"
+                onClick={() => {/* Handle back navigation */}}
+              >
+                <IoIosArrowBack />
+              </button>
+              <button 
+                className="laybye-screen-date-range-btn"
+                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              >
+                <IoCalendar />
+                <span>
+                  {selectedStartDate.toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })} - {selectedEndDate.toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              </button>
+              <button 
+                className="laybye-screen-nav-btn"
+                onClick={() => {/* Handle forward navigation */}}
+              >
+                <IoIosArrowForward />
+              </button>
+            </div>
+            
+            {isDatePickerOpen && (
+              <div ref={dateRangePickerRef} className="laybye-screen-datepicker-modal">
+                <DateRangePicker
+                  ranges={[{
+                    startDate: selectedStartDate,
+                    endDate: selectedEndDate,
+                    key: "selection",
+                  }]}
+                  onChange={(ranges) => {
+                    const { startDate, endDate } = ranges.selection;
+                    setSelectedStartDate(startDate);
+                    setSelectedEndDate(endDate);
+                    setIsDatePickerOpen(false);
+                  }}
+                  moveRangeOnFirstSelection={true}
+                  months={2}
+                  direction="horizontal"
+                  locale={enUS}
+                />
+              </div>
+            )}
+          </div>
+          
+          <div className="laybye-screen-filter-controls">
+            <div className="laybye-screen-store-selector">
+              <button 
+                className="laybye-screen-filter-btn"
+                onClick={() => {
+                  setIsStoreDropdownOpen(!isStoreDropdownOpen);
+                  setIsExportDropdownOpen(false);
+                }}
+              >
+                <FaStore />
+                <span>
+                  {selectedStores.length === 0
+                    ? "Select Store"
+                    : selectedStores.length === 1
+                    ? selectedStores[0].storeName
+                    : selectedStores.length === stores.length
+                    ? "All Stores"
+                    : `${selectedStores.length} stores`}
+                </span>
+              </button>
+              
+              {isStoreDropdownOpen && (
+                <div className="laybye-screen-dropdown">
+                  <div className="laybye-screen-dropdown-header">
+                    <span>Select Stores</span>
+                    <button 
+                      className="laybye-screen-dropdown-select-all"
+                      onClick={() => handleStoreSelect("All Stores")}
+                    >
+                      {selectedStores.length === stores.length ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <div className="laybye-screen-dropdown-content">
+                    {stores.map((store) => (
+                      <div
+                        className="laybye-screen-dropdown-item"
+                        key={store.storeId}
+                        onClick={() => handleStoreSelect(store)}
+                      >
+                        <div className="laybye-screen-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedStores.some((s) => s.storeId === store.storeId)}
+                            readOnly
+                          />
+                          <div className="laybye-screen-checkbox-custom"></div>
+                        </div>
+                        <span className="laybye-screen-store-name">{store.storeName}</span>
+                        <span className="laybye-screen-store-location">{store.location}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="laybye-screen-stats-grid">
+          <StatCard
+            title="Total Laybyes"
+            value={totalLaybyes}
+            icon={<FaShoppingCart />}
+            isPositive={true}
+            color="#6366f1"
+            isCurrency={false}
+          />
+          
+          <StatCard
+            title="Total Value"
+            value={totalValue}
+            icon={<FaDollarSign />}
+            isPositive={true}
+            color="#10b981"
+          />
+          
+          <StatCard
+            title="Total Paid"
+            value={totalPaid}
+            icon={<FaMoneyBill />}
+            isPositive={true}
+            color="#10b981"
+          />
+          
+          <StatCard
+            title="Total Balance"
+            value={totalBalance}
+            icon={<FaCreditCard />}
+            isPositive={false}
+            color={totalBalance > 0 ? "#ef4444" : "#10b981"}
+          />
+          
+          <StatCard
+            title="Paid Up"
+            value={paidLaybyes}
+            icon={<FaCheckCircle />}
+            isPositive={true}
+            color="#10b981"
+            isCurrency={false}
+            subValue={`${totalLaybyes > 0 ? ((paidLaybyes / totalLaybyes) * 100).toFixed(1) : 0}% of total`}
+          />
+          
+          <StatCard
+            title="Pending"
+            value={pendingLaybyes}
+            icon={<FaClock />}
+            isPositive={false}
+            color="#f59e0b"
+            isCurrency={false}
+          />
+          
+          {overdueLaybyes > 0 && (
+            <StatCard
+              title="Overdue"
+              value={overdueLaybyes}
+              icon={<FaExclamationTriangle />}
+              isPositive={false}
+              color="#ef4444"
+              isCurrency={false}
+            />
+          )}
+        </div>
+
+        {/* Search and Filter */}
+        <div className="laybye-screen-search-filter">
+          <div className="laybye-screen-search-container">
+            <FaSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <input
+              type="text"
+              placeholder="Search customer..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="laybye-screen-search-input"
+              style={{ paddingLeft: '40px' }}
+            />
+            {searchTerm && (
+              <button 
+                className="laybye-screen-search-clear"
+                onClick={() => setSearchTerm("")}
+              >
+                <FaTimesIcon />
+              </button>
+            )}
+          </div>
+          
+          <select
+            className="laybye-screen-filter-select"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="all">All Laybyes</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid Up</option>
+          </select>
+        </div>
+
+        {/* Laybyes List */}
+        <div className="laybye-screen-list-container">
+          <div className="laybye-screen-list-header">
+            <h3>Customer Laybyes</h3>
+            <span className="laybye-screen-list-count">
+              {filteredLaybyes.length} laybyes
+            </span>
+          </div>
+          
+          <div className="laybye-screen-list-content">
+            {filteredLaybyes.length > 0 ? (
+              <div className="laybye-screen-list-grid">
+                {filteredLaybyes.map(renderLaybyeCard)}
+              </div>
+            ) : (
+              <div className="laybye-screen-empty-state">
+                <FaShoppingCart className="laybye-screen-empty-icon" />
+                <h3 className="laybye-screen-empty-title">No Laybyes Found</h3>
+                <p className="laybye-screen-empty-description">
+                  {searchTerm ? `No laybyes found for "${searchTerm}"` : "No laybyes available for the selected filters"}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <RemainingTimeFooter />
+      </div>
+      
+      {/* Modal for Payments */}
       {modalVisible && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="laybye-screen-modal-overlay">
+          <div className="laybye-screen-modal-content">
+            <button 
+              className="laybye-screen-modal-close"
+              onClick={() => setModalVisible(false)}
+            >
+              <FaTimes />
+            </button>
             <PaymentsScreen
               laybyeData={selectedLaybyeData?.laybyeData}
               paymentsData={selectedLaybyeData?.paymentsData}
               onClose={() => setModalVisible(false)}
             />
-            <button
-              className="close-payment"
-              onClick={() => setModalVisible(false)}
-            >
-              X
-            </button>
           </div>
         </div>
       )}
-      <RemainingTimeFooter />
-
-      <ToastContainer position="top-right" autoClose={3000} />
+      
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };
