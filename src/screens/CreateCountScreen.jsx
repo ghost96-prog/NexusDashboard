@@ -7,17 +7,15 @@ import {
   FaSearch,
   FaCheck,
   FaTimesCircle,
-  FaPlus,
   FaStore,
-  FaUserCircle,
 } from "react-icons/fa";
 import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import SubscriptionModal from '../components/SubscriptionModal';
-import NProgress from 'nprogress'; // Add this import
-import 'nprogress/nprogress.css'; // Add this import
+import NProgress from 'nprogress';
+import 'nprogress/nprogress.css';
 
 const CreateCountScreen = () => {
   const [createCountSidebarOpen, setCreateCountSidebarOpen] = useState(false);
@@ -354,15 +352,17 @@ const CreateCountScreen = () => {
     <div className="create-count-main-container">
       <ToastContainer position="top-right" autoClose={3000} />
       
-      {/* <div className="create-count-toolbar">
-        {createCountSidebarOpen ? (
-          <FaTimes className="create-count-sidebar-icon" onClick={toggleCreateCountSidebar} />
-        ) : (
-          <FaBars className="create-count-sidebar-icon" onClick={toggleCreateCountSidebar} />
-        )}
-        <span className="create-count-toolbar-title">Create Inventory Count</span>
+      {/* ONLY ADDED THIS: Sidebar Toggle Button */}
+      <div className="sales-summery-sidebar-toggle-wrapper">
+        <button 
+          className="sales-summery-sidebar-toggle"
+          onClick={toggleCreateCountSidebar}
+          style={{ left: createCountSidebarOpen ? '280px' : '80px' }}
+        >
+          {createCountSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
       </div>
-       */}
+        
       <Sidebar isOpen={createCountSidebarOpen} toggleSidebar={toggleCreateCountSidebar} />
       
       <div className={`create-count-content ${createCountSidebarOpen ? 'create-count-shifted' : 'create-count-collapsed'}`}>
