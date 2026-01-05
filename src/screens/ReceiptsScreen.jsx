@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import {
   FaStore,
@@ -46,6 +46,62 @@ import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
 
+// Move StatCard component outside to prevent unnecessary re-renders
+const StatCard = React.memo(({ title, value, icon, color, isCurrency = false, subValue }) => (
+  <div className="receipts-stat-card">
+    <div className="receipts-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
+      <div className="receipts-stat-icon-circle">
+        {icon}
+      </div>
+    </div>
+    <div className="receipts-stat-content">
+      <div className="receipts-stat-title">{title}</div>
+      <div className="receipts-stat-value">
+        {isCurrency ? '$' : ''}{value.toLocaleString(undefined, {
+          minimumFractionDigits: isCurrency ? 2 : 0,
+          maximumFractionDigits: isCurrency ? 2 : 0,
+        })}
+      </div>
+      {subValue && <div className="receipts-stat-subvalue">{subValue}</div>}
+    </div>
+  </div>
+));
+
+StatCard.displayName = 'StatCard';
+
+// Move formatDate function outside as it's pure
+const formatDate = (dateString) => {
+  try {
+    const dateObj = new Date(dateString);
+    
+    // Day of week (Mon, Tue, etc.)
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekday = weekdays[dateObj.getDay()];
+    
+    // Day of month (1, 2, 3... not 01, 02)
+    const day = dateObj.getDate();
+    
+    // Month (Jan, Feb, etc.)
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[dateObj.getMonth()];
+    
+    // Year
+    const year = dateObj.getFullYear();
+    
+    // Time (12:23:44)
+    const hours = dateObj.getHours().toString().padStart(2, '0');
+    const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+    const seconds = dateObj.getSeconds().toString().padStart(2, '0');
+    const time = `${hours}:${minutes}:${seconds}`;
+    
+    // Format: "Thu 1 Jan 2025 12:23:44"
+    return `${weekday} ${day} ${month} ${year} ${time}`;
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Invalid Date";
+  }
+};
+
 const ReceiptsScreen = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedStores, setSelectedStores] = useState([]);
@@ -67,6 +123,12 @@ const ReceiptsScreen = () => {
   const [refundedReceipts, setRefundedReceipts] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [refundedAmount, setRefundedAmount] = useState(0);
+
+  // Initialize with useMemo to prevent recreation
+  const selectedStoreIds = useMemo(() => 
+    selectedStores.map((store) => store.storeId),
+    [selectedStores]
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -96,7 +158,7 @@ const ReceiptsScreen = () => {
     if (selectedStores.length > 0) {
       onRefresh(selectedOption, selectedStartDate, selectedEndDate);
     }
-  }, [selectedStores, selectedOption, selectedStartDate, selectedEndDate]);
+  }, [selectedStores, selectedOption, selectedStartDate, selectedEndDate, selectedStoreIds]);
 
   useEffect(() => {
     setSelectedStores(stores);
@@ -108,11 +170,11 @@ const ReceiptsScreen = () => {
     }
   }, [email]);
 
-  const toggleSidebar = () => {
+  const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(!isSidebarOpen);
-  };
+  }, [isSidebarOpen]);
 
-  const fetchStores = async () => {
+  const fetchStores = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -145,9 +207,16 @@ const ReceiptsScreen = () => {
       }
       console.error("Error fetching stores:", error);
     }
-  };
+  }, []);
 
-  const fetchAllReceiptsData = async (timeframe, startDate, endDate) => {
+  const convertFirestoreTimestampToISO = useCallback((timestamp) => {
+    const date = new Date(
+      timestamp._seconds * 1000 + timestamp._nanoseconds / 1000000
+    );
+    return date.toISOString();
+  }, []);
+
+  const fetchAllReceiptsData = useCallback(async (timeframe, startDate, endDate) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -175,7 +244,6 @@ const ReceiptsScreen = () => {
       }
 
       const { receipts: rawReceipts } = responseData;
-      const selectedStoreIds = selectedStores.map((store) => store.storeId);
 
       const filteredReceipts = rawReceipts
         .map((receipt) => ({
@@ -208,9 +276,9 @@ const ReceiptsScreen = () => {
       }
       console.error("Error fetching receipts:", error);
     }
-  };
+  }, [convertFirestoreTimestampToISO, selectedStoreIds]);
 
-  const onRefresh = async (selectedOption, selectedStartRange, selectedEndRange) => {
+  const onRefresh = useCallback(async (selectedOption, selectedStartRange, selectedEndRange) => {
     NProgress.start();
     setIsRefreshing(true);
     await fetchAllReceiptsData(selectedOption, selectedStartRange, selectedEndRange)
@@ -222,16 +290,9 @@ const ReceiptsScreen = () => {
         console.error(error);
         setIsRefreshing(false);
       });
-  };
+  }, [fetchAllReceiptsData]);
 
-  const convertFirestoreTimestampToISO = (timestamp) => {
-    const date = new Date(
-      timestamp._seconds * 1000 + timestamp._nanoseconds / 1000000
-    );
-    return date.toISOString();
-  };
-
-  const handleStoreSelect = (store) => {
+  const handleStoreSelect = useCallback((store) => {
     if (store === "All Stores") {
       if (selectedStores.length === stores.length) {
         setSelectedStores([]);
@@ -245,9 +306,9 @@ const ReceiptsScreen = () => {
         : [...selectedStores, store];
       setSelectedStores(updatedStores);
     }
-  };
+  }, [selectedStores, stores]);
 
-  const handleClickOutside = (event) => {
+  const handleClickOutside = useCallback((event) => {
     if (isStoreDropdownOpen && !event.target.closest(".receipts-store-selector")) {
       setIsStoreDropdownOpen(false);
       if (selectedStores.length === 0) {
@@ -262,14 +323,14 @@ const ReceiptsScreen = () => {
     if (isExportDropdownOpen && !event.target.closest(".receipts-export-button")) {
       setIsExportDropdownOpen(false);
     }
-  };
+  }, [isStoreDropdownOpen, isExportDropdownOpen, selectedStores.length]);
 
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  });
+  }, [handleClickOutside]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -284,7 +345,7 @@ const ReceiptsScreen = () => {
     };
   }, [dateRangePickerRef]);
 
-  const handleDateRangeChange = (ranges) => {
+  const handleDateRangeChange = useCallback((ranges) => {
     const { startDate, endDate } = ranges.selection;
 
     const selectedRange = customStaticRanges.find(
@@ -328,9 +389,9 @@ const ReceiptsScreen = () => {
     setSelectedStartDate(startDate);
     setSelectedEndDate(endDate);
     onRefresh(selectedOption, startDate, endDate);
-  };
+  }, [onRefresh]);
 
-  const customStaticRanges = [
+  const customStaticRanges = useMemo(() => [
     ...defaultStaticRanges,
     {
       label: "This Year",
@@ -340,9 +401,9 @@ const ReceiptsScreen = () => {
       }),
       isSelected: () => selectedOption === "This Year",
     },
-  ];
+  ], [selectedOption]);
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     let newStartDate, newEndDate;
 
     switch (selectedRange) {
@@ -382,9 +443,9 @@ const ReceiptsScreen = () => {
     setSelectedStartDate(newStartDate);
     setSelectedEndDate(newEndDate);
     onRefresh(selectedOption, newStartDate, newEndDate);
-  };
+  }, [selectedRange, selectedStartDate, selectedEndDate, onRefresh]);
 
-  const handleForwardClick = () => {
+  const handleForwardClick = useCallback(() => {
     let newStartDate, newEndDate;
 
     switch (selectedRange) {
@@ -426,83 +487,121 @@ const ReceiptsScreen = () => {
       setSelectedEndDate(newEndDate);
       onRefresh(selectedOption, newStartDate, newEndDate);
     }
-  };
+  }, [selectedRange, selectedStartDate, selectedEndDate, onRefresh]);
 
-  const StatCard = ({ title, value, icon, color, isCurrency = false, subValue }) => (
-    <div className="receipts-stat-card">
-      <div className="receipts-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
-        <div className="receipts-stat-icon-circle">
-          {icon}
-        </div>
-      </div>
-      <div className="receipts-stat-content">
-        <div className="receipts-stat-title">{title}</div>
-        <div className="receipts-stat-value">
-          {isCurrency ? '$' : ''}{value.toLocaleString(undefined, {
-            minimumFractionDigits: isCurrency ? 2 : 0,
-            maximumFractionDigits: isCurrency ? 2 : 0,
-          })}
-        </div>
-        {subValue && <div className="receipts-stat-subvalue">{subValue}</div>}
-      </div>
-    </div>
+  const handleItemClick = useCallback((item) => {
+    setModalReceipt(item);
+  }, []);
+
+  const filteredReceipts = useMemo(() => 
+    receipts
+      .filter((receipt) =>
+        receipt.ticketNumber.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime)),
+    [receipts, searchTerm]
   );
 
-  const filteredReceipts = receipts
-    .filter((receipt) =>
-      receipt.ticketNumber.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+  const tableRows = useMemo(() => 
+    filteredReceipts.map((item, index) => {
+      const matchedStore = stores.find(
+        (store) => store.storeId === item.storeId
+      );
+      const isRefunded = item.label === "Refunded";
+      
+      return (
+        <tr key={index} className={`receipts-table-row ${isRefunded ? 'receipts-refunded-row' : ''}`}>
+          <td className="receipts-table-cell">{item.ticketNumber || 'N/A'}</td>
+          <td className="receipts-table-cell">
+            {item.dateTime ? formatDate(item.dateTime) : 'N/A'}
+          </td>
+          <td className="receipts-table-cell">{matchedStore?.storeName || 'Unknown Store'}</td>
+          <td className="receipts-table-cell">{item.selectedCurrency || 'N/A'}</td>
+          <td className="receipts-table-cell">
+            ${(Number(item.totalAmountUsd || 0) * Number(item.rate || 1)).toFixed(2)}
+          </td>
+          <td className="receipts-table-cell">
+            <span className={`receipts-status ${isRefunded ? 'receipts-status-refunded' : 'receipts-status-completed'}`}>
+              {isRefunded ? 'Refunded' : 'Completed'}
+            </span>
+          </td>
+          <td className="receipts-table-cell">
+            <button 
+              className="receipts-view-btn"
+              onClick={() => handleItemClick(item)}
+            >
+              View Details
+            </button>
+          </td>
+        </tr>
+      );
+    }),
+    [filteredReceipts, stores, handleItemClick]
+  );
 
-  function handleItemClick(item) {
-    setModalReceipt(item);
-  }
-// Add this formatting function at the top of your component or in the render section
-// Update the formatDate function to show day name first
-const formatDate = (dateString) => {
-  try {
-    const dateObj = new Date(dateString);
-    
-    // Day of week (Mon, Tue, etc.)
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const weekday = weekdays[dateObj.getDay()];
-    
-    // Day of month (1, 2, 3... not 01, 02)
-    const day = dateObj.getDate();
-    
-    // Month (Jan, Feb, etc.)
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[dateObj.getMonth()];
-    
-    // Year
-    const year = dateObj.getFullYear();
-    
-    // Time (12:23:44)
-    const hours = dateObj.getHours().toString().padStart(2, '0');
-    const minutes = dateObj.getMinutes().toString().padStart(2, '0');
-    const seconds = dateObj.getSeconds().toString().padStart(2, '0');
-    const time = `${hours}:${minutes}:${seconds}`;
-    
-    // Format: "Thu 1 Jan 2025 12:23:44"
-    return `${weekday} ${day} ${month} ${year} ${time}`;
-  } catch (error) {
-    console.error("Error formatting date:", error);
-    return "Invalid Date";
-  }
-};
+  // Calculate derived values with useMemo
+  const avgReceiptAmount = useMemo(() => 
+    totalReceipts > 0 ? (totalAmount / totalReceipts).toFixed(2) : 0,
+    [totalReceipts, totalAmount]
+  );
 
+  const avgRefundAmount = useMemo(() => 
+    refundedReceipts > 0 ? (refundedAmount / refundedReceipts).toFixed(2) : 0,
+    [refundedReceipts, refundedAmount]
+  );
+
+  // Add mobile date picker CSS fix
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media (max-width: 768px) {
+        .receipts-datepicker-modal .rdrMonths {
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          scroll-snap-type: x mandatory;
+        }
+        .receipts-datepicker-modal .rdrMonth {
+          min-width: 100%;
+          scroll-snap-align: start;
+        }
+        .receipts-datepicker-modal {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 90vw;
+          max-height: 80vh;
+          overflow: auto;
+          z-index: 1000;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          padding: 16px;
+        }
+        .receipts-datepicker-modal .rdrDateRangePickerWrapper {
+          width: 100%;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   return (
     <div className="receipts-container">
-         <div className="sales-summery-sidebar-toggle-wrapper">
-                    <button 
-                      className="sales-summery-sidebar-toggle"
-                      onClick={toggleSidebar}
-                      style={{ left: isSidebarOpen ? '280px' : '80px' }}
-                    >
-                      {isSidebarOpen ? <FaTimes /> : <FaBars />}
-                    </button>
-                  </div>
+      <div className="sales-summery-sidebar-toggle-wrapper">
+        <button 
+          className="sales-summery-sidebar-toggle"
+          onClick={toggleSidebar}
+          style={{ left: isSidebarOpen ? '280px' : '80px' }}
+        >
+          {isSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
+      </div>
+      
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       
       <div className={`receipts-content ${isSidebarOpen ? "receipts-content-shifted" : "receipts-content-collapsed"}`}>
@@ -663,7 +762,7 @@ const formatDate = (dateString) => {
             icon={<FaReceipt />}
             color="#10b981"
             isCurrency={true}
-            subValue={`${totalReceipts > 0 ? (totalAmount / totalReceipts).toFixed(2) : 0} avg`}
+            subValue={`${avgReceiptAmount} avg`}
           />
           
           <StatCard
@@ -672,7 +771,7 @@ const formatDate = (dateString) => {
             icon={<FaExchangeAlt />}
             color="#f59e0b"
             isCurrency={true}
-            subValue={`${refundedReceipts > 0 ? (refundedAmount / refundedReceipts).toFixed(2) : 0} avg refund`}
+            subValue={`${avgRefundAmount} avg refund`}
           />
         </div>
 
@@ -728,39 +827,7 @@ const formatDate = (dateString) => {
                     </td>
                   </tr>
                 ) : (
-                  filteredReceipts.map((item, index) => {
-                    const matchedStore = stores.find(
-                      (store) => store.storeId === item.storeId
-                    );
-                    const isRefunded = item.label === "Refunded";
-                    
-                    return (
-                      <tr key={index} className={`receipts-table-row ${isRefunded ? 'receipts-refunded-row' : ''}`}>
-                        <td className="receipts-table-cell">{item.ticketNumber || 'N/A'}</td>
-                        <td className="receipts-table-cell">
-  {item.dateTime ? formatDate(item.dateTime) : 'N/A'}
-                        </td>
-                        <td className="receipts-table-cell">{matchedStore?.storeName || 'Unknown Store'}</td>
-                        <td className="receipts-table-cell">{item.selectedCurrency || 'N/A'}</td>
-                        <td className="receipts-table-cell">
-                          ${(Number(item.totalAmountUsd || 0) * Number(item.rate || 1)).toFixed(2)}
-                        </td>
-                        <td className="receipts-table-cell">
-                          <span className={`receipts-status ${isRefunded ? 'receipts-status-refunded' : 'receipts-status-completed'}`}>
-                            {isRefunded ? 'Refunded' : 'Completed'}
-                          </span>
-                        </td>
-                        <td className="receipts-table-cell">
-                          <button 
-                            className="receipts-view-btn"
-                            onClick={() => handleItemClick(item)}
-                          >
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
+                  tableRows
                 )}
               </tbody>
             </table>

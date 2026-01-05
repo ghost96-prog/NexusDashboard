@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import {
   FaStore,
@@ -48,6 +48,29 @@ import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
 import { FaArrowUp, FaArrowDown } from "react-icons/fa";
 
+// Move StatCard component outside to prevent unnecessary re-renders
+const StatCard = React.memo(({ title, value, icon, color, isCurrency = true, subValue }) => (
+  <div className="topselling-stat-card">
+    <div className="topselling-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
+      <div className="topselling-stat-icon-circle">
+        {icon}
+      </div>
+    </div>
+    <div className="topselling-stat-content">
+      <div className="topselling-stat-title">{title}</div>
+      <div className="topselling-stat-value">
+        {isCurrency ? '$' : ''}{value.toLocaleString(undefined, {
+          minimumFractionDigits: isCurrency ? 2 : 0,
+          maximumFractionDigits: isCurrency ? 2 : 0,
+        })}
+      </div>
+      {subValue && <div className="topselling-stat-subvalue">{subValue}</div>}
+    </div>
+  </div>
+));
+
+StatCard.displayName = 'StatCard';
+
 const TopSellingProducts = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedStores, setSelectedStores] = useState([]);
@@ -89,7 +112,7 @@ const TopSellingProducts = () => {
     if (selectedStores.length > 0) {
       onRefresh(selectedOption, selectedStartDate, selectedEndDate);
     }
-  }, [selectedStores, selectedOption, selectedStartDate, selectedEndDate]);
+  }, [selectedStores, selectedOption, selectedStartDate, selectedEndDate, filterTopSellingBySales]);
 
   useEffect(() => {
     setSelectedStores(stores);
@@ -101,11 +124,11 @@ const TopSellingProducts = () => {
     }
   }, [email]);
 
-  const toggleSidebar = () => {
+  const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(!isSidebarOpen);
-  };
+  }, [isSidebarOpen]);
 
-  const fetchStores = async () => {
+  const fetchStores = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -138,9 +161,9 @@ const TopSellingProducts = () => {
       }
       console.error("Error fetching stores:", error);
     }
-  };
+  }, []);
 
-  const fetchAllReceiptsData = async (timeframe, startDate, endDate) => {
+  const fetchAllReceiptsData = useCallback(async (timeframe, startDate, endDate) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -198,9 +221,9 @@ const TopSellingProducts = () => {
       }
       console.error("Error fetching products:", error);
     }
-  };
+  }, [filterTopSellingBySales]);
 
-  const onRefresh = async (selectedOption, selectedStartRange, selectedEndRange) => {
+  const onRefresh = useCallback(async (selectedOption, selectedStartRange, selectedEndRange) => {
     NProgress.start();
     setIsRefreshing(true);
     await fetchAllReceiptsData(selectedOption, selectedStartRange, selectedEndRange)
@@ -212,9 +235,9 @@ const TopSellingProducts = () => {
         console.error(error);
         setIsRefreshing(false);
       });
-  };
+  }, [fetchAllReceiptsData]);
 
-  const handleStoreSelect = (store) => {
+  const handleStoreSelect = useCallback((store) => {
     if (store === "All Stores") {
       if (selectedStores.length === stores.length) {
         setSelectedStores([]);
@@ -228,9 +251,9 @@ const TopSellingProducts = () => {
         : [...selectedStores, store];
       setSelectedStores(updatedStores);
     }
-  };
+  }, [selectedStores, stores]);
 
-  const handleClickOutside = (event) => {
+  const handleClickOutside = useCallback((event) => {
     if (isStoreDropdownOpen && !event.target.closest(".topselling-store-selector")) {
       setIsStoreDropdownOpen(false);
       if (selectedStores.length === 0) {
@@ -245,14 +268,14 @@ const TopSellingProducts = () => {
     if (isExportDropdownOpen && !event.target.closest(".topselling-export-button")) {
       setIsExportDropdownOpen(false);
     }
-  };
+  }, [isStoreDropdownOpen, isExportDropdownOpen, selectedStores.length]);
 
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  });
+  }, [handleClickOutside]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -267,7 +290,7 @@ const TopSellingProducts = () => {
     };
   }, [dateRangePickerRef]);
 
-  const handleDateRangeChange = (ranges) => {
+  const handleDateRangeChange = useCallback((ranges) => {
     const { startDate, endDate } = ranges.selection;
 
     const selectedRange = customStaticRanges.find(
@@ -311,9 +334,9 @@ const TopSellingProducts = () => {
     setSelectedStartDate(startDate);
     setSelectedEndDate(endDate);
     onRefresh(selectedOption, startDate, endDate);
-  };
+  }, [onRefresh]);
 
-  const customStaticRanges = [
+  const customStaticRanges = useMemo(() => [
     ...defaultStaticRanges,
     {
       label: "This Year",
@@ -323,9 +346,9 @@ const TopSellingProducts = () => {
       }),
       isSelected: () => selectedOption === "This Year",
     },
-  ];
+  ], [selectedOption]);
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     let newStartDate, newEndDate;
 
     switch (selectedRange) {
@@ -365,9 +388,9 @@ const TopSellingProducts = () => {
     setSelectedStartDate(newStartDate);
     setSelectedEndDate(newEndDate);
     onRefresh(selectedOption, newStartDate, newEndDate);
-  };
+  }, [selectedRange, selectedStartDate, selectedEndDate, onRefresh]);
 
-  const handleForwardClick = () => {
+  const handleForwardClick = useCallback(() => {
     let newStartDate, newEndDate;
 
     switch (selectedRange) {
@@ -409,29 +432,9 @@ const TopSellingProducts = () => {
       setSelectedEndDate(newEndDate);
       onRefresh(selectedOption, newStartDate, newEndDate);
     }
-  };
+  }, [selectedRange, selectedStartDate, selectedEndDate, onRefresh]);
 
-  const StatCard = ({ title, value, icon, color, isCurrency = true, subValue }) => (
-    <div className="topselling-stat-card">
-      <div className="topselling-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
-        <div className="topselling-stat-icon-circle">
-          {icon}
-        </div>
-      </div>
-      <div className="topselling-stat-content">
-        <div className="topselling-stat-title">{title}</div>
-        <div className="topselling-stat-value">
-          {isCurrency ? '$' : ''}{value.toLocaleString(undefined, {
-            minimumFractionDigits: isCurrency ? 2 : 0,
-            maximumFractionDigits: isCurrency ? 2 : 0,
-          })}
-        </div>
-        {subValue && <div className="topselling-stat-subvalue">{subValue}</div>}
-      </div>
-    </div>
-  );
-
-  const handlePDFExport = () => {
+  const handlePDFExport = useCallback(() => {
     const doc = new jsPDF();
     const date = new Date().toLocaleString("en-US", {
       year: "numeric",
@@ -476,9 +479,9 @@ const TopSellingProducts = () => {
     });
 
     doc.save("TopSellingProducts.pdf");
-  };
+  }, [productSummary, totalQuantity, totalSales, totalCost, totalProfit, selectedStores]);
 
-  const handleCSVExport = () => {
+  const handleCSVExport = useCallback(() => {
     const date = new Date().toLocaleString("en-US", {
       year: "numeric",
       month: "long",
@@ -512,11 +515,97 @@ const TopSellingProducts = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [productSummary, totalQuantity, totalSales, totalCost, totalProfit, selectedStores]);
 
-  const filteredProducts = productSummary.filter((product) =>
-    product.productName.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProducts = useMemo(() => 
+    productSummary.filter((product) =>
+      product.productName.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [productSummary, searchTerm]
   );
+
+  const tableRows = useMemo(() => 
+    filteredProducts.map((item, index) => {
+      const totalPrice = item.totalPrice || 0;
+      const totalCost = item.totalCost || 0;
+      const profit = item.profit || 0;
+      const quantity = item.quantity || 0;
+      
+      const profitMargin = totalPrice > 0 ? (profit / totalPrice) * 100 : 0;
+      
+      return (
+        <tr key={index} className="topselling-table-row">
+          <td className="topselling-table-cell">{item.productName || 'Unknown Product'}</td>
+          <td className="topselling-table-cell">{quantity}</td>
+          <td className="topselling-table-cell">${totalPrice.toFixed(2)}</td>
+          <td className="topselling-table-cell">${totalCost.toFixed(2)}</td>
+          <td className="topselling-table-cell topselling-profit">
+            ${profit.toFixed(2)}
+          </td>
+          <td className="topselling-table-cell">
+            <div className="topselling-margin-container">
+              <span className="topselling-margin-value">{profitMargin.toFixed(1)}%</span>
+              <div className="topselling-margin-bar">
+                <div 
+                  className="topselling-margin-fill"
+                  style={{ 
+                    width: `${Math.min(profitMargin, 100)}%`,
+                    backgroundColor: profitMargin >= 0 ? '#10b981' : '#ef4444'
+                  }}
+                ></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      );
+    }),
+    [filteredProducts]
+  );
+
+  const profitMargin = useMemo(() => 
+    totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : 0,
+    [totalSales, totalProfit]
+  );
+
+  // Add mobile date picker CSS fix
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media (max-width: 768px) {
+        .topselling-datepicker-modal .rdrMonths {
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          scroll-snap-type: x mandatory;
+        }
+        .topselling-datepicker-modal .rdrMonth {
+          min-width: 100%;
+          scroll-snap-align: start;
+        }
+        .topselling-datepicker-modal {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 90vw;
+          max-height: 80vh;
+          overflow: auto;
+          z-index: 1000;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          padding: 16px;
+        }
+        .topselling-datepicker-modal .rdrDateRangePickerWrapper {
+          width: 100%;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   return (
     <div className="topselling-container">
@@ -731,7 +820,7 @@ const TopSellingProducts = () => {
             value={totalProfit}
             icon={<FaChartLine />}
             color="#8b5cf6"
-            subValue={`${totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : 0}% margin`}
+            subValue={`${profitMargin}% margin`}
           />
         </div>
 
@@ -780,73 +869,37 @@ const TopSellingProducts = () => {
             </div>
           </div>
           
-       {/* Products Table - Updated with null checks */}
-<div className="topselling-table-wrapper">
-  <table className="topselling-table">
-    <thead>
-      <tr>
-        <th>Product Name</th>
-        <th>Quantity</th>
-        <th>Total Sales</th>
-        <th>Total Cost</th>
-        <th>Profit</th>
-        <th>Profit Margin</th>
-      </tr>
-    </thead>
-    <tbody>
-      {filteredProducts.map((item, index) => {
-        // Add null checks for all numeric values
-        const totalPrice = item.totalPrice || 0;
-        const totalCost = item.totalCost || 0;
-        const profit = item.profit || 0;
-        const quantity = item.quantity || 0;
-        
-        // Calculate profit margin with null check
-        const profitMargin = totalPrice > 0 ? (profit / totalPrice) * 100 : 0;
-        
-        return (
-          <tr key={index} className="topselling-table-row">
-            <td className="topselling-table-cell">{item.productName || 'Unknown Product'}</td>
-            <td className="topselling-table-cell">{quantity}</td>
-            <td className="topselling-table-cell">${totalPrice.toFixed(2)}</td>
-            <td className="topselling-table-cell">${totalCost.toFixed(2)}</td>
-            <td className="topselling-table-cell topselling-profit">
-              ${profit.toFixed(2)}
-            </td>
-            <td className="topselling-table-cell">
-              <div className="topselling-margin-container">
-                <span className="topselling-margin-value">{profitMargin.toFixed(1)}%</span>
-                <div className="topselling-margin-bar">
-                  <div 
-                    className="topselling-margin-fill"
-                    style={{ 
-                      width: `${Math.min(profitMargin, 100)}%`,
-                      backgroundColor: profitMargin >= 0 ? '#10b981' : '#ef4444'
-                    }}
-                  ></div>
-                </div>
-              </div>
-            </td>
-          </tr>
-        );
-      })}
-      
-      {/* Totals Row with null checks */}
-      <tr className="topselling-table-row topselling-total-row">
-        <td className="topselling-table-cell topselling-total">TOTAL</td>
-        <td className="topselling-table-cell topselling-total">{totalQuantity}</td>
-        <td className="topselling-table-cell topselling-total">${(totalSales || 0).toFixed(2)}</td>
-        <td className="topselling-table-cell topselling-total">${(totalCost || 0).toFixed(2)}</td>
-        <td className="topselling-table-cell topselling-total topselling-profit">
-          ${(totalProfit || 0).toFixed(2)}
-        </td>
-        <td className="topselling-table-cell topselling-total">
-          {totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : 0}%
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+          <div className="topselling-table-wrapper">
+            <table className="topselling-table">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>Quantity</th>
+                  <th>Total Sales</th>
+                  <th>Total Cost</th>
+                  <th>Profit</th>
+                  <th>Profit Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableRows}
+                
+                {/* Totals Row with null checks */}
+                <tr className="topselling-table-row topselling-total-row">
+                  <td className="topselling-table-cell topselling-total">TOTAL</td>
+                  <td className="topselling-table-cell topselling-total">{totalQuantity}</td>
+                  <td className="topselling-table-cell topselling-total">${(totalSales || 0).toFixed(2)}</td>
+                  <td className="topselling-table-cell topselling-total">${(totalCost || 0).toFixed(2)}</td>
+                  <td className="topselling-table-cell topselling-total topselling-profit">
+                    ${(totalProfit || 0).toFixed(2)}
+                  </td>
+                  <td className="topselling-table-cell topselling-total">
+                    {profitMargin}%
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
         
         <RemainingTimeFooter />

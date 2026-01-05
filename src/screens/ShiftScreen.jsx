@@ -4,84 +4,39 @@ import {
   FaBars,
   FaTimes,
   FaStore,
-  FaUser,
-  FaArrowDown,
-  FaArrowUp,
   FaDownload,
-  FaUserCircle,
+  FaSearch,
+  FaTimes as FaTimesIcon,
+  FaFileAlt,
+  FaBox,
+  FaFilter,
+  FaPlus
 } from "react-icons/fa";
-import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import { DateRangePicker, defaultStaticRanges } from "react-date-range";
-import {
-  startOfToday,
-  endOfToday,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  endOfYear,
-  subDays,
-  addDays,
-  subWeeks,
-  addWeeks,
-  subMonths,
-  addMonths,
-  subYears,
-  addYears,
-  addHours,
-} from "date-fns";
-import enUS from "date-fns/locale/en-US";
+import { IoReload } from "react-icons/io5";
 import "../Css/ShiftScreen.css";
-import "react-date-range/dist/styles.css"; // main style file
-import "react-date-range/dist/theme/default.css"; // theme css file
-import { IoCalendar } from "react-icons/io5";
-import { Bar } from "react-chartjs-2";
-import Chart from "chart.js/auto";
-import { format } from "date-fns";
-import { useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ReceiptModal from "../components/ReceiptModal";
-import ReceiptListItem from "../components/ReceiptListItem";
-import { jwtDecode } from "jwt-decode"; // Make sure this is imported
+import { jwtDecode } from "jwt-decode";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
-import ShiftListItem from "../components/ShiftListItem";
-import ShiftModal from "../components/ShiftModal";
+import { useNavigate } from "react-router-dom";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
+import ShiftModal from "../components/ShiftModal";
 
 const ShiftScreen = () => {
-  // const stores = ["Store 1", "Store 2", "Store 3"];
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedStores, setSelectedStores] = useState([]);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
-  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-  const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
-  const [selectedExportOption, setSelectedExportOption] = useState("");
   const [stores, setStoreData] = useState([]);
-  const [selectedStoreName, setSelectedStoreName] = useState("");
-  const [selectedStartDate, setSelectedStartDate] = useState(startOfToday());
-  const [selectedEndDate, setSelectedEndDate] = useState(endOfToday());
-  const [selectedOption, setSelectedOption] = useState("today");
-  const [selectedRange, setSelectedRange] = useState("Today");
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const dateRangePickerRef = useRef(null);
-  const location = useLocation();
-  const [receipts, setReceipts] = useState([]);
-  const [modalShift, setModalShift] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
   const [email, setEmail] = useState(null);
   const [containerShifts, setContainerShifts] = useState([]);
-  const [selectedShift, setSelectedShift] = useState(null);
+  const [modalShift, setModalShift] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const [allReceipts, setAllReceipts] = useState([]);
   useEffect(() => {
-    const token = localStorage.getItem("token"); // Or sessionStorage if needed
-
+    const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Authentication token is missing.");
       return;
@@ -89,18 +44,18 @@ const ShiftScreen = () => {
 
     try {
       const decoded = jwtDecode(token);
-      setEmail(decoded.email); // Extract email from token
+      setEmail(decoded.email);
     } catch (error) {
       toast.error("Invalid authentication token.");
     }
   }, []);
+
   useEffect(() => {
     if (modalShift) {
-      // Push a state into the history when modal opens
       window.history.pushState({ modalOpen: true }, "");
 
       const handlePopState = () => {
-        setModalShift(null); // Close modal on back button
+        setModalShift(null);
       };
 
       window.addEventListener("popstate", handlePopState);
@@ -111,9 +66,6 @@ const ShiftScreen = () => {
     }
   }, [modalShift]);
 
-  console.log("====================================");
-  console.log(email);
-  console.log("====================================");
   useEffect(() => {
     if (selectedStores.length > 0) {
       onRefresh();
@@ -122,13 +74,12 @@ const ShiftScreen = () => {
 
   useEffect(() => {
     setSelectedStores(stores);
-  }, [selectedOption, stores]);
-  useEffect(() => {
-    console.log("Selected Option:", selectedOption);
-  }, [selectedOption]);
+  }, [stores]);
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
   useEffect(() => {
     if (email) {
       fetchStores();
@@ -137,8 +88,7 @@ const ShiftScreen = () => {
 
   const fetchStores = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -161,6 +111,10 @@ const ShiftScreen = () => {
 
       const data = await response.json();
       setStoreData(data || []);
+      
+      if (data.length > 0) {
+        setSelectedStores(data);
+      }
     } catch (error) {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
@@ -170,10 +124,10 @@ const ShiftScreen = () => {
       console.error("Error fetching stores:", error);
     }
   };
+
   const fetchShifts = async () => {
     try {
-      const token = localStorage.getItem("token"); // Or sessionStorage if that's where you store it
-
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         return;
@@ -182,11 +136,13 @@ const ShiftScreen = () => {
       const decoded = jwtDecode(token);
       const userEmail = decoded.email;
       const userId = decoded.userId;
+      
       const response = await fetch(
         `https://nexuspos.onrender.com/api/shiftsRouter/shifts?email=${encodeURIComponent(
           userEmail
         )}`
       );
+      
       if (!response.ok) {
         const errorMessage = await response.text();
         toast.error("User not found or invalid email.");
@@ -194,48 +150,37 @@ const ShiftScreen = () => {
       }
 
       const shiftsFromServer = await response.json();
-      console.log("====================================");
-      console.log("shiftsFromServer", shiftsFromServer);
-      console.log("====================================");
 
-      // Filter shifts based on userId
       const filteredShifts = shiftsFromServer.data.filter(
         (shift) => shift.userId === userId
       );
 
-      // Set the filtered shifts to the state for rendering
       setContainerShifts(filteredShifts);
+      setLoading(false);
     } catch (error) {
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
       } else {
         toast.error("An error occurred while fetching shifts.");
       }
-      console.error("Error fetching stores:", error);
+      console.error("Error fetching shifts:", error);
+      setLoading(false);
     }
   };
 
-  const formatNumber = (number) => {
-    if (number === 0) return "$0";
-    const formattedNumber = number.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-    return `$${formattedNumber}`;
-  };
-
   const onRefresh = async () => {
-    NProgress.start(); // 🔵 Start progress bar
+    NProgress.start();
     setIsRefreshing(true);
-    await fetchShifts()
-      .then(() => {
-        NProgress.done(); // ✅ End progress bar
-        setIsRefreshing(false);
-      })
-      .catch((error) => {
-        console.error(error);
-        setIsRefreshing(false);
-      });
+    setLoading(true);
+    
+    try {
+      await fetchShifts();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      NProgress.done();
+      setIsRefreshing(false);
+    }
   };
 
   const handleStoreSelect = (store) => {
@@ -257,24 +202,9 @@ const ShiftScreen = () => {
   const handleClickOutside = (event) => {
     if (
       isStoreDropdownOpen &&
-      !event.target.closest(".buttonContainerStoresReceipts")
+      !event.target.closest(".shift-store-selector")
     ) {
       setIsStoreDropdownOpen(false);
-      console.log("Selected Stores:", selectedStores);
-
-      if (selectedStores.length === 0) {
-        setContainerShifts([]);
-      } else {
-        // onRefresh(selectedOption, selectedStartDate, selectedEndDate);
-      }
-    }
-
-    if (
-      isExportDropdownOpen &&
-      !event.target.closest(".buttonContainerExportReceipts")
-    ) {
-      setIsExportDropdownOpen(false);
-      console.log("Selected Export Option:");
     }
   };
 
@@ -285,226 +215,263 @@ const ShiftScreen = () => {
     };
   });
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        dateRangePickerRef.current &&
-        !dateRangePickerRef.current.contains(event.target)
-      ) {
-        setIsDatePickerOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dateRangePickerRef]);
-
-  function handleItemClick(item) {
-    console.log("open receipt", item);
+  const handleItemClick = (item) => {
+    console.log("Opening shift details", item);
     setModalShift(item);
-  }
-  const handleToggleDropdown = () => {
-    setShowDropdown((prev) => !prev);
   };
 
-  const handleSignOut = () => {
-    NProgress.start(); // ✅ End progress bar
-
-    localStorage.removeItem("token");
-    window.location.href = "/"; // or navigate to login using React Router
-    NProgress.done(); // ✅ End progress bar
-  };
-  // Filter receipts based on the search term
   const filteredShifts = containerShifts
-    .filter(
-      (shift) =>
-        shift.shiftNumber.toString().includes(searchTerm) ||
-        (shift.closedBy &&
-          shift.closedBy.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+    .filter((shift) => {
+      const shiftNumber = shift.shiftNumber?.toString() || "";
+      const closedBy = shift.closedBy?.toLowerCase() || "";
+      const search = searchTerm.toLowerCase();
+      
+      return shiftNumber.includes(search) || 
+             closedBy.includes(search) ||
+             shift.createdBy?.toLowerCase().includes(search);
+    })
     .sort((a, b) => new Date(b.closingDate) - new Date(a.closingDate));
 
+  const getStatusColor = (shift) => {
+    return shift.closingDate ? 'shift-status-closed' : 'shift-status-open';
+  };
+
+  const getStatusText = (shift) => {
+    return shift.closingDate ? 'Closed' : 'Open';
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
-    <div className="mainContainerReceipts">
-      {showDropdown && (
-        <div className="dropdownMenu">
-          <button className="signOutButton" onClick={handleSignOut}>
-            Sign Out
-          </button>
-        </div>
-      )}
-      <div className="toolBarReceipts">
-        {isSidebarOpen ? (
-          <FaTimes className="sidebar-icon" onClick={toggleSidebar} />
-        ) : (
-          <FaBars className="sidebar-icon" onClick={toggleSidebar} />
-        )}
-        <span className="toolBarTitle">Shifts</span>
+    <div className="shift-container">
+      <div className="shift-sidebar-toggle-wrapper">
+        <button 
+          className="shift-sidebar-toggle"
+          onClick={toggleSidebar}
+          style={{ left: isSidebarOpen ? '280px' : '80px' }}
+        >
+          {isSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
       </div>
+      
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-
-      <div className="buttonsContainerShifts">
-        <div className="buttonContainerStoresReceipts">
-          <button
-            className="inputButtonStore"
-            onClick={() => {
-              setIsStoreDropdownOpen(!isStoreDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsExportDropdownOpen(false);
-            }}
-          >
-            {selectedStores.length === 0
-              ? "Select Store"
-              : selectedStores.length === 1
-              ? selectedStores[0].storeName
-              : selectedStores.length === stores.length
-              ? "All Stores"
-              : selectedStores.map((s) => s.storeName).join(", ")}{" "}
-            <FaStore className="icon" color="grey" />
-          </button>
-          {isStoreDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => handleStoreSelect("All Stores")}
-              >
-                <div className="checkboxContainer">
-                  <input
-                    className="inputCheckBox"
-                    type="checkbox"
-                    checked={selectedStores.length === stores.length}
-                    readOnly
-                  />
-                </div>
-                <span className="storeName">All Stores</span>
-              </div>
-              {stores.map((store) => (
-                <div
-                  className="dropdownItem"
-                  key={store.storeId}
-                  onClick={() => handleStoreSelect(store)}
-                >
-                  <div className="checkboxContainer">
-                    <input
-                      className="inputCheckBox"
-                      type="checkbox"
-                      checked={selectedStores.some(
-                        (s) => s.storeId === store.storeId
-                      )}
-                      readOnly
-                    />
-                  </div>
-                  <span className="storeName">{store.storeName}</span>
-                </div>
-              ))}
+      
+      <div className={`shift-content ${isSidebarOpen ? "shift-content-shifted" : "shift-content-collapsed"}`}>
+        {/* Toolbar */}
+        <div className="shift-toolbar">
+          <div className="shift-toolbar-content">
+            <h1 className="shift-toolbar-title">Shifts</h1>
+            <div className="shift-toolbar-subtitle">
+              View and manage store shifts
             </div>
-          )}
-        </div>
-
-        {/* <div className="buttonContainerExportReceipts">
-          <button
-            className="inputButtonExportReceipts"
-            onClick={() => {
-              setIsExportDropdownOpen(!isExportDropdownOpen);
-              setIsEmployeeDropdownOpen(false);
-              setIsStoreDropdownOpen(false);
-            }}
-          >
-            Export
-            <FaDownload className="icon" color="grey" />
-          </button>
-          {isExportDropdownOpen && (
-            <div className="dropdown">
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setIsExportDropdownOpen(false);
-                  console.log("PDF");
-                }}
-              >
-                <span className="storeName">PDF</span>
-              </div>
-              <div
-                className="dropdownItem"
-                onClick={() => {
-                  setIsExportDropdownOpen(false);
-                  console.log("PDF");
-                }}
-              >
-                <span className="storeName">CSV</span>
-              </div>
-            </div>
-          )}
-        </div> */}
-      </div>
-
-      <div className="shiftsContainerShifts">
-        {/* Search Input */}
-        <div className="searchBar">
-          <input
-            type="text"
-            placeholder="Search by shift number/employee..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="searchInput"
-          />
-          {searchTerm && (
-            <button className="clearButton" onClick={() => setSearchTerm("")}>
-              ×
+          </div>
+          <div className="shift-toolbar-actions">
+            <button 
+              className="shift-refresh-btn"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              <IoReload />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
-          )}
+          </div>
         </div>
 
+        {/* Control Panel */}
+        <div className="shift-control-panel">
+          <div className="shift-filter-controls">
+            <div className="shift-store-selector">
+              <button 
+                className="shift-filter-btn"
+                onClick={() => {
+                  setIsStoreDropdownOpen(!isStoreDropdownOpen);
+                }}
+              >
+                <FaStore />
+                <span>
+                  {selectedStores.length === 0
+                    ? "Select Store"
+                    : selectedStores.length === 1
+                    ? selectedStores[0].storeName
+                    : selectedStores.length === stores.length
+                    ? "All Stores"
+                    : `${selectedStores.length} stores`}
+                </span>
+              </button>
+              
+              {isStoreDropdownOpen && (
+                <div className="shift-dropdown">
+                  <div className="shift-dropdown-header">
+                    <span>Select Stores</span>
+                    <button 
+                      className="shift-dropdown-select-all"
+                      onClick={() => handleStoreSelect("All Stores")}
+                    >
+                      {selectedStores.length === stores.length ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <div className="shift-dropdown-content">
+                    {stores.map((store) => (
+                      <div
+                        className="shift-dropdown-item"
+                        key={store.storeId}
+                        onClick={() => handleStoreSelect(store)}
+                      >
+                        <div className="shift-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedStores.some((s) => s.storeId === store.storeId)}
+                            readOnly
+                          />
+                          <div className="shift-checkbox-custom"></div>
+                        </div>
+                        <span className="shift-store-name">{store.storeName}</span>
+                        <span className="shift-store-location">{store.location}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
-<div className="shift-table-container">
-  <div className="receiptHeader">
-    <div className="headerItem">Shift Number</div>
-    <div className="headerItem">Closed By</div>
-    <div className="headerItem">Store Name</div>
-    <div className="headerItem">Opening Date</div>
-    <div className="headerItem">Closing Date</div>
-    <div className="headerItem">Amount</div>
-  </div>
-  {filteredShifts.map((item, index) => {
-    const matchedStore = stores.find(
-      (store) => store.storeId === item.storeId
-    );
-    return (
-<ShiftListItem
-  key={index}
-  closedBy={item.createdBy}
-  shiftNumber={item.shiftNumber}
-  closingDate={item.closingDate}
-  openingDate={item.openingDate}
-  storeName={matchedStore?.storeName || "Unknown Store"}
-  amount={Number(item.expectedCash).toFixed(2)}
-  baseCurrency={item.baseCurrency || "USD"} // Add this
-  onClick={() => handleItemClick(item)}
-/>
-    );
-  })}
-</div>
-      </div>
-      {modalShift &&
-        (() => {
-          // Compute the matching store before returning JSX
-          const matchedStore = stores.find(
-            (store) => store.storeId === modalShift.storeId
-          );
-          return (
-            <ShiftModal
-              selectedShift={modalShift}
-              store={matchedStore}
-              email={email}
-              onClose={() => setModalShift(null)}
+        {/* Search Bar */}
+        <div className="shift-search-filter">
+          <div className="shift-search-container">
+            <FaSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <input
+              type="text"
+              placeholder="Search by shift number or employee..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="shift-search-input"
+              style={{ paddingLeft: '40px' }}
             />
-          );
-        })()}
-      <RemainingTimeFooter />
+            {searchTerm && (
+              <button 
+                className="shift-search-clear"
+                onClick={() => setSearchTerm("")}
+              >
+                <FaTimesIcon />
+              </button>
+            )}
+          </div>
+        </div>
 
-      <ToastContainer position="top-right" autoClose={3000} />
+        {/* Table Container */}
+        <div className="shift-table-container">
+          <div className="shift-table-header">
+            <h3>Shift Details</h3>
+            <span className="shift-table-count">
+              {isRefreshing ? 'Refreshing...' : 
+               filteredShifts.length > 0 ? `Showing ${filteredShifts.length} shifts` : 
+               loading ? 'Loading shifts...' : 'No shifts found'}
+            </span>
+          </div>
+          
+          <div className="shift-table-wrapper">
+            <table className="shift-table">
+              <thead>
+                <tr>
+                  <th>Shift #</th>
+                  <th>Status</th>
+                  <th>Closed By</th>
+                  <th>Store Name</th>
+                  <th>Opening Date</th>
+                  <th>Closing Date</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredShifts.length > 0 ? (
+                  filteredShifts.map((item, index) => {
+                    const matchedStore = stores.find(
+                      (store) => store.storeId === item.storeId
+                    );
+                    
+                    return (
+                      <tr 
+                        key={`${item.shiftId || index}`} 
+                        className="shift-table-row"
+                        onClick={() => handleItemClick(item)}
+                      >
+                        <td className="shift-table-cell">
+                          <span style={{ fontWeight: '600', color: '#1e293b' }}>
+                            #{item.shiftNumber}
+                          </span>
+                        </td>
+                        <td className="shift-table-cell">
+                          <span className={`shift-status ${getStatusColor(item)}`}>
+                            {getStatusText(item)}
+                          </span>
+                        </td>
+                        <td className="shift-table-cell">
+                          {item.closedBy || item.createdBy || 'N/A'}
+                        </td>
+                        <td className="shift-table-cell">
+                          {matchedStore?.storeName || 'Unknown Store'}
+                        </td>
+                        <td className="shift-table-cell">
+                          {formatDate(item.openingDate)}
+                        </td>
+                        <td className="shift-table-cell">
+                          {item.closingDate ? formatDate(item.closingDate) : 'Still Open'}
+                        </td>
+                        <td className="shift-table-cell">
+                          <span className="shift-amount-badge">
+                            ${Number(item.expectedCash || 0).toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="shift-empty-state">
+                      <div className="shift-empty-icon">
+                        <FaBox />
+                      </div>
+                      <h3 className="shift-empty-title">
+                        {loading ? 'Loading shifts...' : 
+                         searchTerm ? `No results for "${searchTerm}"` : 
+                         'No Shifts Found'}
+                      </h3>
+                      <p className="shift-empty-description">
+                        {searchTerm ? 'Try adjusting your search' :
+                         'No shifts available for the selected stores'}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <RemainingTimeFooter />
+      </div>
+      
+      {modalShift && (
+        <ShiftModal
+          selectedShift={modalShift}
+          store={stores.find(store => store.storeId === modalShift.storeId)}
+          email={email}
+          onClose={() => setModalShift(null)}
+        />
+      )}
+      
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };

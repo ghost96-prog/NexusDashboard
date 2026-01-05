@@ -97,7 +97,86 @@ const InventoryHistoryScreen = () => {
       fetchProducts();
     }
   }, [email]);
-
+// Add this useEffect hook after your other useEffect hooks
+useEffect(() => {
+  const style = document.createElement('style');
+  style.textContent = `
+    @media (max-width: 768px) {
+      .datePickerContainerInventory .rdrMonths {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-snap-type: x mandatory !important;
+      }
+      
+      .datePickerContainerInventory .rdrMonth {
+        min-width: 100% !important;
+        scroll-snap-align: start !important;
+        flex-shrink: 0 !important;
+      }
+      
+      .datePickerContainerInventory {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 95vw !important;
+        max-width: 400px !important;
+        max-height: 85vh !important;
+        overflow: auto !important;
+        z-index: 9999 !important;
+        background: white !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2) !important;
+        padding: 16px !important;
+      }
+      
+      /* Hide default navigation arrows if they exist */
+      .datePickerContainerInventory .rdrNextPrevButton {
+        z-index: 2 !important;
+      }
+      
+      /* Ensure date picker wrapper takes full width */
+      .datePickerContainerInventory .rdrDateRangePickerWrapper {
+        width: 100% !important;
+      }
+      
+      /* Style for better mobile experience */
+      .datePickerContainerInventory .rdrCalendarWrapper {
+        width: 100% !important;
+      }
+      
+      /* Prevent horizontal scroll on body when date picker is open */
+      body.date-picker-open {
+        overflow: hidden !important;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .datePickerContainerInventory {
+        width: 98vw !important;
+        padding: 12px !important;
+      }
+      
+      .datePickerContainerInventory .rdrMonth {
+        min-width: 95vw !important;
+      }
+      
+      /* Adjust font sizes for very small screens */
+      .datePickerContainerInventory .rdrDay,
+      .datePickerContainerInventory .rdrWeekDay {
+        font-size: 12px !important;
+      }
+    }
+  `;
+  
+  document.head.appendChild(style);
+  
+  return () => {
+    document.head.removeChild(style);
+  };
+}, []);
   const fetchStores = async () => {
     try {
       const token = localStorage.getItem("token");

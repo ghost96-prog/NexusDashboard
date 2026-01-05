@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import {
   FaBars,
@@ -52,6 +52,44 @@ import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
 import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
+
+// Move StatCard component outside to prevent unnecessary re-renders
+const StatCard = React.memo(({ 
+  title, 
+  value, 
+  icon, 
+  percentage, 
+  isPositive, 
+  subValue, 
+  color, 
+  isCurrency = true 
+}) => (
+  <div className="sales-summery-stat-card">
+    <div className="sales-summery-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
+      <div className="sales-summery-stat-icon-circle">
+        {icon}
+      </div>
+    </div>
+    <div className="sales-summery-stat-content">
+      <div className="sales-summery-stat-title">{title}</div>
+      <div className="sales-summery-stat-value">
+        {isCurrency ? '$' : ''}{value.toLocaleString(undefined, {
+          minimumFractionDigits: isCurrency ? 2 : 0,
+          maximumFractionDigits: isCurrency ? 2 : 0,
+        })}
+      </div>
+      <div className="sales-summery-stat-change-container">
+        <div className={`sales-summery-stat-change ${isPositive ? 'positive' : 'negative'}`}>
+          {isPositive ? <FaArrowUp /> : <FaArrowDown />}
+          <span>{percentage}</span>
+        </div>
+      </div>
+      {subValue && <div className="sales-summery-stat-subvalue">{subValue}</div>}
+    </div>
+  </div>
+));
+
+StatCard.displayName = 'StatCard';
 
 const SalesSummery = () => {
   const employees = ["Employee 1", "Employee 2", "Employee 3"];
@@ -162,7 +200,7 @@ const SalesSummery = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const fetchAllReceiptsData = async (timeframe, startDate, endDate) => {
+  const fetchAllReceiptsData = useCallback(async (timeframe, startDate, endDate) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -251,7 +289,7 @@ const SalesSummery = () => {
       }
       console.error("Error fetching receipts:", error);
     }
-  };
+  }, []);
 
   const convertFirestoreTimestampToDate = (timestamp) => {
     return new Date(
@@ -259,7 +297,7 @@ const SalesSummery = () => {
     );
   };
 
-  const onRefresh = async (
+  const onRefresh = useCallback(async (
     selectedOption,
     selectedStartRange,
     selectedEndRange
@@ -279,9 +317,9 @@ const SalesSummery = () => {
         console.error(error);
         setIsRefreshing(false);
       });
-  };
+  }, [fetchAllReceiptsData]);
 
-  const handleStoreSelect = (store) => {
+  const handleStoreSelect = useCallback((store) => {
     if (store === "All Stores") {
       if (selectedStores.length === stores.length) {
         setSelectedStores([]);
@@ -295,9 +333,9 @@ const SalesSummery = () => {
         : [...selectedStores, store];
       setSelectedStores(updatedStores);
     }
-  };
+  }, [selectedStores, stores]);
 
-  const handleClickOutside = (event) => {
+  const handleClickOutside = useCallback((event) => {
     if (
       isStoreDropdownOpen &&
       !event.target.closest(".sales-summery-store-selector")
@@ -326,14 +364,14 @@ const SalesSummery = () => {
     ) {
       setIsExportDropdownOpen(false);
     }
-  };
+  }, [isStoreDropdownOpen, isExportDropdownOpen, selectedStores.length]);
 
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  });
+  }, [handleClickOutside]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -351,7 +389,7 @@ const SalesSummery = () => {
     };
   }, [dateRangePickerRef]);
 
-  const handleDateRangeChange = (ranges) => {
+  const handleDateRangeChange = useCallback((ranges) => {
     const { startDate, endDate } = ranges.selection;
 
     const selectedRange = customStaticRanges.find(
@@ -395,9 +433,9 @@ const SalesSummery = () => {
     setSelectedStartDate(startDate);
     setSelectedEndDate(endDate);
     onRefresh(selectedOption, startDate, endDate);
-  };
+  }, [onRefresh]);
 
-  const customStaticRanges = [
+  const customStaticRanges = useMemo(() => [
     ...defaultStaticRanges,
     {
       label: "This Year",
@@ -407,9 +445,9 @@ const SalesSummery = () => {
       }),
       isSelected: () => selectedOption === "This Year",
     },
-  ];
+  ], [selectedOption]);
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     let newStartDate, newEndDate;
 
     switch (selectedRange) {
@@ -449,9 +487,9 @@ const SalesSummery = () => {
     setSelectedStartDate(newStartDate);
     setSelectedEndDate(newEndDate);
     onRefresh(selectedOption, newStartDate, newEndDate);
-  };
+  }, [selectedRange, selectedStartDate, selectedEndDate, onRefresh]);
 
-  const handleForwardClick = () => {
+  const handleForwardClick = useCallback(() => {
     let newStartDate, newEndDate;
 
     switch (selectedRange) {
@@ -493,9 +531,9 @@ const SalesSummery = () => {
       setSelectedEndDate(newEndDate);
       onRefresh(selectedOption, newStartDate, newEndDate);
     }
-  };
+  }, [selectedRange, selectedStartDate, selectedEndDate, onRefresh]);
 
-  const tableHeaders = [
+  const tableHeaders = useMemo(() => [
     [
       "Date",
       "Gross Sales",
@@ -506,9 +544,9 @@ const SalesSummery = () => {
       "Profit",
       "Profit Margin",
     ],
-  ];
+  ], []);
 
-  const getSalesSummaryRows = (receiptsByDate, laybyeTotal = 0) => {
+  const getSalesSummaryRows = useCallback((receiptsByDate, laybyeTotal = 0) => {
     let rows = [];
     let totalGrossSales = 0;
     let totalDiscounts = 0;
@@ -587,11 +625,11 @@ const SalesSummery = () => {
 
     rows.push(totalRow);
     return rows;
-  };
+  }, []);
 
-  const rows = getSalesSummaryRows(receiptsByDate, laybyeTotal);
+  const rows = useMemo(() => getSalesSummaryRows(receiptsByDate, laybyeTotal), [receiptsByDate, laybyeTotal, getSalesSummaryRows]);
 
-  const generateCsvContent = () => {
+  const generateCsvContent = useCallback(() => {
     let csv = "SALES SUMMARY\n\n";
     const currentDateTime = new Date().toLocaleString("en-US", {
       year: "numeric",
@@ -610,9 +648,9 @@ const SalesSummery = () => {
     });
 
     return csv;
-  };
+  }, [tableHeaders, rows]);
 
-  const downloadCsv = () => {
+  const downloadCsv = useCallback(() => {
     const csvContent = generateCsvContent();
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -623,9 +661,9 @@ const SalesSummery = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [generateCsvContent]);
 
-  const downloadPdf = () => {
+  const downloadPdf = useCallback(() => {
     const doc = new jsPDF();
     const date = new Date().toLocaleString("en-US", {
       year: "numeric",
@@ -649,9 +687,9 @@ const SalesSummery = () => {
     });
 
     doc.save("SalesSummary.pdf");
-  };
+  }, [tableHeaders, rows]);
 
-  const generateRows = () => {
+  const generateRows = useCallback(() => {
     let totalGrossSales = 0;
     let totalDiscounts = 0;
     let totalRefunds = 0;
@@ -737,49 +775,51 @@ const SalesSummery = () => {
     );
 
     return rows;
-  };
+  }, [receiptsByDate, laybyeTotal]);
 
-  const percentageStyleReceipts = {
-    color: percentageDiffReceipts < 0 ? "#ef4444" : "#10b981",
-  };
+  const percentageDifferenceReceipts = useMemo(() => `${percentageDiffReceipts.toFixed(2)}%`, [percentageDiffReceipts]);
+  const percentageDifferenceIncome = useMemo(() => `${percentageDiffTotalIncome.toFixed(2)}%`, [percentageDiffTotalIncome]);
+  const percentageDifferenceProfit = useMemo(() => `${percentageDiffProfit.toFixed(2)}%`, [percentageDiffProfit]);
 
-  const percentageStyleSales = {
-    color: percentageDiffTotalIncome < 0 ? "#ef4444" : "#10b981",
-  };
-
-  const percentageStyleProfit = {
-    color: percentageDiffProfit < 0 ? "#ef4444" : "#10b981",
-  };
-
-  const percentageDifferenceReceipts = `${percentageDiffReceipts.toFixed(2)}%`;
-  const percentageDifferenceIncome = `${percentageDiffTotalIncome.toFixed(2)}%`;
-  const percentageDifferenceProfit = `${percentageDiffProfit.toFixed(2)}%`;
-
-const StatCard = ({ title, value, icon, percentage, isPositive, subValue, color, isCurrency = true }) => (
-  <div className="sales-summery-stat-card">
-    <div className="sales-summery-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
-      <div className="sales-summery-stat-icon-circle">
-        {icon}
-      </div>
-    </div>
-    <div className="sales-summery-stat-content">
-      <div className="sales-summery-stat-title">{title}</div>
-      <div className="sales-summery-stat-value">
-        {isCurrency ? '$' : ''}{value.toLocaleString(undefined, {
-          minimumFractionDigits: isCurrency ? 2 : 0,
-          maximumFractionDigits: isCurrency ? 2 : 0,
-        })}
-      </div>
-      <div className="sales-summery-stat-change-container">
-        <div className={`sales-summery-stat-change ${isPositive ? 'positive' : 'negative'}`}>
-          {isPositive ? <FaArrowUp /> : <FaArrowDown />}
-          <span>{percentage}</span>
-        </div>
-      </div>
-      {subValue && <div className="sales-summery-stat-subvalue">{subValue}</div>}
-    </div>
-  </div>
-);
+  // Add this CSS for mobile date picker scrolling
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media (max-width: 768px) {
+        .sales-summery-datepicker-modal .rdrMonths {
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          scroll-snap-type: x mandatory;
+        }
+        .sales-summery-datepicker-modal .rdrMonth {
+          min-width: 100%;
+          scroll-snap-align: start;
+        }
+        .sales-summery-datepicker-modal {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 90vw;
+          max-height: 80vh;
+          overflow: auto;
+          z-index: 1000;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          padding: 16px;
+        }
+        .sales-summery-datepicker-modal .rdrDateRangePickerWrapper {
+          width: 100%;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   return (
     <div className="sales-summery-container">
@@ -1034,16 +1074,16 @@ const StatCard = ({ title, value, icon, percentage, isPositive, subValue, color,
             color="#8b5cf6"
           />
           
-        <StatCard
-  title="Receipts"
-  value={receiptsLength}
-  icon={<FaReceipt />}
-  percentage={percentageDifferenceReceipts}
-  isPositive={percentageDiffReceipts >= 0}
-  subValue={`$${totalAmount.toFixed(2)} total`}
-  color="#6366f1"
-  isCurrency={false}  // Add this line
-/>
+          <StatCard
+            title="Receipts"
+            value={receiptsLength}
+            icon={<FaReceipt />}
+            percentage={percentageDifferenceReceipts}
+            isPositive={percentageDiffReceipts >= 0}
+            subValue={`$${totalAmount.toFixed(2)} total`}
+            color="#6366f1"
+            isCurrency={false}
+          />
         </div>
 
         {/* Data Table */}
