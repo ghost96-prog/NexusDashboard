@@ -347,17 +347,18 @@ const fetchInventoryCount = async (countId) => {
     <div className="inventory-details-main-container">
       <ToastContainer position="top-right" autoClose={3000} />
       
-      <div className="inventory-details-toolbar">
-        {inventoryDetailsSidebarOpen ? (
-          <FaTimes className="inventory-details-sidebar-icon" onClick={toggleInventoryDetailsSidebar} />
-        ) : (
-          <FaBars className="inventory-details-sidebar-icon" onClick={toggleInventoryDetailsSidebar} />
-        )}
-        <span className="inventory-details-toolbar-title">Inventory Count Details</span>
-        <button className="inventory-details-back-button" onClick={handleInventoryBack}>
-          <FaChevronLeft /> Back
+      {/* ONLY ADDED THIS: Sidebar Toggle Button */}
+      <div className="sales-summery-sidebar-toggle-wrapper">
+        <button 
+          className="sales-summery-sidebar-toggle"
+          onClick={toggleInventoryDetailsSidebar}
+          style={{ left: inventoryDetailsSidebarOpen ? '280px' : '80px' }}
+        >
+          {inventoryDetailsSidebarOpen ? <FaTimes /> : <FaBars />}
         </button>
       </div>
+      
+      {/* REMOVED the old toolbar icons from here */}
       
       <Sidebar isOpen={inventoryDetailsSidebarOpen} toggleSidebar={toggleInventoryDetailsSidebar} />
       
