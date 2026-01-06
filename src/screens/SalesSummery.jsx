@@ -128,6 +128,7 @@ const SalesSummery = () => {
   const [percentageDiffReceipts, setPercentageDiffReceipts] = useState(0);
   const [percentageDiffTotalIncome, setPercentageDiffTotalIncome] = useState(0);
   const [percentageDiffTotalCost, setPercentageDiffTotalCost] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -199,6 +200,31 @@ const SalesSummery = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+      setIsFullScreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullScreen(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    };
+  }, []);
 
   const fetchAllReceiptsData = useCallback(async (timeframe, startDate, endDate) => {
     try {
@@ -555,6 +581,7 @@ const SalesSummery = () => {
     let totalCogs = 0;
     let totalProfit = 0;
 
+    // First, process all regular receipts
     for (const [date, dailyReceipts] of Object.entries(receiptsByDate)) {
       const grossSales = dailyReceipts.reduce(
         (sum, receipt) => sum + receipt.totalAmountUsd,
@@ -596,6 +623,7 @@ const SalesSummery = () => {
       ]);
     }
 
+    // Add laybye payments row
     if (laybyeTotal > 0) {
       const laybyeRow = [
         "Laybye Payments",
@@ -603,24 +631,34 @@ const SalesSummery = () => {
         "",
         "",
         laybyeTotal.toFixed(2),
-        "",
-        "",
-        "",
+        "0.00", // COGS for laybye payments
+        laybyeTotal.toFixed(2), // Profit from laybye payments (full amount since COGS is 0)
+        "100.00%", // Since COGS is 0, profit margin is 100%
       ];
       rows.push(laybyeRow);
+      
+      // Add laybye payments to totals (INCLUDING PROFIT)
+      totalGrossSales += laybyeTotal;
+      totalNetSales += laybyeTotal;
+      totalProfit += laybyeTotal; // This is the key change - include laybye in profit
     }
+
+    // Calculate final profit margin including laybye
+    const finalNetSales = totalNetSales;
+    const finalProfit = totalProfit;
+    const finalMargin = finalNetSales > 0 
+      ? ((finalProfit / finalNetSales) * 100).toFixed(2) 
+      : "0.00";
 
     const totalRow = [
       "TOTALS",
-      (totalGrossSales + laybyeTotal).toFixed(2),
+      totalGrossSales.toFixed(2),
       totalRefunds.toFixed(2),
       totalDiscounts.toFixed(2),
-      (totalNetSales + laybyeTotal).toFixed(2),
+      finalNetSales.toFixed(2),
       totalCogs.toFixed(2),
-      totalProfit.toFixed(2),
-      totalNetSales + laybyeTotal > 0
-        ? `${((totalProfit / (totalNetSales + laybyeTotal)) * 100).toFixed(2)}%`
-        : "0.00%",
+      finalProfit.toFixed(2), // This now includes laybye profit
+      `${finalMargin}%`,
     ];
 
     rows.push(totalRow);
@@ -749,27 +787,37 @@ const SalesSummery = () => {
           <td className="sales-summery-table-cell"></td>
           <td className="sales-summery-table-cell"></td>
           <td className="sales-summery-table-cell sales-summery-positive">${laybyeTotal.toFixed(2)}</td>
-          <td className="sales-summery-table-cell"></td>
-          <td className="sales-summery-table-cell"></td>
-          <td className="sales-summery-table-cell"></td>
+          <td className="sales-summery-table-cell">$0.00</td>
+          <td className="sales-summery-table-cell sales-summery-profit">${laybyeTotal.toFixed(2)}</td>
+          <td className="sales-summery-table-cell">100.00%</td>
         </tr>
       );
       rows.push(laybyeRow);
+      
+      // Add laybye to totals
+      totalGrossSales += laybyeTotal;
+      totalNetSales += laybyeTotal;
+      totalProfit += laybyeTotal; // Include laybye in profit
     }
+
+    // Calculate final totals including laybye
+    const finalNetSales = totalNetSales;
+    const finalProfit = totalProfit;
+    const finalMargin = finalNetSales > 0 
+      ? ((finalProfit / finalNetSales) * 100).toFixed(2) 
+      : "0";
 
     rows.push(
       <tr key="totals" className="sales-summery-table-row sales-summery-total-row">
         <td className="sales-summery-table-cell sales-summery-total">TOTALS</td>
-        <td className="sales-summery-table-cell sales-summery-total">${(totalGrossSales + laybyeTotal).toFixed(2)}</td>
+        <td className="sales-summery-table-cell sales-summery-total">${totalGrossSales.toFixed(2)}</td>
         <td className="sales-summery-table-cell sales-summery-total sales-summery-negative">${totalRefunds.toFixed(2)}</td>
         <td className="sales-summery-table-cell sales-summery-total sales-summery-negative">${totalDiscounts.toFixed(2)}</td>
-        <td className="sales-summery-table-cell sales-summery-total sales-summery-positive">${(totalNetSales + laybyeTotal).toFixed(2)}</td>
+        <td className="sales-summery-table-cell sales-summery-total sales-summery-positive">${finalNetSales.toFixed(2)}</td>
         <td className="sales-summery-table-cell sales-summery-total">${totalCogs.toFixed(2)}</td>
-        <td className="sales-summery-table-cell sales-summery-total sales-summery-profit">${totalProfit.toFixed(2)}</td>
+        <td className="sales-summery-table-cell sales-summery-total sales-summery-profit">${finalProfit.toFixed(2)}</td>
         <td className="sales-summery-table-cell sales-summery-total">
-          {totalNetSales + laybyeTotal > 0
-            ? ((totalProfit / (totalNetSales + laybyeTotal)) * 100).toFixed(2)
-            : "0"}%
+          {finalMargin}%
         </td>
       </tr>
     );
@@ -781,7 +829,7 @@ const SalesSummery = () => {
   const percentageDifferenceIncome = useMemo(() => `${percentageDiffTotalIncome.toFixed(2)}%`, [percentageDiffTotalIncome]);
   const percentageDifferenceProfit = useMemo(() => `${percentageDiffProfit.toFixed(2)}%`, [percentageDiffProfit]);
 
-  // Add this CSS for mobile date picker scrolling
+  // Add this CSS for mobile date picker scrolling and full-screen
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
@@ -813,6 +861,43 @@ const SalesSummery = () => {
           width: 100%;
         }
       }
+      
+      .sales-summery-fullscreen-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      
+      .sales-summery-fullscreen-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      }
+      
+      .sales-summery-fullscreen-btn:active {
+        transform: translateY(0);
+      }
+      
+      .fullscreen-mode .sales-summery-container {
+        height: 100vh;
+        overflow: hidden;
+      }
+      
+      .fullscreen-mode .sales-summery-content {
+        height: calc(100vh - 60px);
+        overflow-y: auto;
+      }
+      
+      .fullscreen-mode .sales-summery-table-container {
+        max-height: 50vh;
+      }
     `;
     document.head.appendChild(style);
     
@@ -822,7 +907,7 @@ const SalesSummery = () => {
   }, []);
 
   return (
-    <div className="sales-summery-container">
+    <div className={`sales-summery-container ${isFullScreen ? 'fullscreen-mode' : ''}`}>
       <div className="sales-summery-sidebar-toggle-wrapper">
         <button 
           className="sales-summery-sidebar-toggle"
@@ -845,6 +930,7 @@ const SalesSummery = () => {
             </div>
           </div>
           <div className="sales-summery-toolbar-actions">
+          
             <button 
               className="sales-summery-refresh-btn"
               onClick={() => onRefresh(selectedOption, selectedStartDate, selectedEndDate)}
