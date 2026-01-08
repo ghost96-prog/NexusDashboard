@@ -469,11 +469,17 @@ const CountStockScreen = () => {
       return;
     }
 
-    const uncountedItems = countedItems.filter(item => !item.isCounted);
-    if (uncountedItems.length > 0) {
-      toast.error(`Please count ${uncountedItems.length} remaining item(s) before completing.`);
-      return;
-    }
+   // Check if any items haven't been counted yet (countedQuantity is empty or undefined)
+const uncountedItems = countedItems.filter(item => 
+  item.countedQuantity === undefined || 
+  item.countedQuantity === '' || 
+  item.countedQuantity === null
+);
+
+if (uncountedItems.length > 0) {
+  toast.error(`Please enter a count for ${uncountedItems.length} item(s) before completing.`);
+  return;
+}
 
     setCountedShowConfirmModal(true);
   };
