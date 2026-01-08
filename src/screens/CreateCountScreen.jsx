@@ -575,7 +575,7 @@ const CreateCountScreen = () => {
                         </div>
                         <div className="create-count-item-expected">{product.stock || 0}</div>
                         <div className="create-count-item-actions">
-                          <button className="create-count-remove-btn" disabled>
+                          <button className="create-count-remove-btn" >
                             <FaTimesCircle />
                           </button>
                         </div>

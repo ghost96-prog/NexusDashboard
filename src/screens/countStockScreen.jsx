@@ -13,6 +13,7 @@ import {
   FaExclamationTriangle,
   FaSpinner,
   FaTrash,
+  FaSearch, // Added
 } from "react-icons/fa";
 import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
@@ -43,6 +44,9 @@ const CountStockScreen = () => {
   // Add state for delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  
+  // Add state for search
+  const [searchQuery, setSearchQuery] = useState('');
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -171,6 +175,15 @@ const CountStockScreen = () => {
   const getProductById = (productId) => {
     return allProducts.find(product => product.productId === productId);
   };
+
+  // Filter items based on search query
+  const filteredItems = searchQuery
+    ? countedItems.filter(item =>
+        item.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : countedItems;
 
   // Optimized update function - NO PRODUCT FETCHING
   const updateProductsAndCreateInventory = async (countData) => {
@@ -370,6 +383,16 @@ const CountStockScreen = () => {
   const handleCancelDelete = () => {
     setShowDeleteModal(false);
     setItemToDelete(null);
+  };
+
+  // Function to handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Function to clear search
+  const handleClearSearch = () => {
+    setSearchQuery('');
   };
 
   const toggleCountedSidebar = () => {
@@ -809,11 +832,41 @@ const CountStockScreen = () => {
           {/* Counted Items Table */}
           <div className="counted-items-section">
             <div className="counted-items-header">
-              <h3>Counted Items</h3>
-              <div className="counted-items-count">
-                {countedCompletedItems} of {countedTotalItems} completed
-                {allProducts.length > 0 && (
-                  <span className="counted-products-loaded"> ({allProducts.length} products loaded)</span>
+              <div className="counted-items-header-left">
+                <h3>Counted Items</h3>
+                <div className="counted-items-count">
+                  {countedCompletedItems} of {countedTotalItems} completed
+                  {allProducts.length > 0 && (
+                    <span className="counted-products-loaded"> ({allProducts.length} products loaded)</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Search Input */}
+              <div className="counted-search-container">
+                <div className="counted-search-input-wrapper">
+                  <FaSearch className="counted-search-icon" />
+                  <input
+                    type="text"
+                    className="counted-search-input"
+                    placeholder="Search by product name, SKU, or category..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                  />
+                  {searchQuery && (
+                    <button 
+                      className="counted-search-clear"
+                      onClick={handleClearSearch}
+                      title="Clear search"
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
+                </div>
+                {searchQuery && (
+                  <div className="counted-search-results">
+                    Found {filteredItems.length} of {countedItems.length} items
+                  </div>
                 )}
               </div>
             </div>
@@ -831,55 +884,70 @@ const CountStockScreen = () => {
                   </div>
                   
                   <div className="counted-items-table-body">
-                    {countedItems.map(item => (
-                      <div key={item.productId} className="counted-item-row">
-                        <div className="counted-item-info">
-                          <div className="counted-item-name">{item.productName}</div>
-                          <div className="counted-item-details-small">
-                            SKU: {item.sku}
+                    {filteredItems.length > 0 ? (
+                      filteredItems.map(item => (
+                        <div key={item.productId} className="counted-item-row">
+                          <div className="counted-item-info">
+                            <div className="counted-item-name">{item.productName}</div>
+                            <div className="counted-item-details-small">
+                              SKU: {item.sku}
+                            </div>
+                          </div>
+                          <div className="counted-item-expected">{item.expectedStock || 0}</div>
+                          <div className="counted-item-counted">
+                            <input
+                              type="text"
+                              className="counted-count-input"
+                              value={item.countedQuantity || ''}
+                              onChange={(e) => handleCountedManualUpdate(item.productId, e.target.value)}
+                              placeholder={item.expectedStock || '0'}
+                            />
+                          </div>
+                          <div className={`counted-item-difference ${(item.difference || 0) < 0 ? 'counted-negative' : (item.difference || 0) > 0 ? 'counted-positive' : ''}`}>
+                            {item.difference || 0}
+                          </div>
+                          <div className={`counted-item-cost-difference ${(item.priceDifference || 0) < 0 ? 'counted-negative' : (item.priceDifference || 0) > 0 ? 'counted-positive' : ''}`}>
+                            ${Math.abs(item.priceDifference || 0).toFixed(2)}
+                          </div>
+                          <div className="counted-item-actions">
+                            <button
+                              className="counted-remove-btn"
+                              onClick={() => handleShowDeleteModal(item)}
+                              title="Remove from count"
+                            >
+                              <FaTrash />
+                            </button>
                           </div>
                         </div>
-                        <div className="counted-item-expected">{item.expectedStock || 0}</div>
-                        <div className="counted-item-counted">
-                          <input
-                            type="text"
-                            className="counted-count-input"
-                            value={item.countedQuantity || ''}
-                            onChange={(e) => handleCountedManualUpdate(item.productId, e.target.value)}
-                            placeholder={item.expectedStock || '0'}
-                          />
-                        </div>
-                        <div className={`counted-item-difference ${(item.difference || 0) < 0 ? 'counted-negative' : (item.difference || 0) > 0 ? 'counted-positive' : ''}`}>
-                          {item.difference || 0}
-                        </div>
-                        <div className={`counted-item-cost-difference ${(item.priceDifference || 0) < 0 ? 'counted-negative' : (item.priceDifference || 0) > 0 ? 'counted-positive' : ''}`}>
-                          ${Math.abs(item.priceDifference || 0).toFixed(2)}
-                        </div>
-                        <div className="counted-item-actions">
-                          <button
-                            className="counted-remove-btn"
-                            onClick={() => handleShowDeleteModal(item)}
-                            title="Remove from count"
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="counted-no-search-results">
+                        <FaExclamationTriangle className="counted-no-search-icon" />
+                        <p>No items found for "{searchQuery}"</p>
+                        <button 
+                          className="counted-clear-search-btn"
+                          onClick={handleClearSearch}
+                        >
+                          Clear search
+                        </button>
                       </div>
-                    ))}
+                    )}
                     
-                    {/* Totals Row */}
-                    <div className="counted-totals-row">
-                      <div className="counted-total-label">Total</div>
-                      <div className="counted-total-expected"></div>
-                      <div className="counted-total-counted"></div>
-                      <div className={`counted-total-difference ${calculatedTotals.totalDifference < 0 ? 'counted-negative' : calculatedTotals.totalDifference > 0 ? 'counted-positive' : ''}`}>
-                        {calculatedTotals.totalDifference}
+                    {/* Totals Row - Only show if there are items */}
+                    {filteredItems.length > 0 && (
+                      <div className="counted-totals-row">
+                        <div className="counted-total-label">Total</div>
+                        <div className="counted-total-expected"></div>
+                        <div className="counted-total-counted"></div>
+                        <div className={`counted-total-difference ${calculatedTotals.totalDifference < 0 ? 'counted-negative' : calculatedTotals.totalDifference > 0 ? 'counted-positive' : ''}`}>
+                          {calculatedTotals.totalDifference}
+                        </div>
+                        <div className={`counted-total-cost-difference ${calculatedTotals.totalPriceDifference < 0 ? 'counted-negative' : calculatedTotals.totalPriceDifference > 0 ? 'counted-positive' : ''}`}>
+                          ${Math.abs(calculatedTotals.totalPriceDifference).toFixed(2)}
+                        </div>
+                        <div className="counted-total-actions"></div>
                       </div>
-                      <div className={`counted-total-cost-difference ${calculatedTotals.totalPriceDifference < 0 ? 'counted-negative' : calculatedTotals.totalPriceDifference > 0 ? 'counted-positive' : ''}`}>
-                        ${Math.abs(calculatedTotals.totalPriceDifference).toFixed(2)}
-                      </div>
-                      <div className="counted-total-actions"></div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </>

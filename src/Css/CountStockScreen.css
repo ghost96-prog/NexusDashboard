@@ -186,7 +186,154 @@
   color: #2196f3;
   font-weight: 500;
 }
+/* Search Styles */
+.counted-items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
 
+.counted-items-header-left {
+  flex: 1;
+  min-width: 300px;
+}
+
+.counted-search-container {
+  flex: 1;
+  min-width: 300px;
+  max-width: 400px;
+}
+
+.counted-search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.counted-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #666;
+  font-size: 16px;
+}
+
+.counted-search-input {
+  width: 100%;
+  padding: 10px 40px 10px 40px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.counted-search-input:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.counted-search-clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.counted-search-clear:hover {
+  color: #ff5252;
+  background-color: #ffebee;
+}
+
+.counted-search-results {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #666;
+  text-align: right;
+}
+
+/* No Search Results */
+.counted-no-search-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.counted-no-search-icon {
+  font-size: 48px;
+  color: #ff9800;
+  margin-bottom: 15px;
+}
+
+.counted-no-search-results p {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.counted-clear-search-btn {
+  background: #2196f3;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.counted-clear-search-btn:hover {
+  background: #1976d2;
+  transform: translateY(-1px);
+}
+
+.counted-clear-search-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .counted-items-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .counted-search-container {
+    max-width: 100%;
+  }
+  
+  .counted-items-header-left,
+  .counted-search-container {
+    min-width: 100%;
+  }
+}
+
+/* Adjust the existing counted-items-count */
+.counted-items-count {
+  font-size: 14px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.counted-products-loaded {
+  color: #4caf50;
+  font-weight: 500;
+}
 .counted-warning-message {
   background: #fff3cd;
   border: 1px solid #ffeaa7;
