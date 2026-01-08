@@ -12,6 +12,7 @@ import {
   FaTimesCircle,
   FaExclamationTriangle,
   FaSpinner,
+  FaTrash,
 } from "react-icons/fa";
 import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
@@ -38,6 +39,10 @@ const CountStockScreen = () => {
   const [allProducts, setAllProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [productsLoaded, setProductsLoaded] = useState(false);
+  
+  // Add state for delete modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -318,6 +323,55 @@ const CountStockScreen = () => {
     }
   };
 
+  // Function to show delete confirmation modal
+  const handleShowDeleteModal = (item) => {
+    if (!countedIsSubscribedAdmin) {
+      setCountedShowSubscriptionModal(true);
+      return;
+    }
+
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+  };
+
+  // Function to confirm deletion
+  const handleConfirmDelete = () => {
+    if (!itemToDelete) return;
+
+    const productId = itemToDelete.productId;
+    const updatedItems = countedItems.filter(item => item.productId !== productId);
+    
+    // Update the items list
+    setCountedItems(updatedItems);
+    setCountedTotalItems(updatedItems.length);
+    
+    // Update completed items count
+    const completed = updatedItems.filter(item => item.isCounted).length;
+    setCountedCompletedItems(completed);
+    
+    // If we removed the current item, set a new current item
+    if (countedCurrentItem && countedCurrentItem.productId === productId) {
+      if (updatedItems.length > 0) {
+        const nextItem = updatedItems.find(item => !item.isCounted) || updatedItems[0];
+        setCountedCurrentItem(nextItem);
+        setCountedCurrentQuantity(nextItem.expectedStock?.toString() || '');
+      } else {
+        setCountedCurrentItem(null);
+        setCountedCurrentQuantity('');
+      }
+    }
+    
+    toast.success(`${itemToDelete.productName} removed from count`);
+    setShowDeleteModal(false);
+    setItemToDelete(null);
+  };
+
+  // Function to cancel deletion
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setItemToDelete(null);
+  };
+
   const toggleCountedSidebar = () => {
     setCountedSidebarOpen(!countedSidebarOpen);
   };
@@ -409,7 +463,7 @@ const CountStockScreen = () => {
           difference,
           priceDifference,
           countedQuantity: value,
-          isCounted: quantity > 0
+          isCounted: value !== '' // Counted if any value is entered (even 0)
         };
       }
       return item;
@@ -469,17 +523,22 @@ const CountStockScreen = () => {
       return;
     }
 
-   // Check if any items haven't been counted yet (countedQuantity is empty or undefined)
-const uncountedItems = countedItems.filter(item => 
-  item.countedQuantity === undefined || 
-  item.countedQuantity === '' || 
-  item.countedQuantity === null
-);
+    // Check if any items haven't been counted yet (countedQuantity is empty or undefined)
+    const uncountedItems = countedItems.filter(item => 
+      item.countedQuantity === undefined || 
+      item.countedQuantity === '' || 
+      item.countedQuantity === null
+    );
 
-if (uncountedItems.length > 0) {
-  toast.error(`Please enter a count for ${uncountedItems.length} item(s) before completing.`);
-  return;
-}
+    if (uncountedItems.length > 0) {
+      toast.error(`Please enter a count for ${uncountedItems.length} item(s) before completing.`);
+      return;
+    }
+
+    if (countedItems.length === 0) {
+      toast.error('No items to count. Add items to complete the count.');
+      return;
+    }
 
     setCountedShowConfirmModal(true);
   };
@@ -747,7 +806,6 @@ if (uncountedItems.length > 0) {
             </div>
           )}
 
-
           {/* Counted Items Table */}
           <div className="counted-items-section">
             <div className="counted-items-header">
@@ -769,6 +827,7 @@ if (uncountedItems.length > 0) {
                     <div className="counted-table-header-cell">Counted</div>
                     <div className="counted-table-header-cell">Difference</div>
                     <div className="counted-table-header-cell">Price difference</div>
+                    <div className="counted-table-header-cell">Actions</div>
                   </div>
                   
                   <div className="counted-items-table-body">
@@ -796,6 +855,15 @@ if (uncountedItems.length > 0) {
                         <div className={`counted-item-cost-difference ${(item.priceDifference || 0) < 0 ? 'counted-negative' : (item.priceDifference || 0) > 0 ? 'counted-positive' : ''}`}>
                           ${Math.abs(item.priceDifference || 0).toFixed(2)}
                         </div>
+                        <div className="counted-item-actions">
+                          <button
+                            className="counted-remove-btn"
+                            onClick={() => handleShowDeleteModal(item)}
+                            title="Remove from count"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
                       </div>
                     ))}
                     
@@ -810,6 +878,7 @@ if (uncountedItems.length > 0) {
                       <div className={`counted-total-cost-difference ${calculatedTotals.totalPriceDifference < 0 ? 'counted-negative' : calculatedTotals.totalPriceDifference > 0 ? 'counted-positive' : ''}`}>
                         ${Math.abs(calculatedTotals.totalPriceDifference).toFixed(2)}
                       </div>
+                      <div className="counted-total-actions"></div>
                     </div>
                   </div>
                 </div>
@@ -830,13 +899,73 @@ if (uncountedItems.length > 0) {
             <button 
               className="counted-complete-btn" 
               onClick={handleCountedComplete}
-              disabled={countedCompletedItems !== countedTotalItems || isLoadingProducts || !productsLoaded}
+              disabled={
+                countedItems.length === 0 || 
+                countedItems.some(item => 
+                  item.countedQuantity === undefined || 
+                  item.countedQuantity === '' || 
+                  item.countedQuantity === null
+                ) ||
+                isLoadingProducts || 
+                !productsLoaded
+              }
             >
               {isLoadingProducts ? 'LOADING...' : 'COMPLETE'}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && itemToDelete && (
+        <div className="counted-modal-overlay">
+          <div className="counted-delete-modal">
+            <div className="counted-modal-header">
+              <h3>Remove Item</h3>
+              <button 
+                className="counted-modal-close"
+                onClick={handleCancelDelete}
+              >
+                <FaTimesCircle />
+              </button>
+            </div>
+            <div className="counted-modal-body">
+              <div className="counted-delete-warning-icon">
+                <FaExclamationTriangle />
+              </div>
+              <p>Are you sure you want to remove this item from the count?</p>
+              <div className="counted-item-to-delete">
+                <strong>{itemToDelete.productName}</strong>
+                <div className="counted-item-details">
+                  SKU: {itemToDelete.sku} • Expected: {itemToDelete.expectedStock || 0}
+                </div>
+                {itemToDelete.countedQuantity && (
+                  <div className="counted-item-counted-info">
+                    Counted: {itemToDelete.countedQuantity}
+                  </div>
+                )}
+              </div>
+              <div className="counted-warning-message">
+                This action cannot be undone.
+              </div>
+            </div>
+            <div className="counted-modal-footer">
+              <button 
+                className="counted-modal-cancel"
+                onClick={handleCancelDelete}
+              >
+                KEEP ITEM
+              </button>
+              <button 
+                className="counted-modal-delete"
+                onClick={handleConfirmDelete}
+              >
+                REMOVE ITEM
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm Modal */}
       {countedShowConfirmModal && (
