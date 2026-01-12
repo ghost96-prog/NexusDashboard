@@ -17,7 +17,7 @@ import CreateProductScreen from "./screens/CreateProductScreen";
 import EditProductScreen from "./screens/EditProductScreen";
 import InventoryCountsScreen from "./screens/InventoryCountsScreen";
 import CreateCountScreen from "./screens/CreateCountScreen";
-import CountStockScreen from "./screens/CountStockScreen";
+import CountStockScreen from "./screens/countStockScreen";
 import InventoryCountDetailsScreen from "./screens/InventoryCountDetailsScreen";
 import CashManagementScreen from "./screens/CashManagementScreen";
 
