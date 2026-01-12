@@ -298,25 +298,32 @@ const CreateGoodsReceivedScreen = () => {
     setGrvSelectedItems(newSelectedItems);
   };
 
-  const handleQuantityChange = (productId, value) => {
-    const item = grvSelectedItems.find(item => item.productId === productId);
-    if (!item) return;
+const handleQuantityChange = (productId, value) => {
+  const item = grvSelectedItems.find(item => item.productId === productId);
+  if (!item) return;
 
-    const parsedValue = parseInputValue(value, item.productType);
-    
-    setGrvSelectedItems(prevItems =>
-      prevItems.map(item =>
-        item.productId === productId
-          ? {
-              ...item,
-              receivedQuantity: parsedValue,
-              // Use NEW COST for calculation (editable field)
-              totalPrice: (parseFloat(parsedValue) || 0) * (parseFloat(item.newCost) || 0)
-            }
-          : item
-      )
-    );
-  };
+  const parsedValue = parseInputValue(value, item.productType);
+  
+  // For weight products, ensure we keep decimal if user enters it
+  let displayValue = parsedValue;
+  if (item.productType === 'Weight' && parsedValue.includes('.')) {
+    // Keep the decimal format for display
+    displayValue = parsedValue;
+  }
+  
+  setGrvSelectedItems(prevItems =>
+    prevItems.map(item =>
+      item.productId === productId
+        ? {
+            ...item,
+            receivedQuantity: parsedValue, // Store the raw parsed value
+            // Use NEW COST for calculation (editable field)
+            totalPrice: (parseFloat(parsedValue) || 0) * (parseFloat(item.newCost) || 0)
+          }
+        : item
+    )
+  );
+};
 
   const handlePriceChange = (productId, priceType, value) => {
     // For prices, always allow decimal with 2 places
@@ -729,16 +736,16 @@ const handleGrvSaveAndProcess = async () => {
           <div className="grv-create-item-existing-stock">
             {formatDisplay(item.existingStock, item.productType)}
           </div>
-          <div className="grv-create-item-quantity">
-            <input
-              type="text"
-              inputMode="decimal"
-              className="grv-create-quantity-input"
-              value={formatDisplay(item.receivedQuantity, item.productType)}
-              onChange={(e) => handleQuantityChange(item.productId, e.target.value)}
-              placeholder={item.productType === 'Weight' ? '0.00' : '0'}
-            />
-          </div>
+         <div className="grv-create-item-quantity">
+  <input
+    type="text"
+    inputMode={item.productType === 'Weight' ? 'decimal' : 'numeric'}
+    className="grv-create-quantity-input"
+    value={item.receivedQuantity} // Use raw value directly
+    onChange={(e) => handleQuantityChange(item.productId, e.target.value)}
+    placeholder={item.productType === 'Weight' ? '0.00' : '0'}
+  />
+</div>
           {/* UNIT COST - EDITABLE (comes after Qty Received) */}
           <div className="grv-create-item-unit-cost">
             <input
