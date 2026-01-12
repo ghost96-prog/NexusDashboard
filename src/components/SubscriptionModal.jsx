@@ -1,5 +1,5 @@
 import React from "react";
-import { FaWhatsapp, FaCrown, FaStar, FaChevronDown } from "react-icons/fa";
+import { FaWhatsapp, FaCrown, FaStar, FaChevronDown, FaClipboardList, FaTruck } from "react-icons/fa";
 import "../Css/SubscriptionModal.css";
 
 const SubscriptionModal = ({ isOpen, onClose }) => {
@@ -33,7 +33,7 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
             <FaCrown className="crown-icon" />
             <span>Premium Feature</span>
           </div>
-          <h2 className="gradient-title">Unlock Access</h2>
+          <h2 className="gradient-title">Unlock Advanced Features</h2>
           <button className="close-button-premium" onClick={onClose}>
             ×
           </button>
@@ -44,41 +44,58 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
           <div className="modal-body-premium">
             <p className="premium-text">
               This feature requires an <strong>Admin Subscription</strong> to
-              access advanced product management capabilities.
+              access advanced inventory and stock management capabilities.
             </p>
             <div className="pricing-info">
               <h3 className="pricing-title">Subscription Plans</h3>
               <div className="pricing-cards">
                 <div className="pricing-card">
                   <h4>Basic</h4>
-                  <div className="pricem">$29 Unlimited Access</div>
-                  <p className="labelm">Essential product management</p>
+                  <div className="pricemm">$29 Unlimited Access</div>
+                  <p className="labelm">Essential inventory management</p>
                 </div>
               </div>
             </div>
             <div className="feature-details">
-              <h3 className="features-title">What You Get:</h3>
+              <h3 className="features-title">Premium Features Included:</h3>
               <div className="benefits-list">
+                <div className="benefit-item">
+                  <span className="checkmark">✓</span>
+                  <strong>Inventory Counts</strong> - Track and manage stock counts
+                  <FaClipboardList style={{ marginLeft: '8px', color: '#5694e6' }} />
+                </div>
+                <div className="benefit-item">
+                  <span className="checkmark">✓</span>
+                  <strong>Goods Received (GRVs)</strong> - Manage incoming inventory
+                  <FaTruck style={{ marginLeft: '8px', color: '#5694e6' }} />
+                </div>
                 <div className="benefit-item">
                   <span className="checkmark">✓</span>
                   Unlimited remote product creation and editing
                 </div>
-
-                {/* <div className="benefit-item">
-                  <span className="checkmark">✓</span>
-                  Bulk product operations and imports
-                </div> */}
                 <div className="benefit-item">
                   <span className="checkmark">✓</span>
                   Real-time stock synchronization
                 </div>
-
                 <div className="benefit-item">
                   <span className="checkmark">✓</span>
                   Automated low stock notifications
                 </div>
+                <div className="benefit-item">
+                  <span className="checkmark">✓</span>
+                  Stock adjustment and reconciliation
+                </div>
+                <div className="benefit-item">
+                  <span className="checkmark">✓</span>
+                  Multi-store inventory management
+                </div>
+                <div className="benefit-item">
+                  <span className="checkmark">✓</span>
+                  Advanced reporting and analytics
+                </div>
               </div>
             </div>
+
 
             <div className="support-section">
               <p className="support-text">

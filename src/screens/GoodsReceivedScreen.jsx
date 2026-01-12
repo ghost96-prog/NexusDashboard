@@ -17,6 +17,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
+import SubscriptionModal from "../components/SubscriptionModal";
 
 const GoodsReceivedScreen = () => {
   const [grvSidebarOpen, setGrvSidebarOpen] = useState(false);
@@ -27,6 +28,8 @@ const GoodsReceivedScreen = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All");
+  const [isSubscribedAdmin, setIsSubscribedAdmin] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
   const navigate = useNavigate();
 
@@ -48,6 +51,7 @@ const GoodsReceivedScreen = () => {
 
   useEffect(() => {
     if (grvEmail) {
+      fetchAdminSubscriptionStatus();
       fetchGRVs();
     }
   }, [grvEmail]);
@@ -55,6 +59,27 @@ const GoodsReceivedScreen = () => {
   useEffect(() => {
     applyFilters();
   }, [searchTerm, selectedStatus, grvs]);
+
+  const fetchAdminSubscriptionStatus = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const decoded = jwtDecode(token);
+      const userEmail = decoded.email;
+
+      const response = await fetch(
+        `https://nexuspos.onrender.com/api/adminSubscriptionRouter/status?email=${encodeURIComponent(userEmail)}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsSubscribedAdmin(data.isSubscribedAdmin);
+      }
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+    }
+  };
 
   const fetchGRVs = async () => {
     try {
@@ -140,6 +165,10 @@ const GoodsReceivedScreen = () => {
   };
 
   const handleCreateGRV = () => {
+    if (!isSubscribedAdmin) {
+      setShowSubscriptionModal(true);
+      return;
+    }
     navigate("/create-grv");
   };
 
@@ -354,6 +383,10 @@ const GoodsReceivedScreen = () => {
         </div>
       </div>
       
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+      />
       <ToastContainer position="bottom-right" />
     </div>
   );
