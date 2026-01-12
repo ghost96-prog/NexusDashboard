@@ -227,7 +227,7 @@
 }
 
 .pricing-card {
-  background: rgb(191, 163, 163);
+  background: rgb(177, 121, 121);
   padding: 5px;
   border-radius: 12px;
   text-align: center;
@@ -246,7 +246,7 @@
   color: "#000";
 }
 
-.pricemm {
+.pricem {
   font-size: 0.8rem;
   font-weight: 700;
   margin: 10px 0;
