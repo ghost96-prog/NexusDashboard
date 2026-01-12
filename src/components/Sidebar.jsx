@@ -185,6 +185,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { label: "Inventory History", path: "/inventory" },
         { label: "Inventory Value", path: "/inventory-value" },
         { label: "Inventory Counts", path: "/counts" },
+        { label: "Inventory GRVs", path: "/goods-received" },
       ],
     },
     {

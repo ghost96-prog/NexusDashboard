@@ -2,7 +2,6 @@ import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import WelcomeScreen from "./screens/WelcomeScreen";
 import LoginScreen from "./screens/LoginScreen";
-
 import FiscalisationScreen from "./screens/FiscalisationScreen";
 import LoginScreenFiscal from "./screens/LoginScreenFiscal";
 import SalesSummery from "./screens/SalesSummery";
@@ -18,9 +17,15 @@ import CreateProductScreen from "./screens/CreateProductScreen";
 import EditProductScreen from "./screens/EditProductScreen";
 import InventoryCountsScreen from "./screens/InventoryCountsScreen";
 import CreateCountScreen from "./screens/CreateCountScreen";
-import CountStockScreen from "./screens/countStockScreen";
+import CountStockScreen from "./screens/CountStockScreen";
 import InventoryCountDetailsScreen from "./screens/InventoryCountDetailsScreen";
 import CashManagementScreen from "./screens/CashManagementScreen";
+
+// Import GRV screens
+import GoodsReceivedScreen from "./screens/GoodsReceivedScreen";
+import CreateGoodsReceivedScreen from "./screens/CreateGoodsReceivedScreen";
+import ProcessGoodsReceivedScreen from "./screens/ProcessGoodsReceivedScreen";
+import GoodsReceivedDetailsScreen from "./screens/GoodsReceivedDetailsScreen";
 
 function App() {
   return (
@@ -47,6 +52,12 @@ function App() {
           <Route path="/create-counts" element={<CreateCountScreen />} />
           <Route path="/count-stock" element={<CountStockScreen />} />
           <Route path="/inventory-count/:id" element={<InventoryCountDetailsScreen />} />
+          
+          {/* GRV Routes */}
+          <Route path="/goods-received" element={<GoodsReceivedScreen />} />
+          <Route path="/create-grv" element={<CreateGoodsReceivedScreen />} />
+          <Route path="/process-grv" element={<ProcessGoodsReceivedScreen />} />
+          <Route path="/grv-details/:grvId" element={<GoodsReceivedDetailsScreen />} />
         </Routes>
       </div>
     </Router>
