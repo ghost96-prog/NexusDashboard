@@ -27,6 +27,10 @@ import CreateGoodsReceivedScreen from "./screens/CreateGoodsReceivedScreen";
 import ProcessGoodsReceivedScreen from "./screens/ProcessGoodsReceivedScreen";
 import GoodsReceivedDetailsScreen from "./screens/GoodsReceivedDetailsScreen";
 
+// Import new Category and Discount screens
+import CategoriesScreen from "./screens/CategoriesScreen";
+import DiscountsScreen from "./screens/DiscountsScreen";
+
 function App() {
   return (
     <Router>
@@ -58,6 +62,10 @@ function App() {
           <Route path="/create-grv" element={<CreateGoodsReceivedScreen />} />
           <Route path="/process-grv" element={<ProcessGoodsReceivedScreen />} />
           <Route path="/grv-details/:grvId" element={<GoodsReceivedDetailsScreen />} />
+          
+          {/* New Category and Discount Routes */}
+          <Route path="/categories" element={<CategoriesScreen />} />
+          <Route path="/discounts" element={<DiscountsScreen />} />
         </Routes>
       </div>
     </Router>

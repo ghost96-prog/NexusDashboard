@@ -121,85 +121,96 @@ const CreateProductScreen = () => {
     return result;
   };
 
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) {
-      toast.error("Category name cannot be empty");
-      return;
-    }
+const handleAddCategory = async () => {
+  if (!newCategoryName.trim()) {
+    toast.error("Category name cannot be empty");
+    return;
+  }
 
-    if (newCategoryName.length > 16) {
-      toast.error("Category name must be 16 characters or less");
-      return;
-    }
+  if (newCategoryName.length > 16) {
+    toast.error("Category name must be 16 characters or less");
+    return;
+  }
 
-    try {
-      setCreatingCategory(true);
-      
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Authentication token is missing.");
-        setCreatingCategory(false);
-        return;
-      }
-
-      const decoded = jwtDecode(token);
-      const userEmail = decoded.email;
-
-      // Create new category object
-      const newCategory = {
-        categoryId: generateCategoryId(),
-        categoryName: newCategoryName.toUpperCase(),
-        currentDate: new Date().toISOString(),
-        items: 0,
-      };
-
-      // Check internet connectivity
-      if (!navigator.onLine) {
-        toast.error("No internet connection. Please check your network.");
-        setCreatingCategory(false);
-        return;
-      }
-
-      // Send category to server
-      const response = await fetch(
-        `https://nexuspos.onrender.com/api/categoryRouter/category-updates?email=${encodeURIComponent(
-          userEmail
-        )}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(newCategory),
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("Category created successfully!");
-        
-        // Close modal and reset form
-        setShowCategoryModal(false);
-        setNewCategoryName("");
-        
-        // Refetch categories
-        await fetchCategories();
-        
-        // Automatically select the new category
-        setCategoryName(newCategoryName.toUpperCase());
-        setCategory(newCategory);
-      } else {
-        toast.error("Failed to create category");
-        console.error("Error adding category to server:", data.error);
-      }
-    } catch (error) {
-      toast.error("Error creating category");
-      console.error("Error adding category:", error);
-    } finally {
+  try {
+    // FIRST: Close the category modal
+    setShowCategoryModal(false);
+    
+    // THEN: Show loading modal
+    setCreatingCategory(true);
+    
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication token is missing.");
       setCreatingCategory(false);
+      // Re-open the modal if there's an error
+      setShowCategoryModal(true);
+      return;
     }
-  };
+
+    const decoded = jwtDecode(token);
+    const userEmail = decoded.email;
+
+    // Create new category object
+    const newCategory = {
+      categoryId: generateCategoryId(),
+      categoryName: newCategoryName.toUpperCase(),
+      currentDate: new Date().toISOString(),
+      items: 0,
+    };
+
+    // Check internet connectivity
+    if (!navigator.onLine) {
+      toast.error("No internet connection. Please check your network.");
+      setCreatingCategory(false);
+      // Re-open the modal if there's no internet
+      setShowCategoryModal(true);
+      return;
+    }
+
+    // Send category to server
+    const response = await fetch(
+      `https://nexuspos.onrender.com/api/categoryRouter/category-updates?email=${encodeURIComponent(
+        userEmail
+      )}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newCategory),
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      toast.success("Category created successfully!");
+      
+      // Reset form
+      setNewCategoryName("");
+      
+      // Refetch categories
+      await fetchCategories();
+      
+      // Automatically select the new category
+      setCategoryName(newCategoryName.toUpperCase());
+      setCategory(newCategory);
+    } else {
+      toast.error("Failed to create category");
+      console.error("Error adding category to server:", data.error);
+      // Re-open the modal if there's an error
+      setShowCategoryModal(true);
+    }
+  } catch (error) {
+    toast.error("Error creating category");
+    console.error("Error adding category:", error);
+    // Re-open the modal if there's an error
+    setShowCategoryModal(true);
+  } finally {
+    setCreatingCategory(false);
+  }
+};
 
   const generateInventoryId = () => {
     return generateRandomString(16);
@@ -562,101 +573,100 @@ const CreateProductScreen = () => {
               <span className="dropdownIcon">{showDropdown ? "↑" : "↓"}</span>
             </div>
 
-            {showDropdown && (
-              <div
-                className="dropdownModalBackdrop"
-                onClick={() => setShowDropdown(false)}
+         {showDropdown && (
+  <div
+    className="dropdownModalBackdrop"
+    onClick={() => setShowDropdown(false)}
+  >
+    <div
+      className="dropdownModalContainer"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="dropdownModalHeader">
+        <h3 className="dropdownModalHeaderText">Select Category</h3>
+        <button
+          onClick={() => setShowDropdown(false)}
+          className="closeButton"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="dropdownModalScroll">
+        {/* Add New Category Button - At the TOP */}
+        <div
+          className="dropdownModalItemp addNewCategoryItem"
+          onClick={() => {
+            setShowDropdown(false);
+            setShowCategoryModal(true);
+          }}
+        >
+          <span className="itemIcon addCategoryIcon">+</span>
+          <span className="dropdownModalItemText addNewCategoryText">
+            Add New Category
+          </span>
+        </div>
+
+        {/* Add "No Category" option */}
+        <div
+          className={`dropdownModalItemp ${
+            !categoryName &&
+            !category?.categoryName &&
+            "dropdownModalItemSelected"
+          }`}
+          onClick={() => {
+            setCategoryName("No Category");
+            setCategory(null);
+            setShowDropdown(false);
+          }}
+        >
+          <span className="itemIcon">📁</span>
+          <span
+            className={`dropdownModalItemText ${
+              !categoryName &&
+              !category?.categoryName &&
+              "dropdownModalItemTextSelected"
+            }`}
+          >
+            No Category
+          </span>
+        </div>
+
+        {/* Existing categories list */}
+        {categories
+          .sort((a, b) =>
+            a.categoryName.localeCompare(b.categoryName)
+          )
+          .map((cat) => (
+            <div
+              key={cat.categoryId}
+              className={`dropdownModalItemp ${
+                (categoryName === cat.categoryName ||
+                  category?.categoryName === cat.categoryName) &&
+                "dropdownModalItemSelected"
+              }`}
+              onClick={() => {
+                setCategoryName(cat.categoryName);
+                setCategory(cat);
+                setShowDropdown(false);
+              }}
+            >
+              <span className="itemIcon">📂</span>
+              <span
+                className={`dropdownModalItemText ${
+                  (categoryName === cat.categoryName ||
+                    category?.categoryName === cat.categoryName) &&
+                  "dropdownModalItemTextSelected"
+                }`}
               >
-                <div
-                  className="dropdownModalContainer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="dropdownModalHeader">
-                    <h3 className="dropdownModalHeaderText">Select Category</h3>
-                    <button
-                      onClick={() => setShowDropdown(false)}
-                      className="closeButton"
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  <div className="dropdownModalScroll">
-                    {/* Add "No Category" option at the top */}
-                       {/* Add New Category Button */}
-                    <div className="addCategoryContainer">
-                      <button
-                        className="addCategoryButton"
-                        onClick={() => {
-                          setShowDropdown(false);
-                          setShowCategoryModal(true);
-                        }}
-                      >
-                        <span className="addCategoryIcon">+</span>
-                        <span className="addCategoryText">Add New Category</span>
-                      </button>
-                    </div>
-                    <div
-                      className={`dropdownModalItemp ${
-                        !categoryName &&
-                        !category?.categoryName &&
-                        "dropdownModalItemSelected"
-                      }`}
-                      onClick={() => {
-                        setCategoryName("No Category");
-                        setCategory(null);
-                        setShowDropdown(false);
-                      }}
-                    >
-                      <span className="itemIcon">📁</span>
-                      <span
-                        className={`dropdownModalItemText ${
-                          !categoryName &&
-                          !category?.categoryName &&
-                          "dropdownModalItemTextSelected"
-                        }`}
-                      >
-                        No Category
-                      </span>
-                    </div>
-
-                    {/* Existing categories list */}
-                    {categories
-                      .sort((a, b) =>
-                        a.categoryName.localeCompare(b.categoryName)
-                      )
-                      .map((cat) => (
-                        <div
-                          key={cat.categoryId}
-                          className={`dropdownModalItemp ${
-                            (categoryName === cat.categoryName ||
-                              category?.categoryName === cat.categoryName) &&
-                            "dropdownModalItemSelected"
-                          }`}
-                          onClick={() => {
-                            setCategoryName(cat.categoryName);
-                            setCategory(cat);
-                            setShowDropdown(false);
-                          }}
-                        >
-                          <span className="itemIcon">📂</span>
-                          <span
-                            className={`dropdownModalItemText ${
-                              (categoryName === cat.categoryName ||
-                                category?.categoryName === cat.categoryName) &&
-                              "dropdownModalItemTextSelected"
-                            }`}
-                          >
-                            {cat.categoryName}
-                          </span>
-                        </div>
-                      ))}
-
-                 
-                  </div>
-                </div>
-              </div>
-            )}
+                {cat.categoryName}
+              </span>
+            </div>
+          ))}
+      </div>
+    </div>
+  </div>
+)}
           </div>
 
           {/* Sold By Radio Buttons */}
@@ -809,65 +819,50 @@ const CreateProductScreen = () => {
       </div>
 
       {/* Create Category Modal */}
-      {showCategoryModal && (
-        <div className="modalBackground">
-          <div
-            className="modalContent"
-            onClick={(e) => e.stopPropagation()}
+   {showCategoryModal && (
+  <div className="create-product-category-modal-backdrop">
+    <div
+      className="create-product-category-modal-container"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="create-product-category-modal-header">
+        <h3 className="create-product-category-modal-title">Create New Category</h3>
+      </div>
+      
+      <div className="create-product-category-modal-body">
+        <input
+          className="create-product-category-modal-input"
+          placeholder="Enter Category Name"
+          value={newCategoryName}
+          onChange={(e) => setNewCategoryName(e.target.value)}
+          maxLength={16}
+          autoFocus
+        />
+        <p className="create-product-category-modal-helper-text">Maximum 16 characters</p>
+        
+        <div className="create-product-category-modal-buttons">
+          <button
+            className="create-product-category-modal-button-cancel"
+            onClick={() => {
+              setShowCategoryModal(false);
+              setNewCategoryName("");
+            }}
+            disabled={creatingCategory}
           >
-            <div className="modalHeader">
-              <h3 className="modalTitle">Create New Category</h3>
-              <button
-                onClick={() => {
-                  setShowCategoryModal(false);
-                  setNewCategoryName("");
-                }}
-                className="closeButton"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="modalBody">
-              <div className="inputContainer">
-                <label className="inputLabel">Category Name</label>
-                <div className="inputWrapper">
-                  <span className="inputIcon">📁</span>
-                  <input
-                    className="input"
-                    placeholder="Enter Category Name"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    maxLength={16}
-                    autoFocus
-                  />
-                </div>
-                <p className="helperText">Maximum 16 characters</p>
-              </div>
-              
-              <div className="modalButtons">
-                <button
-                  className="modalButton cancelButton"
-                  onClick={() => {
-                    setShowCategoryModal(false);
-                    setNewCategoryName("");
-                  }}
-                  disabled={creatingCategory}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="modalButton saveButton"
-                  onClick={handleAddCategory}
-                  disabled={creatingCategory || !newCategoryName.trim()}
-                >
-                  {creatingCategory ? "Creating..." : "Save Category"}
-                </button>
-              </div>
-            </div>
-          </div>
+            Cancel
+          </button>
+          <button
+            className="create-product-category-modal-button-save"
+            onClick={handleAddCategory}
+            disabled={creatingCategory || !newCategoryName.trim()}
+          >
+            {creatingCategory ? "Creating..." : "Save Category"}
+          </button>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Loading Modal */}
       {loading && (

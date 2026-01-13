@@ -174,7 +174,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: "Items List",
       color: "#10b981",
       gradient: "linear-gradient(135deg, #10b981, #34d399)",
-      subItems: [{ label: "Products", path: "/products" }],
+      subItems: [
+        { label: "Products", path: "/products" },
+        // { label: "Categories", path: "/categories" },
+        // { label: "Discounts", path: "/discounts" },
+      ],
     },
     {
       icon: <FaChartColumn className="sidebar-icon" size={18} color="#8b5cf6"/>,
