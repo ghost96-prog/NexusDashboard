@@ -175,9 +175,7 @@ const CreateGoodsReceivedScreen = () => {
       
       // Filter products for the current user and selected store
       const filteredProducts = responseData.data.filter(product => 
-        product.userId === userId && 
-        product.storeId === grvSelectedStore?.storeId
-      );
+        product.userId === userId  );
 
       filteredProducts.sort((a, b) => 
         a.productName?.localeCompare(b.productName || '')
