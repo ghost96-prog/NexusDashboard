@@ -25,6 +25,11 @@ const CreateProductScreen = () => {
   const [loading, setLoading] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [userId, setUserId] = useState("");
+  
+  // New states for category creation
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -82,18 +87,31 @@ const CreateProductScreen = () => {
     }
   };
 
-  const generateInventoryId = () => {
-    return generateRandomString(16);
-  };
+  const generateCategoryId = () => {
+    const currentDate = new Date();
 
-  const generateProductId = () => {
-    const id = generateRandomString(16);
-    setProductId(id);
+    // Format the date as DD-MM-YYYY HH:mm:ss
+    const day = String(currentDate.getDate()).padStart(2, "0");
+    const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+    const year = currentDate.getFullYear();
+    const hours = String(currentDate.getHours() % 12 || 12).padStart(2, "0");
+    const minutes = String(currentDate.getMinutes()).padStart(2, "0");
+    const seconds = String(currentDate.getSeconds()).padStart(2, "0");
+    const ampm = currentDate.getHours() >= 12 ? "PM" : "AM";
+
+    // Convert current timestamp to a hexadecimal string
+    const timestamp = new Date().getTime().toString(16);
+
+    // Generate a random string
+    const randomString = generateRandomString(16);
+
+    // Combine date, timestamp, and random string
+    return `${day}-${month}-${year} ${hours}:${minutes}:${seconds} ${ampm}-${timestamp}${randomString}`;
   };
 
   const generateRandomString = (length) => {
     const characters =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
     let result = "";
     for (let i = 0; i < length; i++) {
       result += characters.charAt(
@@ -101,6 +119,95 @@ const CreateProductScreen = () => {
       );
     }
     return result;
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("Category name cannot be empty");
+      return;
+    }
+
+    if (newCategoryName.length > 16) {
+      toast.error("Category name must be 16 characters or less");
+      return;
+    }
+
+    try {
+      setCreatingCategory(true);
+      
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication token is missing.");
+        setCreatingCategory(false);
+        return;
+      }
+
+      const decoded = jwtDecode(token);
+      const userEmail = decoded.email;
+
+      // Create new category object
+      const newCategory = {
+        categoryId: generateCategoryId(),
+        categoryName: newCategoryName.toUpperCase(),
+        currentDate: new Date().toISOString(),
+        items: 0,
+      };
+
+      // Check internet connectivity
+      if (!navigator.onLine) {
+        toast.error("No internet connection. Please check your network.");
+        setCreatingCategory(false);
+        return;
+      }
+
+      // Send category to server
+      const response = await fetch(
+        `https://nexuspos.onrender.com/api/categoryRouter/category-updates?email=${encodeURIComponent(
+          userEmail
+        )}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newCategory),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Category created successfully!");
+        
+        // Close modal and reset form
+        setShowCategoryModal(false);
+        setNewCategoryName("");
+        
+        // Refetch categories
+        await fetchCategories();
+        
+        // Automatically select the new category
+        setCategoryName(newCategoryName.toUpperCase());
+        setCategory(newCategory);
+      } else {
+        toast.error("Failed to create category");
+        console.error("Error adding category to server:", data.error);
+      }
+    } catch (error) {
+      toast.error("Error creating category");
+      console.error("Error adding category:", error);
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  const generateInventoryId = () => {
+    return generateRandomString(16);
+  };
+
+  const generateProductId = () => {
+    const id = generateRandomString(16);
+    setProductId(id);
   };
 
   const generateSKU = async () => {
@@ -219,7 +326,7 @@ const CreateProductScreen = () => {
       const productData = {
         productName: productName.toUpperCase(),
         category: categoryName === "No Category" ? "" : categoryName,
-        categoryId: category.categoryId || "",
+        categoryId: category?.categoryId || "",
         productType: productType,
         sku: sku,
         lowStockNotification: Number(lowStockNotification) || 0,
@@ -229,8 +336,8 @@ const CreateProductScreen = () => {
         userId: userId,
         productId: productId,
         price: Number(price),
-        roleOfEditor: "Owner", // You might want to get this from your auth context
-        createdBy: "Web User", // You might want to get this from your auth context
+        roleOfEditor: "Owner",
+        createdBy: "Web User",
         EditorId: userId,
         cost: Number(cost),
         currentDate: currentDate.toISOString(),
@@ -252,8 +359,8 @@ const CreateProductScreen = () => {
         productName: productData.productName,
         inventoryId: generateInventoryId(),
         productId: productData.productId,
-        roleOfEditor: "Owner", // You might want to get this from your auth context
-        createdBy: "Web User", // You might want to get this from your auth context
+        roleOfEditor: "Owner",
+        createdBy: "Web User",
         EditorId: userId,
         userId: userId,
         currentDate: productData.currentDate,
@@ -284,7 +391,6 @@ const CreateProductScreen = () => {
         }
       } catch (error) {
         console.error("Error sending inventory updates:", error);
-        // Continue with product creation even if inventory update fails
       }
 
       // Then send product data
@@ -477,6 +583,19 @@ const CreateProductScreen = () => {
 
                   <div className="dropdownModalScroll">
                     {/* Add "No Category" option at the top */}
+                       {/* Add New Category Button */}
+                    <div className="addCategoryContainer">
+                      <button
+                        className="addCategoryButton"
+                        onClick={() => {
+                          setShowDropdown(false);
+                          setShowCategoryModal(true);
+                        }}
+                      >
+                        <span className="addCategoryIcon">+</span>
+                        <span className="addCategoryText">Add New Category</span>
+                      </button>
+                    </div>
                     <div
                       className={`dropdownModalItemp ${
                         !categoryName &&
@@ -532,6 +651,8 @@ const CreateProductScreen = () => {
                           </span>
                         </div>
                       ))}
+
+                 
                   </div>
                 </div>
               </div>
@@ -619,7 +740,7 @@ const CreateProductScreen = () => {
                   placeholder="SKU"
                   onChange={(e) => setSku(e.target.value)}
                   onFocus={() => setShowDropdown(false)}
-                  readOnly // SKU is auto-generated
+                  readOnly
                 />
               </div>
               {errors.sku && <p className="errorText">{errors.sku}</p>}
@@ -687,12 +808,83 @@ const CreateProductScreen = () => {
         </div>
       </div>
 
+      {/* Create Category Modal */}
+      {showCategoryModal && (
+        <div className="modalBackground">
+          <div
+            className="modalContent"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modalHeader">
+              <h3 className="modalTitle">Create New Category</h3>
+              <button
+                onClick={() => {
+                  setShowCategoryModal(false);
+                  setNewCategoryName("");
+                }}
+                className="closeButton"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modalBody">
+              <div className="inputContainer">
+                <label className="inputLabel">Category Name</label>
+                <div className="inputWrapper">
+                  <span className="inputIcon">📁</span>
+                  <input
+                    className="input"
+                    placeholder="Enter Category Name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    maxLength={16}
+                    autoFocus
+                  />
+                </div>
+                <p className="helperText">Maximum 16 characters</p>
+              </div>
+              
+              <div className="modalButtons">
+                <button
+                  className="modalButton cancelButton"
+                  onClick={() => {
+                    setShowCategoryModal(false);
+                    setNewCategoryName("");
+                  }}
+                  disabled={creatingCategory}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="modalButton saveButton"
+                  onClick={handleAddCategory}
+                  disabled={creatingCategory || !newCategoryName.trim()}
+                >
+                  {creatingCategory ? "Creating..." : "Save Category"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Loading Modal */}
       {loading && (
         <div className="modalBackground">
           <div className="modalContent">
             <div className="loader"></div>
             <p className="modalText">Saving Product...</p>
+          </div>
+        </div>
+      )}
+      
+      {/* Category Creation Loading Modal */}
+      {creatingCategory && (
+        <div className="modalBackground">
+          <div className="modalContent">
+            <div className="loader"></div>
+            <p className="modalText">Creating Category...</p>
           </div>
         </div>
       )}
