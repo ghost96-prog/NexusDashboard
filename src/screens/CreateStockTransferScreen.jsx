@@ -194,10 +194,15 @@ const CreateStockTransferScreen = () => {
     }
   };
 
-  useEffect(() => {
+  // Handle search when term changes
+  const handleSearch = (searchTerm) => {
     if (searchTerm.trim() === '') {
-      setSearchResults([]);
-      setShowSearchResults(false);
+      // Show ALL products that are not already added to transfer
+      const allResults = products.filter(product =>
+        !selectedItems.some(item => item.productId === product.productId)
+      );
+      setSearchResults(allResults);
+      setShowSearchResults(allResults.length > 0);
       return;
     }
 
@@ -214,32 +219,36 @@ const CreateStockTransferScreen = () => {
 
     setSearchResults(filteredResults);
     setShowSearchResults(filteredResults.length > 0);
-  }, [searchTerm, products, selectedItems]);
-useEffect(() => {
-  const handleClickOutside = (event) => {
-    const searchContainer = document.querySelector('.transfer-create-search-container');
-    const searchResults = document.querySelector('.transfer-create-search-results-dropdown');
-    
-    if (
-      searchContainer && 
-      searchResults && 
-      !searchContainer.contains(event.target) && 
-      !searchResults.contains(event.target)
-    ) {
-      setShowSearchResults(false);
+  };
+
+  // Handle click outside to close search results
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const searchContainer = document.querySelector('.transfer-create-search-container');
+      const searchResults = document.querySelector('.transfer-create-search-results-dropdown');
+      
+      if (
+        searchContainer && 
+        searchResults && 
+        !searchContainer.contains(event.target) && 
+        !searchResults.contains(event.target)
+      ) {
+        // Just hide the results, don't clear selections
+        setShowSearchResults(false);
+      }
+    };
+
+    // Add event listener only when search results are shown
+    if (showSearchResults) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-  };
 
-  // Add event listener only when search results are shown
-  if (showSearchResults) {
-    document.addEventListener('mousedown', handleClickOutside);
-  }
+    // Clean up the event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSearchResults]);
 
-  // Clean up the event listener
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside);
-  };
-}, [showSearchResults]); // Only re-run when showSearchResults changes
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -260,9 +269,17 @@ useEffect(() => {
       return;
     }
 
-    const selectedProducts = searchResults.filter(product => 
-      searchSelected.has(product.productId)
+    // Get ALL products that are selected, not just from search results
+    const selectedProducts = products.filter(product => 
+      searchSelected.has(product.productId) && 
+      !selectedItems.some(item => item.productId === product.productId) // Check not already added
     );
+
+    if (selectedProducts.length === 0) {
+      toast.error('All selected products are already added to transfer.');
+      setSearchSelected(new Set());
+      return;
+    }
 
     const newItems = selectedProducts.map(product => ({
       ...product,
@@ -464,8 +481,60 @@ useEffect(() => {
   };
 
   const getProductTypeIcon = (productType) => {
-    return productType === 'Weight' ? <FaWeight title="Weight Product" style={{ color: '#5694e6', marginLeft: '4px' }} /> : null;
+    return productType === 'Weight' ? <FaWeight title="Weight Product" style={{ color: '#059669', marginLeft: '4px' }} /> : null;
   };
+
+  // Clear search input but keep popup open showing all items
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    // Show ALL products that are not already added to transfer
+    const allResults = products.filter(product =>
+      !selectedItems.some(item => item.productId === product.productId)
+    );
+    setSearchResults(allResults);
+    setShowSearchResults(true);
+  };
+
+  // Handle search input focus
+  const handleSearchFocus = () => {
+    if (productsLoading) {
+      toast.info('Please wait for products to load.');
+      return;
+    }
+    
+    // Show all items not yet added when search input is focused
+    const filteredResults = products.filter(product =>
+      !selectedItems.some(item => item.productId === product.productId)
+    );
+    
+    if (filteredResults.length > 0) {
+      setSearchResults(filteredResults);
+      setShowSearchResults(true);
+    }
+  };
+
+  // Get ALL selected products count (even if not in current search results)
+  const getTotalSelectedCount = () => {
+    // Count all selected products that aren't already added to transfer
+    const allSelectedProducts = products.filter(product => 
+      searchSelected.has(product.productId) && 
+      !selectedItems.some(item => item.productId === product.productId)
+    );
+    return allSelectedProducts.length;
+  };
+
+  // Handle search input change
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    handleSearch(value);
+  };
+
+  // Effect to update search results when products or selected items change
+  useEffect(() => {
+    if (showSearchResults) {
+      handleSearch(searchTerm);
+    }
+  }, [products, selectedItems]);
 
   return (
     <div className="transfer-create-main-container">
@@ -613,31 +682,14 @@ useEffect(() => {
                     className="transfer-create-search-input"
                     placeholder={productsLoading ? "Loading products..." : "Search item by name, SKU, or category..."}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onFocus={() => {
-                      if (productsLoading) {
-                        toast.info('Please wait for products to load.');
-                        return;
-                      }
-                      const filteredResults = products.filter(product =>
-                        !selectedItems.some(item => item.productId === product.productId)
-                      );
-                      
-                      if (filteredResults.length > 0) {
-                        setSearchResults(filteredResults);
-                        setShowSearchResults(true);
-                      }
-                    }}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    onFocus={handleSearchFocus}
                     disabled={productsLoading}
                   />
                   {searchTerm && !productsLoading && (
                     <button 
                       className="transfer-create-clear-search-btn"
-                      onClick={() => {
-                        setSearchTerm('');
-                        setShowSearchResults(false);
-                        setSearchSelected(new Set());
-                      }}
+                      onClick={handleClearSearch}
                     >
                       <FaTimesCircle />
                     </button>
@@ -664,11 +716,17 @@ useEffect(() => {
                       >
                         <FaTimesCircle /> Clear
                       </button>
+                      <button 
+                        className="transfer-create-close-popup-btn"
+                        onClick={() => setShowSearchResults(false)}
+                      >
+                        <FaTimes /> Close
+                      </button>
                     </div>
                     
-                    {searchResults.length > 0 ? (
-                      <>
-                        {searchResults.map(product => {
+                    <div className="transfer-create-search-results-list">
+                      {searchResults.length > 0 ? (
+                        searchResults.map(product => {
                           const isSelected = searchSelected.has(product.productId);
                           const isAlreadyAdded = selectedItems.some(item => item.productId === product.productId);
                           
@@ -708,22 +766,22 @@ useEffect(() => {
                               </div>
                             </div>
                           );
-                        })}
-                        
-                        {searchSelected.size > 0 && (
-                          <div className="transfer-create-add-selected-section">
-                            <button 
-                              className="transfer-create-add-selected-btn"
-                              onClick={handleAddSelectedProducts}
-                              disabled={productsLoading}
-                            >
-                              <FaPlus /> Add Selected ({searchSelected.size})
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="transfer-create-no-results">No products found</div>
+                        })
+                      ) : (
+                        <div className="transfer-create-no-results">No products found</div>
+                      )}
+                    </div>
+                    
+                    {searchSelected.size > 0 && (
+                      <div className="transfer-create-search-actions-footer">
+                        <button 
+                          className="transfer-create-add-selected-btn"
+                          onClick={handleAddSelectedProducts}
+                          disabled={productsLoading}
+                        >
+                          <FaPlus /> Add Selected ({getTotalSelectedCount()})
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

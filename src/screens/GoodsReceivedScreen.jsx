@@ -218,7 +218,7 @@ const GoodsReceivedScreen = () => {
       <ToastContainer position="bottom-right" />
       
       {/* Loading Modal */}
-      {showLoadingModal && (
+      {/* {showLoadingModal && (
         <div className="grv-loading-modal">
           <div className="grv-loading-modal-content">
             <div className="grv-loading-spinner-container">
@@ -236,7 +236,7 @@ const GoodsReceivedScreen = () => {
           </div>
         </div>
       )}
-      
+       */}
       <div className="grv-sidebar-toggle-wrapper">
         <button 
           className="grv-sidebar-toggle"
