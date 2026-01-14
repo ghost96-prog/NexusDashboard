@@ -208,17 +208,22 @@ const CreateGoodsReceivedScreen = () => {
     }
   };
 
-  useEffect(() => {
-    if (grvSearchTerm.trim() === '') {
-      setGrvSearchResults([]);
-      setGrvShowSearchResults(false);
+  // Handle search when term changes
+  const handleSearch = (searchTerm) => {
+    if (searchTerm.trim() === '') {
+      // Show ALL products that are not already added to GRV
+      const allResults = grvProducts.filter(product =>
+        !grvSelectedItems.some(item => item.productId === product.productId)
+      );
+      setGrvSearchResults(allResults);
+      setGrvShowSearchResults(allResults.length > 0);
       return;
     }
 
     const filtered = grvProducts.filter(product =>
-      product.productName?.toLowerCase().includes(grvSearchTerm.toLowerCase()) ||
-      product.sku?.toString().includes(grvSearchTerm) ||
-      product.category?.toLowerCase().includes(grvSearchTerm.toLowerCase())
+      product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku?.toString().includes(searchTerm) ||
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Filter out already selected items
@@ -228,32 +233,36 @@ const CreateGoodsReceivedScreen = () => {
 
     setGrvSearchResults(filteredResults);
     setGrvShowSearchResults(filteredResults.length > 0);
-  }, [grvSearchTerm, grvProducts, grvSelectedItems]);
-useEffect(() => {
-  const handleClickOutside = (event) => {
-    const searchContainer = document.querySelector('.grv-create-search-container');
-    const searchResults = document.querySelector('.grv-create-search-results-dropdown');
-    
-    if (
-      searchContainer && 
-      searchResults && 
-      !searchContainer.contains(event.target) && 
-      !searchResults.contains(event.target)
-    ) {
-      setGrvShowSearchResults(false);
+  };
+
+  // Handle click outside to close search results
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const searchContainer = document.querySelector('.grv-create-search-container');
+      const searchResults = document.querySelector('.grv-create-search-results-dropdown');
+      
+      if (
+        searchContainer && 
+        searchResults && 
+        !searchContainer.contains(event.target) && 
+        !searchResults.contains(event.target)
+      ) {
+        // Just hide the results, don't clear selections
+        setGrvShowSearchResults(false);
+      }
+    };
+
+    // Add event listener only when search results are shown
+    if (grvShowSearchResults) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-  };
 
-  // Add event listener only when search results are shown
-  if (grvShowSearchResults) {
-    document.addEventListener('mousedown', handleClickOutside);
-  }
+    // Clean up the event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [grvShowSearchResults]);
 
-  // Clean up the event listener
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside);
-  };
-}, [grvShowSearchResults]); // Only re-run when grvShowSearchResults changes
   const toggleGrvSidebar = () => {
     setGrvSidebarOpen(!grvSidebarOpen);
   };
@@ -276,9 +285,17 @@ useEffect(() => {
       return;
     }
 
-    const selectedProducts = grvSearchResults.filter(product => 
-      grvSearchSelected.has(product.productId)
+    // Get ALL products that are selected, not just from search results
+    const selectedProducts = grvProducts.filter(product => 
+      grvSearchSelected.has(product.productId) && 
+      !grvSelectedItems.some(item => item.productId === product.productId) // Check not already added
     );
+
+    if (selectedProducts.length === 0) {
+      toast.error('All selected products are already added to GRV.');
+      setGrvSearchSelected(new Set());
+      return;
+    }
 
     const newItems = selectedProducts.map(product => ({
       ...product,
@@ -529,6 +546,53 @@ useEffect(() => {
     return productType === 'Weight' ? <FaWeight title="Weight Product" style={{ color: '#5694e6', marginLeft: '4px' }} /> : null;
   };
 
+  // Clear search input but keep popup open showing all items
+  const handleClearSearch = () => {
+    setGrvSearchTerm('');
+    // Show ALL products that are not already added to GRV
+    const allResults = grvProducts.filter(product =>
+      !grvSelectedItems.some(item => item.productId === product.productId)
+    );
+    setGrvSearchResults(allResults);
+    setGrvShowSearchResults(true);
+  };
+
+  // Handle search input focus
+  const handleSearchFocus = () => {
+    // Show all items not yet added when search input is focused
+    const filteredResults = grvProducts.filter(product =>
+      !grvSelectedItems.some(item => item.productId === product.productId)
+    );
+    
+    if (filteredResults.length > 0) {
+      setGrvSearchResults(filteredResults);
+      setGrvShowSearchResults(true);
+    }
+  };
+
+  // Get ALL selected products count (even if not in current search results)
+  const getTotalSelectedCount = () => {
+    // Count all selected products that aren't already added to GRV
+    const allSelectedProducts = grvProducts.filter(product => 
+      grvSearchSelected.has(product.productId) && 
+      !grvSelectedItems.some(item => item.productId === product.productId)
+    );
+    return allSelectedProducts.length;
+  };
+
+  // Handle search input change
+  const handleSearchChange = (value) => {
+    setGrvSearchTerm(value);
+    handleSearch(value);
+  };
+
+  // Effect to update search results when products or selected items change
+  useEffect(() => {
+    if (grvShowSearchResults) {
+      handleSearch(grvSearchTerm);
+    }
+  }, [grvProducts, grvSelectedItems]);
+
   return (
     <div className="grv-create-main-container">
       <ToastContainer position="top-right" autoClose={3000} />
@@ -656,27 +720,13 @@ useEffect(() => {
                     className="grv-create-search-input"
                     placeholder="Search item by name, SKU, or category..."
                     value={grvSearchTerm}
-                    onChange={(e) => setGrvSearchTerm(e.target.value)}
-                    onFocus={() => {
-                      // Show all items not yet added when search input is focused
-                      const filteredResults = grvProducts.filter(product =>
-                        !grvSelectedItems.some(item => item.productId === product.productId)
-                      );
-                      
-                      if (filteredResults.length > 0) {
-                        setGrvSearchResults(filteredResults);
-                        setGrvShowSearchResults(true);
-                      }
-                    }}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    onFocus={handleSearchFocus}
                   />
                   {grvSearchTerm && (
                     <button 
                       className="grv-create-clear-search-btn"
-                      onClick={() => {
-                        setGrvSearchTerm('');
-                        setGrvShowSearchResults(false);
-                        setGrvSearchSelected(new Set());
-                      }}
+                      onClick={handleClearSearch}
                     >
                       <FaTimesCircle />
                     </button>
@@ -698,11 +748,17 @@ useEffect(() => {
                       >
                         <FaTimesCircle /> Clear
                       </button>
+                      <button 
+                        className="grv-create-close-popup-btn"
+                        onClick={() => setGrvShowSearchResults(false)}
+                      >
+                        <FaTimes /> Close
+                      </button>
                     </div>
                     
-                    {grvSearchResults.length > 0 ? (
-                      <>
-                        {grvSearchResults.map(product => {
+                    <div className="grv-create-search-results-list">
+                      {grvSearchResults.length > 0 ? (
+                        grvSearchResults.map(product => {
                           const isSelected = grvSearchSelected.has(product.productId);
                           const isAlreadyAdded = grvSelectedItems.some(item => item.productId === product.productId);
                           
@@ -742,21 +798,21 @@ useEffect(() => {
                               </div>
                             </div>
                           );
-                        })}
-                        
-                        {grvSearchSelected.size > 0 && (
-                          <div className="grv-create-add-selected-section">
-                            <button 
-                              className="grv-create-add-selected-btn"
-                              onClick={handleAddSelectedProducts}
-                            >
-                              <FaPlus /> Add Selected ({grvSearchSelected.size})
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="grv-create-no-results">No products found</div>
+                        })
+                      ) : (
+                        <div className="grv-create-no-results">No products found</div>
+                      )}
+                    </div>
+                    
+                    {grvSearchSelected.size > 0 && (
+                      <div className="grv-create-search-actions-footer">
+                        <button 
+                          className="grv-create-add-selected-btn"
+                          onClick={handleAddSelectedProducts}
+                        >
+                          <FaPlus /> Add Selected ({getTotalSelectedCount()})
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

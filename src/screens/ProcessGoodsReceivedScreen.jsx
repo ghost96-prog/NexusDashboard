@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../Css/ProcessStockTransferScreen.css';
+import '../Css/ProcessGoodsReceivedScreen.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FaBars,
@@ -7,7 +7,7 @@ import {
   FaCheck,
   FaTimesCircle,
   FaStore,
-  FaExchangeAlt,
+  FaFileInvoice,
   FaBox,
   FaDollarSign,
   FaExclamationTriangle
@@ -17,11 +17,12 @@ import { jwtDecode } from 'jwt-decode';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const ProcessStockTransferScreen = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [transferData, setTransferData] = useState(null);
+const ProcessGoodsReceivedScreen = () => {
+  const [processSidebarOpen, setProcessSidebarOpen] = useState(false);
+  const [grvData, setGrvData] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [email, setEmail] = useState(null);
+  const [itemUpdates, setItemUpdates] = useState({});
   const [allProducts, setAllProducts] = useState([]);
   const [productsLoaded, setProductsLoaded] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -29,6 +30,7 @@ const ProcessStockTransferScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Fetch all products on screen load
   const fetchAllProducts = async () => {
     try {
       setIsLoadingProducts(true);
@@ -67,11 +69,22 @@ const ProcessStockTransferScreen = () => {
   };
 
   useEffect(() => {
-    if (location.state?.transferData) {
-      setTransferData(location.state.transferData);
+    if (location.state?.grvData) {
+      setGrvData(location.state.grvData);
+      // Initialize item updates
+      const updates = {};
+      location.state.grvData.items?.forEach(item => {
+        updates[item.productId] = {
+          updatePrice: true,
+          updateCost: true
+        };
+      });
+      setItemUpdates(updates);
       
+      // Fetch products
       fetchAllProducts();
       
+      // Set email from token
       const token = localStorage.getItem("token");
       if (token) {
         try {
@@ -82,29 +95,42 @@ const ProcessStockTransferScreen = () => {
         }
       }
     } else {
-      navigate('/stock-transfers');
+      navigate('/goods-received');
     }
   }, [location, navigate]);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+  const toggleProcessSidebar = () => {
+    setProcessSidebarOpen(!processSidebarOpen);
+  };
+
+  const handleToggleUpdate = (productId, field) => {
+    setItemUpdates(prev => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        [field]: !prev[productId]?.[field]
+      }
+    }));
   };
 
   const calculateNewStock = (item) => {
-    return (item.existingStock || 0) - (item.transferQuantity || 0);
+    return (item.existingStock || 0) + (item.receivedQuantity || 0);
   };
 
+  // Get product from cache
   const getProductById = (productId) => {
     return allProducts.find(product => product.productId === productId);
   };
 
+  // Generate inventory ID
   const generateInventoryId = () => {
     const timestamp = new Date().getTime().toString(36);
     const randomString = Math.random().toString(36).substr(2, 5);
     return `${timestamp}${randomString}`.toUpperCase();
   };
 
-  const saveTransferToBackend = async () => {
+  // STEP 1: Save GRV to backend
+  const saveGRVToBackend = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error('No token found');
@@ -113,43 +139,44 @@ const ProcessStockTransferScreen = () => {
       const userEmail = decoded.email;
       const userId = decoded.userId || "";
 
-      console.log('Saving transfer to backend:', transferData.transferNumber);
+      console.log('Saving GRV to backend:', grvData.grNumber);
 
-      const transferDataToSave = {
-        ...transferData,
+      const grvDataToSave = {
+        ...grvData,
         userId: userId,
         dateCreated: new Date().toISOString(),
         status: 'Draft'
       };
 
       const response = await fetch(
-        `https://nexuspos.onrender.com/api/stock-transfer/create?email=${encodeURIComponent(userEmail)}`,
+        `https://nexuspos.onrender.com/api/grv/create?email=${encodeURIComponent(userEmail)}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify(transferDataToSave)
+          body: JSON.stringify(grvDataToSave)
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to save transfer: ${errorText}`);
+        throw new Error(`Failed to save GRV: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('Transfer saved to backend:', result.data.transferNumber);
-      return result.data;
+      console.log('GRV saved to backend:', result.data.grNumber);
+      return result.data; // Return saved GRV data with backend ID
       
     } catch (error) {
-      console.error('Error saving transfer to backend:', error);
+      console.error('Error saving GRV to backend:', error);
       throw error;
     }
   };
 
-  const updateProductsAndInventory = async (savedTransfer) => {
+  // STEP 2: Update products and inventory
+  const updateProductsAndInventory = async (savedGrv) => {
     try {
       const token = localStorage.getItem("token");
       const decoded = jwtDecode(token);
@@ -159,8 +186,7 @@ const ProcessStockTransferScreen = () => {
       const productUpdatePromises = [];
       const inventoryUpdatePromises = [];
 
-      // Update FROM store products (deduct stock)
-      for (const item of savedTransfer.items) {
+      for (const item of savedGrv.items) {
         const existingProduct = getProductById(item.productId);
         
         if (!existingProduct) {
@@ -168,10 +194,16 @@ const ProcessStockTransferScreen = () => {
           continue;
         }
 
+        const updates = itemUpdates[item.productId] || {};
         const newStock = calculateNewStock(item);
 
-        // FROM STORE PRODUCT UPDATE (deduct stock)
-        const fromProductUpdateData = {
+        // Only update if checkbox is checked
+        if (!updates.updateCost && !updates.updatePrice) {
+          continue;
+        }
+
+        // PRODUCT UPDATE
+        const productUpdateData = {
           productName: existingProduct.productName,
           category: existingProduct.category || "",
           categoryId: existingProduct.categoryId || "",
@@ -180,21 +212,21 @@ const ProcessStockTransferScreen = () => {
           userId: userId,
           lowStockNotification: existingProduct.lowStockNotification || 0,
           trackStock: existingProduct.trackStock !== false,
-          editType: "Stock Transfer Out",
+          editType: "Goods Received",
           stock: parseFloat(newStock),
           productId: item.productId,
-          price: parseFloat(existingProduct.price || 0),
-          cost: parseFloat(existingProduct.cost || 0),
+          price: updates.updatePrice ? parseFloat(item.newPrice || 0) : parseFloat(existingProduct.price || 0),
+          cost: updates.updateCost ? parseFloat(item.newCost || 0) : parseFloat(existingProduct.cost || 0),
           currentDate: new Date().toISOString(),
           barcode: existingProduct.barcode || "",
           createdBy: existingProduct.createdBy || "",
           roleOfEditor: existingProduct.roleOfEditor || "Owner",
-          storeId: savedTransfer.fromStoreId,
+          storeId: existingProduct.storeId || savedGrv.storeId,
           appCreated: existingProduct.appCreated || null,
           adminSynced: existingProduct.adminSynced || false
         };
 
-        const fromProductPromise = fetch(
+        const productPromise = fetch(
           `https://nexuspos.onrender.com/api/productRouter/product-updates?email=${encodeURIComponent(userEmail)}`,
           {
             method: "POST",
@@ -202,24 +234,24 @@ const ProcessStockTransferScreen = () => {
               "Content-Type": "application/json",
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(fromProductUpdateData),
+            body: JSON.stringify(productUpdateData),
           }
         ).then(async (response) => {
           if (!response.ok) {
             const errorText = await response.text();
-            console.error(`Failed to update product ${fromProductUpdateData.productName}:`, errorText);
-            throw new Error(`Failed to update product ${fromProductUpdateData.productName}`);
+            console.error(`Failed to update product ${productUpdateData.productName}:`, errorText);
+            throw new Error(`Failed to update product ${productUpdateData.productName}`);
           }
           return response.json();
         });
 
-        productUpdatePromises.push(fromProductPromise);
+        productUpdatePromises.push(productPromise);
 
-        // FROM STORE INVENTORY UPDATE
-        const fromInventoryId = generateInventoryId();
-        const fromInventoryUpdateData = {
+        // INVENTORY UPDATE
+        const inventoryId = generateInventoryId();
+        const inventoryUpdateData = {
           productName: existingProduct.productName,
-          inventoryId: fromInventoryId,
+          inventoryId: inventoryId,
           productId: item.productId,
           roleOfEditor: "Owner",
           createdBy: "Web App",
@@ -228,28 +260,28 @@ const ProcessStockTransferScreen = () => {
           currentDate: new Date().toISOString(),
           stockBefore: parseFloat(existingProduct.stock || 0),
           stockAfter: parseFloat(newStock),
-          typeOfEdit: "Stock Transfer Out",
+          typeOfEdit: "Goods Received",
           synchronized: false,
           editedBy: "adminApp",
-          transferNumber: savedTransfer.transferNumber,
-          storeName: savedTransfer.fromStoreName,
-          notes: `Transfer ${savedTransfer.transferNumber} - Transferred ${item.transferQuantity} units to ${savedTransfer.toStoreName}`,
-          difference: -item.transferQuantity,
-          priceImpact: -item.totalValue,
+          grNumber: savedGrv.grNumber,
+          storeName: savedGrv.storeName,
+          notes: `GRV: ${savedGrv.grNumber} - Received ${item.receivedQuantity} units from ${savedGrv.supplierName}`,
+          difference: item.receivedQuantity,
+          priceImpact: item.totalPrice,
           costBefore: parseFloat(existingProduct.cost || 0),
-          costAfter: parseFloat(existingProduct.cost || 0),
+          costAfter: updates.updateCost ? parseFloat(item.newCost || 0) : parseFloat(existingProduct.cost || 0),
           priceBefore: parseFloat(existingProduct.price || 0),
-          priceAfter: parseFloat(existingProduct.price || 0),
+          priceAfter: updates.updatePrice ? parseFloat(item.newPrice || 0) : parseFloat(existingProduct.price || 0),
           deviceId: "web-app",
           pos: "owner",
           posId: userId,
           productType: existingProduct.productType || "Each",
-          storeId: savedTransfer.fromStoreId,
+          storeId: existingProduct.storeId || savedGrv.storeId,
           stockSynced: false,
           stockUpdated: ""
         };
 
-        const fromInventoryPromise = fetch(
+        const inventoryPromise = fetch(
           `https://nexuspos.onrender.com/api/inventoryRouter/inventory-updates?email=${encodeURIComponent(userEmail)}`,
           {
             method: "POST",
@@ -257,20 +289,17 @@ const ProcessStockTransferScreen = () => {
               "Content-Type": "application/json",
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(fromInventoryUpdateData),
+            body: JSON.stringify(inventoryUpdateData),
           }
         ).then(async (response) => {
           if (!response.ok) {
             const errorText = await response.text();
-            console.error(`Failed to create inventory update for ${fromInventoryUpdateData.productName}:`, errorText);
+            console.error(`Failed to create inventory update for ${inventoryUpdateData.productName}:`, errorText);
           }
           return response.json();
         });
 
-        inventoryUpdatePromises.push(fromInventoryPromise);
-
-        // Note: We're NOT creating/updating products in the destination store
-        // since it's an external store that we only track by name
+        inventoryUpdatePromises.push(inventoryPromise);
       }
 
       // Wait for all updates
@@ -285,14 +314,15 @@ const ProcessStockTransferScreen = () => {
     }
   };
 
-  const markTransferAsCompleted = async (savedTransfer) => {
+  // STEP 3: Mark GRV as completed
+  const markGRVAsCompleted = async (savedGrv) => {
     try {
       const token = localStorage.getItem("token");
       const decoded = jwtDecode(token);
       const userEmail = decoded.email;
 
       const response = await fetch(
-        `https://nexuspos.onrender.com/api/stock-transfer/${savedTransfer.transferNumber}/complete?email=${encodeURIComponent(userEmail)}`,
+        `https://nexuspos.onrender.com/api/grv/${savedGrv.grNumber}/complete?email=${encodeURIComponent(userEmail)}`,
         {
           method: 'POST',
           headers: {
@@ -308,19 +338,20 @@ const ProcessStockTransferScreen = () => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to complete transfer: ${errorText}`);
+        throw new Error(`Failed to complete GRV: ${errorText}`);
       }
 
       return await response.json();
       
     } catch (error) {
-      console.error('Error marking transfer as completed:', error);
+      console.error('Error marking GRV as completed:', error);
       throw error;
     }
   };
 
-  const handleProcessTransfer = async () => {
-    if (!transferData || processing) return;
+  // MAIN PROCESSING FUNCTION
+  const handleProcessGRV = async () => {
+    if (!grvData || processing) return;
 
     if (!productsLoaded) {
       toast.error('Products are still loading. Please wait...');
@@ -330,161 +361,187 @@ const ProcessStockTransferScreen = () => {
     setProcessing(true);
     
     try {
-      // 1. Save transfer to backend
-      toast.info('Saving transfer to server...');
-      const savedTransfer = await saveTransferToBackend();
+      // 1. Save GRV to backend
+      toast.info('Saving GRV to server...');
+      const savedGrv = await saveGRVToBackend();
 
-      // 2. Update products and inventory (only deduct from source store)
+      // 2. Update products and inventory
       toast.info('Updating products and inventory...');
-      await updateProductsAndInventory(savedTransfer);
+      await updateProductsAndInventory(savedGrv);
 
-      // 3. Mark transfer as completed
-      toast.info('Completing transfer...');
-      await markTransferAsCompleted(savedTransfer);
+      // 3. Mark GRV as completed
+      toast.info('Completing GRV...');
+      await markGRVAsCompleted(savedGrv);
 
       // Clear local storage
-      if (transferData.localId) {
-        localStorage.removeItem(transferData.localId);
-        const existingTransfers = JSON.parse(localStorage.getItem('localTransfers') || '[]');
-        const updatedTransfers = existingTransfers.filter(trf => trf.id !== transferData.localId);
-        localStorage.setItem('localTransfers', JSON.stringify(updatedTransfers));
+      if (grvData.localId) {
+        localStorage.removeItem(grvData.localId);
+        const existingGrvs = JSON.parse(localStorage.getItem('localGrvs') || '[]');
+        const updatedGrvs = existingGrvs.filter(grv => grv.id !== grvData.localId);
+        localStorage.setItem('localGrvs', JSON.stringify(updatedGrvs));
       }
 
-      toast.success('Stock transfer processed successfully!');
+      toast.success('GRV processed successfully!');
       
+      // Navigate back to GRV list
       setTimeout(() => {
-        navigate('/stock-transfers');
+        navigate('/goods-received');
       }, 1500);
 
     } catch (error) {
-      console.error('Error processing transfer:', error);
-      toast.error(`Failed to process transfer: ${error.message}`);
+      console.error('Error processing GRV:', error);
+      toast.error(`Failed to process GRV: ${error.message}`);
     } finally {
       setProcessing(false);
     }
   };
 
   const handleCancel = () => {
-    navigate('/stock-transfers');
+    navigate('/goods-received');
   };
 
-  if (!transferData) {
+  if (!grvData) {
     return (
-      <div className="transfer-process-loading">
-        <p>Loading transfer data...</p>
+      <div className="grv-process-loading">
+        <p>Loading GRV data...</p>
       </div>
     );
   }
 
   return (
-    <div className="transfer-process-main-container">
+    <div className="grv-process-main-container">
       <ToastContainer position="top-right" autoClose={3000} />
       
-      <div className="transfer-process-sidebar-toggle-wrapper">
+      <div className="grv-process-sidebar-toggle-wrapper">
         <button 
-          className="transfer-process-sidebar-toggle"
-          onClick={toggleSidebar}
-          style={{ left: sidebarOpen ? '280px' : '80px' }}
+          className="grv-process-sidebar-toggle"
+          onClick={toggleProcessSidebar}
+          style={{ left: processSidebarOpen ? '280px' : '80px' }}
         >
-          {sidebarOpen ? <FaTimes /> : <FaBars />}
+          {processSidebarOpen ? <FaTimes /> : <FaBars />}
         </button>
       </div>
         
-      <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+      <Sidebar isOpen={processSidebarOpen} toggleSidebar={toggleProcessSidebar} />
       
-      <div className={`transfer-process-content ${sidebarOpen ? 'transfer-process-shifted' : 'transfer-process-collapsed'}`}>
-        <div className="transfer-process-container">
-          <div className="transfer-process-header">
-            <h2>Process Stock Transfer</h2>
-            <div className="transfer-process-status">
-              <span className="transfer-process-status-text">
-                Ready to Process Transfer
+      <div className={`grv-process-content ${processSidebarOpen ? 'grv-process-shifted' : 'grv-process-collapsed'}`}>
+        <div className="grv-process-container">
+          <div className="grv-process-header">
+            <h2>Process Goods Received</h2>
+            <div className="grv-process-status">
+              <span className="grv-process-status-text">
+                Ready to Update Inventory
               </span>
             </div>
           </div>
 
-          <div className="transfer-process-summary">
-            <div className="transfer-process-summary-item">
-              <FaExchangeAlt className="transfer-process-summary-icon" />
-              <div className="transfer-process-summary-content">
-                <span className="transfer-process-summary-label">Transfer #:</span>
-                <span className="transfer-process-summary-value">{transferData.transferNumber}</span>
+          <div className="grv-process-summary">
+            <div className="grv-process-summary-item">
+              <FaFileInvoice className="grv-process-summary-icon" />
+              <div className="grv-process-summary-content">
+                <span className="grv-process-summary-label">GR Number:</span>
+                <span className="grv-process-summary-value">{grvData.grNumber}</span>
               </div>
             </div>
-            <div className="transfer-process-summary-item">
-              <FaStore className="transfer-process-summary-icon" />
-              <div className="transfer-process-summary-content">
-                <span className="transfer-process-summary-label">From:</span>
-                <span className="transfer-process-summary-value">{transferData.fromStoreName}</span>
+            <div className="grv-process-summary-item">
+              <FaStore className="grv-process-summary-icon" />
+              <div className="grv-process-summary-content">
+                <span className="grv-process-summary-label">Supplier:</span>
+                <span className="grv-process-summary-value">{grvData.supplierName}</span>
               </div>
             </div>
-            <div className="transfer-process-summary-item">
-              <FaStore className="transfer-process-summary-icon" />
-              <div className="transfer-process-summary-content">
-                <span className="transfer-process-summary-label">To:</span>
-                <span className="transfer-process-summary-value">{transferData.toStoreName}</span>
-              </div>
-            </div>
-            <div className="transfer-process-summary-item">
-              <FaDollarSign className="transfer-process-summary-icon" />
-              <div className="transfer-process-summary-content">
-                <span className="transfer-process-summary-label">Total Value:</span>
-                <span className="transfer-process-summary-value">${transferData.totalValue?.toFixed(2)}</span>
+            <div className="grv-process-summary-item">
+              <FaDollarSign className="grv-process-summary-icon" />
+              <div className="grv-process-summary-content">
+                <span className="grv-process-summary-label">Total Value:</span>
+                <span className="grv-process-summary-value">${grvData.totalValue?.toFixed(2)}</span>
               </div>
             </div>
           </div>
 
-          <div className="transfer-process-warning">
-            <FaExclamationTriangle className="transfer-process-warning-icon" />
-            <p>This will deduct stock from {transferData.fromStoreName} and transfer it to {transferData.toStoreName}. This action cannot be undone.</p>
+          <div className="grv-process-warning">
+            <FaExclamationTriangle className="grv-process-warning-icon" />
+            <p>Review and confirm the updates below. This will update stock levels, prices, and costs in your inventory.</p>
           </div>
 
-          <div className="transfer-process-items-section">
-            <div className="transfer-process-items-header">
-              <h3>Items to Transfer</h3>
-              <span className="transfer-process-items-count">
-                {transferData.items?.length || 0} items
+          <div className="grv-process-items-section">
+            <div className="grv-process-items-header">
+              <h3>Item Updates</h3>
+              <span className="grv-process-items-count">
+                {grvData.items?.length || 0} items to update
               </span>
             </div>
 
-            <div className="transfer-process-items-table-container">
-              <div className="transfer-process-items-table-header">
-                <div className="transfer-process-table-header-cell">Item</div>
-                <div className="transfer-process-table-header-cell">Current Stock</div>
-                <div className="transfer-process-table-header-cell">Transfer Qty</div>
-                <div className="transfer-process-table-header-cell">New Stock</div>
-                <div className="transfer-process-table-header-cell">Unit Cost</div>
-                <div className="transfer-process-table-header-cell">Total Value</div>
+            <div className="grv-process-items-table-container">
+              <div className="grv-process-items-table-header">
+                <div className="grv-process-table-header-cell">Item</div>
+                <div className="grv-process-table-header-cell">Current Stock</div>
+                <div className="grv-process-table-header-cell">Received</div>
+                <div className="grv-process-table-header-cell">New Stock</div>
+                <div className="grv-process-table-header-cell">Current Price</div>
+                <div className="grv-process-table-header-cell">New Price</div>
+                <div className="grv-process-table-header-cell">Current Cost</div>
+                <div className="grv-process-table-header-cell">New Cost</div>
+                <div className="grv-process-table-header-cell">Update</div>
               </div>
               
-              <div className="transfer-process-items-table-body">
-                {transferData.items?.map((item, index) => {
+              <div className="grv-process-items-table-body">
+                {grvData.items?.map((item, index) => {
+                  const updates = itemUpdates[item.productId] || {};
                   const newStock = calculateNewStock(item);
                   
                   return (
-                    <div key={item.productId} className="transfer-process-item-row">
-                      <div className="transfer-process-item-info">
-                        <div className="transfer-process-item-name">{item.productName}</div>
-                        <div className="transfer-process-item-details">
+                    <div key={item.productId} className="grv-process-item-row">
+                      <div className="grv-process-item-info">
+                        <div className="grv-process-item-name">{item.productName}</div>
+                        <div className="grv-process-item-details">
                           SKU: {item.sku}
                         </div>
                       </div>
-                      <div className="transfer-process-item-current-stock">
+                      <div className="grv-process-item-current-stock">
                         {item.existingStock || 0}
                       </div>
-                      <div className="transfer-process-item-transfer">
-                        -{item.transferQuantity || 0}
+                      <div className="grv-process-item-received">
+                        +{item.receivedQuantity || 0}
                       </div>
-                      <div className="transfer-process-item-new-stock">
-                        <span className={newStock < (item.existingStock || 0) ? 'transfer-process-negative' : ''}>
+                      <div className="grv-process-item-new-stock">
+                        <span className={newStock > (item.existingStock || 0) ? 'grv-process-positive' : ''}>
                           {newStock}
                         </span>
                       </div>
-                      <div className="transfer-process-item-unit-cost">
-                        ${(item.unitCost || 0).toFixed(2)}
+                      <div className="grv-process-item-current-price">
+                        ${(item.currentPrice || 0).toFixed(2)}
                       </div>
-                      <div className="transfer-process-item-total">
-                        ${(item.totalValue || 0).toFixed(2)}
+                      <div className="grv-process-item-new-price">
+                        ${(item.newPrice || 0).toFixed(2)}
+                      </div>
+                      <div className="grv-process-item-current-cost">
+                        ${(item.currentCost || 0).toFixed(2)}
+                      </div>
+                      <div className="grv-process-item-new-cost">
+                        ${(item.newCost || 0).toFixed(2)}
+                      </div>
+                      <div className="grv-process-item-update-controls">
+                        <div className="grv-process-update-checkbox">
+                          <label className="grv-process-checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={updates.updatePrice || false}
+                              onChange={() => handleToggleUpdate(item.productId, 'updatePrice')}
+                            />
+                            <span>Price</span>
+                          </label>
+                        </div>
+                        <div className="grv-process-update-checkbox">
+                          <label className="grv-process-checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={updates.updateCost || false}
+                              onChange={() => handleToggleUpdate(item.productId, 'updateCost')}
+                            />
+                            <span>Cost</span>
+                          </label>
+                        </div>
                       </div>
                     </div>
                   );
@@ -493,28 +550,28 @@ const ProcessStockTransferScreen = () => {
             </div>
           </div>
 
-          <div className="transfer-process-confirmation">
-            <div className="transfer-process-confirmation-item">
-              <span className="transfer-process-confirmation-label">Total Items:</span>
-              <span className="transfer-process-confirmation-value">{transferData.items?.length || 0}</span>
+          <div className="grv-process-confirmation">
+            <div className="grv-process-confirmation-item">
+              <span className="grv-process-confirmation-label">Total Items:</span>
+              <span className="grv-process-confirmation-value">{grvData.items?.length || 0}</span>
             </div>
-            <div className="transfer-process-confirmation-item">
-              <span className="transfer-process-confirmation-label">Total Quantity:</span>
-              <span className="transfer-process-confirmation-value">
-                {transferData.items?.reduce((sum, item) => sum + (item.transferQuantity || 0), 0)}
+            <div className="grv-process-confirmation-item">
+              <span className="grv-process-confirmation-label">Total Quantity:</span>
+              <span className="grv-process-confirmation-value">
+                {grvData.items?.reduce((sum, item) => sum + (item.receivedQuantity || 0), 0)}
               </span>
             </div>
-            <div className="transfer-process-confirmation-item">
-              <span className="transfer-process-confirmation-label">Total Value:</span>
-              <span className="transfer-process-confirmation-value">
-                ${transferData.totalValue?.toFixed(2)}
+            <div className="grv-process-confirmation-item">
+              <span className="grv-process-confirmation-label">Total Value:</span>
+              <span className="grv-process-confirmation-value">
+                ${grvData.totalValue?.toFixed(2)}
               </span>
             </div>
           </div>
 
-          <div className="transfer-process-action-buttons">
+          <div className="grv-process-action-buttons">
             <button 
-              className="transfer-process-cancel-btn" 
+              className="grv-process-cancel-btn" 
               onClick={handleCancel}
               disabled={processing}
             >
@@ -522,13 +579,13 @@ const ProcessStockTransferScreen = () => {
               CANCEL
             </button>
             <button 
-              className="transfer-process-confirm-btn" 
-              onClick={handleProcessTransfer}
+              className="grv-process-confirm-btn" 
+              onClick={handleProcessGRV}
               disabled={processing || isLoadingProducts || !productsLoaded}
             >
               {processing ? (
                 <>
-                  <div className="transfer-process-spinner"></div>
+                  <div className="grv-process-spinner"></div>
                   PROCESSING...
                 </>
               ) : isLoadingProducts ? (
@@ -538,7 +595,7 @@ const ProcessStockTransferScreen = () => {
               ) : (
                 <>
                   <FaCheck />
-                  PROCESS TRANSFER
+                  SAVE GRV & UPDATE INVENTORY
                 </>
               )}
             </button>
@@ -549,4 +606,4 @@ const ProcessStockTransferScreen = () => {
   );
 };
 
-export default ProcessStockTransferScreen;
+export default ProcessGoodsReceivedScreen;
