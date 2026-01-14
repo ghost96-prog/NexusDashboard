@@ -269,8 +269,106 @@ const ProcessStockTransferScreen = () => {
 
         inventoryUpdatePromises.push(fromInventoryPromise);
 
-        // Note: We're NOT creating/updating products in the destination store
-        // since it's an external store that we only track by name
+        // Check if product exists in TO store, if not create it
+        const toStoreProduct = allProducts.find(p => 
+          p.productId === item.productId && p.storeId === savedTransfer.toStoreId
+        );
+
+        if (toStoreProduct) {
+          // Update existing product in TO store (add stock)
+          const toStockAfter = (parseFloat(toStoreProduct.stock) || 0) + (item.transferQuantity || 0);
+          
+          const toProductUpdateData = {
+            productName: toStoreProduct.productName,
+            category: toStoreProduct.category || "",
+            categoryId: toStoreProduct.categoryId || "",
+            productType: toStoreProduct.productType || "Each",
+            sku: toStoreProduct.sku || "",
+            userId: userId,
+            lowStockNotification: toStoreProduct.lowStockNotification || 0,
+            trackStock: toStoreProduct.trackStock !== false,
+            editType: "Stock Transfer In",
+            stock: parseFloat(toStockAfter),
+            productId: item.productId,
+            price: parseFloat(toStoreProduct.price || 0),
+            cost: parseFloat(toStoreProduct.cost || 0),
+            currentDate: new Date().toISOString(),
+            barcode: toStoreProduct.barcode || "",
+            createdBy: toStoreProduct.createdBy || "",
+            roleOfEditor: toStoreProduct.roleOfEditor || "Owner",
+            storeId: savedTransfer.toStoreId,
+            appCreated: toStoreProduct.appCreated || null,
+            adminSynced: toStoreProduct.adminSynced || false
+          };
+
+          const toProductPromise = fetch(
+            `https://nexuspos.onrender.com/api/productRouter/product-updates?email=${encodeURIComponent(userEmail)}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(toProductUpdateData),
+            }
+          ).then(async (response) => {
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error(`Failed to update TO store product ${toProductUpdateData.productName}:`, errorText);
+            }
+            return response.json();
+          });
+
+          productUpdatePromises.push(toProductPromise);
+
+          // TO STORE INVENTORY UPDATE
+          const toInventoryId = generateInventoryId();
+          const toInventoryUpdateData = {
+            productName: toStoreProduct.productName,
+            inventoryId: toInventoryId,
+            productId: item.productId,
+            roleOfEditor: "Owner",
+            createdBy: "Web App",
+            userId: userId,
+            EditorId: userId,
+            currentDate: new Date().toISOString(),
+            stockBefore: parseFloat(toStoreProduct.stock || 0),
+            stockAfter: parseFloat(toStockAfter),
+            typeOfEdit: "Stock Transfer In",
+            synchronized: false,
+            editedBy: "adminApp",
+            transferNumber: savedTransfer.transferNumber,
+            storeName: savedTransfer.toStoreName,
+            notes: `Transfer ${savedTransfer.transferNumber} - Received ${item.transferQuantity} units from ${savedTransfer.fromStoreName}`,
+            difference: item.transferQuantity,
+            priceImpact: item.totalValue,
+            costBefore: parseFloat(toStoreProduct.cost || 0),
+            costAfter: parseFloat(toStoreProduct.cost || 0),
+            priceBefore: parseFloat(toStoreProduct.price || 0),
+            priceAfter: parseFloat(toStoreProduct.price || 0),
+            deviceId: "web-app",
+            pos: "owner",
+            posId: userId,
+            productType: toStoreProduct.productType || "Each",
+            storeId: savedTransfer.toStoreId,
+            stockSynced: false,
+            stockUpdated: ""
+          };
+
+          const toInventoryPromise = fetch(
+            `https://nexuspos.onrender.com/api/inventoryRouter/inventory-updates?email=${encodeURIComponent(userEmail)}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(toInventoryUpdateData),
+            }
+          );
+
+          inventoryUpdatePromises.push(toInventoryPromise);
+        }
       }
 
       // Wait for all updates
@@ -334,7 +432,7 @@ const ProcessStockTransferScreen = () => {
       toast.info('Saving transfer to server...');
       const savedTransfer = await saveTransferToBackend();
 
-      // 2. Update products and inventory (only deduct from source store)
+      // 2. Update products and inventory
       toast.info('Updating products and inventory...');
       await updateProductsAndInventory(savedTransfer);
 
@@ -436,7 +534,7 @@ const ProcessStockTransferScreen = () => {
 
           <div className="transfer-process-warning">
             <FaExclamationTriangle className="transfer-process-warning-icon" />
-            <p>This will deduct stock from {transferData.fromStoreName} and transfer it to {transferData.toStoreName}. This action cannot be undone.</p>
+            <p>This will deduct stock from the source store. This action cannot be undone.</p>
           </div>
 
           <div className="transfer-process-items-section">

@@ -27,6 +27,12 @@ import CreateGoodsReceivedScreen from "./screens/CreateGoodsReceivedScreen";
 import ProcessGoodsReceivedScreen from "./screens/ProcessGoodsReceivedScreen";
 import GoodsReceivedDetailsScreen from "./screens/GoodsReceivedDetailsScreen";
 
+// Import Stock Transfer screens
+import StockTransferScreen from "./screens/StockTransferScreen";
+import CreateStockTransferScreen from "./screens/CreateStockTransferScreen";
+import ProcessStockTransferScreen from "./screens/ProcessStockTransferScreen";
+import StockTransferDetailsScreen from "./screens/StockTransferDetailsScreen";
+
 // Import new Category and Discount screens
 import CategoriesScreen from "./screens/CategoriesScreen";
 import DiscountsScreen from "./screens/DiscountsScreen";
@@ -62,6 +68,12 @@ function App() {
           <Route path="/create-grv" element={<CreateGoodsReceivedScreen />} />
           <Route path="/process-grv" element={<ProcessGoodsReceivedScreen />} />
           <Route path="/grv-details/:grvId" element={<GoodsReceivedDetailsScreen />} />
+          
+          {/* Stock Transfer Routes */}
+          <Route path="/stock-transfers" element={<StockTransferScreen />} />
+          <Route path="/create-stock-transfer" element={<CreateStockTransferScreen />} />
+          <Route path="/process-stock-transfer" element={<ProcessStockTransferScreen />} />
+          <Route path="/stock-transfer-details/:transferId" element={<StockTransferDetailsScreen />} />
           
           {/* New Category and Discount Routes */}
           <Route path="/categories" element={<CategoriesScreen />} />

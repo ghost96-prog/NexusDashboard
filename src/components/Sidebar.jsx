@@ -190,6 +190,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { label: "Inventory Value", path: "/inventory-value" },
         { label: "Inventory Counts", path: "/counts" },
         { label: "Inventory GRVs", path: "/goods-received" },
+        { label: "Stock Transfers", path: "/stock-transfers" },
       ],
     },
     {

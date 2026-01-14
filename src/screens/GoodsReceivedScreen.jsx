@@ -9,7 +9,9 @@ import {
   FaCalendarAlt,
   FaClipboardList,
   FaStore,
-  FaFileInvoice
+  FaFileInvoice,
+  FaSpinner,
+  FaSyncAlt
 } from "react-icons/fa";
 import { IoReload } from "react-icons/io5";
 import "../Css/GoodsReceivedScreen.css";
@@ -30,6 +32,7 @@ const GoodsReceivedScreen = () => {
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [isSubscribedAdmin, setIsSubscribedAdmin] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
   
   const navigate = useNavigate();
 
@@ -85,6 +88,7 @@ const GoodsReceivedScreen = () => {
     try {
       setLoading(true);
       setIsRefreshing(true);
+      setShowLoadingModal(true);
 
       const token = localStorage.getItem("token");
       if (!token) {
@@ -117,6 +121,10 @@ const GoodsReceivedScreen = () => {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      // Small delay to show loading animation
+      setTimeout(() => {
+        setShowLoadingModal(false);
+      }, 500);
     }
   };
 
@@ -207,6 +215,28 @@ const GoodsReceivedScreen = () => {
 
   return (
     <div className="grv-main-container">
+      <ToastContainer position="bottom-right" />
+      
+      {/* Loading Modal */}
+      {showLoadingModal && (
+        <div className="grv-loading-modal">
+          <div className="grv-loading-modal-content">
+            <div className="grv-loading-spinner-container">
+              <FaSyncAlt className="grv-loading-icon" />
+            </div>
+            <h3 className="grv-loading-title">
+              {isRefreshing ? 'Refreshing GRVs...' : 'Loading GRVs...'}
+            </h3>
+            <p className="grv-loading-message">
+              Please wait while we load your goods received vouchers...
+            </p>
+            <div className="grv-loading-progress">
+              <div className="grv-loading-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="grv-sidebar-toggle-wrapper">
         <button 
           className="grv-sidebar-toggle"
@@ -231,10 +261,19 @@ const GoodsReceivedScreen = () => {
             <button 
               className="grv-refresh-btn"
               onClick={handleRefresh}
-              disabled={isRefreshing}
+              disabled={isRefreshing || showLoadingModal}
             >
-              <IoReload />
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              {isRefreshing ? (
+                <>
+                  <FaSpinner className="grv-refresh-spinner" />
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <IoReload />
+                  Refresh
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -243,6 +282,7 @@ const GoodsReceivedScreen = () => {
           <button 
             className="grv-create-btn"
             onClick={handleCreateGRV}
+            disabled={showLoadingModal}
           >
             <FaPlus />
             Create GRV
@@ -251,12 +291,13 @@ const GoodsReceivedScreen = () => {
             <FaSearch className="grv-search-icon" />
             <input
               type="text"
-              placeholder="Search GRVs..."
+              placeholder={showLoadingModal ? "Loading GRVs..." : "Search GRVs..."}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => !showLoadingModal && setSearchTerm(e.target.value)}
               className="grv-search-input"
+              disabled={showLoadingModal}
             />
-            {searchTerm && (
+            {searchTerm && !showLoadingModal && (
               <button 
                 className="grv-search-clear"
                 onClick={() => setSearchTerm("")}
@@ -264,20 +305,26 @@ const GoodsReceivedScreen = () => {
                 <FaTimesIcon />
               </button>
             )}
+            {showLoadingModal && (
+              <div className="grv-search-loading">
+                <FaSpinner className="grv-search-loading-icon" />
+              </div>
+            )}
           </div>
         </div>
 
         <div className="grv-status-filter">
           <button 
             className={`grv-status-filter-btn ${selectedStatus === 'All' ? 'active' : ''}`}
-            onClick={() => setSelectedStatus('All')}
+            onClick={() => !showLoadingModal && setSelectedStatus('All')}
+            disabled={showLoadingModal}
           >
             All
           </button>
-         
           <button 
             className={`grv-status-filter-btn ${selectedStatus === 'Completed' ? 'active' : ''}`}
-            onClick={() => setSelectedStatus('Completed')}
+            onClick={() => !showLoadingModal && setSelectedStatus('Completed')}
+            disabled={showLoadingModal}
           >
             Completed
           </button>
@@ -287,7 +334,8 @@ const GoodsReceivedScreen = () => {
           <div className="grv-table-header">
             <h3>Goods Received Vouchers</h3>
             <span className="grv-table-count">
-              {loading ? 'Loading...' : 
+              {showLoadingModal ? 'Loading...' : 
+               loading ? 'Loading...' : 
                isRefreshing ? 'Refreshing...' : 
                `Showing ${filteredGrvs.length} of ${grvs.length} GRVs`}
             </span>
@@ -307,11 +355,13 @@ const GoodsReceivedScreen = () => {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
+                {showLoadingModal ? (
                   <tr>
                     <td colSpan="7" className="grv-loading">
                       <div className="grv-loading-spinner"></div>
-                      <p className="grv-loading-text">Loading GRVs...</p>
+                      <p className="grv-loading-text">
+                        {isRefreshing ? 'Refreshing GRVs...' : 'Loading GRVs...'}
+                      </p>
                     </td>
                   </tr>
                 ) : filteredGrvs.length > 0 ? (
@@ -319,7 +369,7 @@ const GoodsReceivedScreen = () => {
                     <tr 
                       key={`${grv.id}-${index}`} 
                       className="grv-table-row"
-                      onClick={() => handleViewGRVDetails(grv.id)}
+                      onClick={() => !showLoadingModal && handleViewGRVDetails(grv.id)}
                     >
                       <td className="grv-table-cell">
                         <span style={{ fontWeight: '500' }}>
@@ -370,6 +420,7 @@ const GoodsReceivedScreen = () => {
                         className="grv-create-btn"
                         onClick={handleCreateGRV}
                         style={{ marginTop: '10px' }}
+                        disabled={showLoadingModal}
                       >
                         <FaPlus />
                         Create GRV
@@ -387,7 +438,6 @@ const GoodsReceivedScreen = () => {
         isOpen={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
       />
-      <ToastContainer position="bottom-right" />
     </div>
   );
 };

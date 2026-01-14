@@ -13,7 +13,8 @@ import {
   FaBox,
   FaDollarSign,
   FaCheck,
-  FaWeight
+  FaWeight,
+  FaSpinner
 } from "react-icons/fa";
 import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
@@ -38,6 +39,8 @@ const CreateGoodsReceivedScreen = () => {
   const [grvPoNumber, setGrvPoNumber] = useState('');
   const [grvDeliveryNote, setGrvDeliveryNote] = useState('');
   const [grvSearchSelected, setGrvSearchSelected] = useState(new Set());
+  const [showProductsLoading, setShowProductsLoading] = useState(false);
+  const [productsLoadingMessage, setProductsLoadingMessage] = useState('Loading products...');
   
   const navigate = useNavigate();
 
@@ -148,18 +151,23 @@ const CreateGoodsReceivedScreen = () => {
   const fetchGrvProducts = async () => {
     try {
       NProgress.start();
+      setShowProductsLoading(true);
+      setProductsLoadingMessage('Loading products...');
       setGrvLoading(true);
       
       const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
         NProgress.done();
+        setShowProductsLoading(false);
         return;
       }
 
       const decoded = jwtDecode(token);
       const userEmail = decoded.email;
       const userId = decoded.userId;
+
+      setProductsLoadingMessage('Connecting to server...');
 
       const response = await fetch(
         `https://nexuspos.onrender.com/api/productRouter/products?email=${encodeURIComponent(userEmail)}`
@@ -168,14 +176,18 @@ const CreateGoodsReceivedScreen = () => {
       if (!response.ok) {
         toast.error("Failed to fetch products.");
         NProgress.done();
+        setShowProductsLoading(false);
         return;
       }
+
+      setProductsLoadingMessage('Processing product data...');
 
       const responseData = await response.json();
       
       // Filter products for the current user and selected store
       const filteredProducts = responseData.data.filter(product => 
-        product.userId === userId  );
+        product.userId === userId
+      );
 
       filteredProducts.sort((a, b) => 
         a.productName?.localeCompare(b.productName || '')
@@ -183,11 +195,15 @@ const CreateGoodsReceivedScreen = () => {
 
       setGrvProducts(filteredProducts);
       setGrvLoading(false);
+      setShowProductsLoading(false);
       NProgress.done();
+      
+      toast.success(`Loaded ${filteredProducts.length} products`);
     } catch (error) {
       console.error("Error fetching products:", error);
       toast.error("An error occurred while fetching products.");
       setGrvLoading(false);
+      setShowProductsLoading(false);
       NProgress.done();
     }
   };
@@ -213,7 +229,31 @@ const CreateGoodsReceivedScreen = () => {
     setGrvSearchResults(filteredResults);
     setGrvShowSearchResults(filteredResults.length > 0);
   }, [grvSearchTerm, grvProducts, grvSelectedItems]);
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    const searchContainer = document.querySelector('.grv-create-search-container');
+    const searchResults = document.querySelector('.grv-create-search-results-dropdown');
+    
+    if (
+      searchContainer && 
+      searchResults && 
+      !searchContainer.contains(event.target) && 
+      !searchResults.contains(event.target)
+    ) {
+      setGrvShowSearchResults(false);
+    }
+  };
 
+  // Add event listener only when search results are shown
+  if (grvShowSearchResults) {
+    document.addEventListener('mousedown', handleClickOutside);
+  }
+
+  // Clean up the event listener
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+}, [grvShowSearchResults]); // Only re-run when grvShowSearchResults changes
   const toggleGrvSidebar = () => {
     setGrvSidebarOpen(!grvSidebarOpen);
   };
@@ -296,32 +336,32 @@ const CreateGoodsReceivedScreen = () => {
     setGrvSelectedItems(newSelectedItems);
   };
 
-const handleQuantityChange = (productId, value) => {
-  const item = grvSelectedItems.find(item => item.productId === productId);
-  if (!item) return;
+  const handleQuantityChange = (productId, value) => {
+    const item = grvSelectedItems.find(item => item.productId === productId);
+    if (!item) return;
 
-  const parsedValue = parseInputValue(value, item.productType);
-  
-  // For weight products, ensure we keep decimal if user enters it
-  let displayValue = parsedValue;
-  if (item.productType === 'Weight' && parsedValue.includes('.')) {
-    // Keep the decimal format for display
-    displayValue = parsedValue;
-  }
-  
-  setGrvSelectedItems(prevItems =>
-    prevItems.map(item =>
-      item.productId === productId
-        ? {
-            ...item,
-            receivedQuantity: parsedValue, // Store the raw parsed value
-            // Use NEW COST for calculation (editable field)
-            totalPrice: (parseFloat(parsedValue) || 0) * (parseFloat(item.newCost) || 0)
-          }
-        : item
-    )
-  );
-};
+    const parsedValue = parseInputValue(value, item.productType);
+    
+    // For weight products, ensure we keep decimal if user enters it
+    let displayValue = parsedValue;
+    if (item.productType === 'Weight' && parsedValue.includes('.')) {
+      // Keep the decimal format for display
+      displayValue = parsedValue;
+    }
+    
+    setGrvSelectedItems(prevItems =>
+      prevItems.map(item =>
+        item.productId === productId
+          ? {
+              ...item,
+              receivedQuantity: parsedValue, // Store the raw parsed value
+              // Use NEW COST for calculation (editable field)
+              totalPrice: (parseFloat(parsedValue) || 0) * (parseFloat(item.newCost) || 0)
+            }
+          : item
+      )
+    );
+  };
 
   const handlePriceChange = (productId, priceType, value) => {
     // For prices, always allow decimal with 2 places
@@ -371,103 +411,103 @@ const handleQuantityChange = (productId, value) => {
     });
   };
 
-const handleGrvSaveAndProcess = async () => {
-  if (!grvSupplierName.trim()) {
-    toast.error('Please enter supplier name.');
-    return;
-  }
+  const handleGrvSaveAndProcess = async () => {
+    if (!grvSupplierName.trim()) {
+      toast.error('Please enter supplier name.');
+      return;
+    }
 
-  if (grvSelectedItems.length === 0) {
-    toast.error('Please add at least one item to the GRV.');
-    return;
-  }
+    if (grvSelectedItems.length === 0) {
+      toast.error('Please add at least one item to the GRV.');
+      return;
+    }
 
-  // Check for invalid quantities
-  if (hasInvalidQuantities()) {
-    toast.error('Please enter valid quantity (greater than 0) for all items.');
-    return;
-  }
+    // Check for invalid quantities
+    if (hasInvalidQuantities()) {
+      toast.error('Please enter valid quantity (greater than 0) for all items.');
+      return;
+    }
 
-  // Check for invalid NEW costs
-  if (hasInvalidUnitPrices()) {
-    toast.error('Please enter valid cost (greater than 0) for all items.');
-    return;
-  }
+    // Check for invalid NEW costs
+    if (hasInvalidUnitPrices()) {
+      toast.error('Please enter valid cost (greater than 0) for all items.');
+      return;
+    }
 
-  // Prepare GRV data with correct structure
-  const grvData = {
-    grNumber: `GRV-${Date.now()}`,
-    poNumber: grvPoNumber,
-    supplierName: grvSupplierName,
-    deliveryNote: grvDeliveryNote,
-    notes: grvNotes,
-    items: grvSelectedItems.map(item => ({
-      productId: item.productId,
-      productName: item.productName,
-      productType: item.productType,
-      sku: item.sku,
-      category: item.category,
-      existingStock: item.existingStock || 0,
-      receivedQuantity: parseFloat(item.receivedQuantity) || 0,
-      unitCost: parseFloat(item.unitCost) || 0,
-      newCost: parseFloat(item.newCost) || 0,
-      totalPrice: parseFloat(item.totalPrice) || 0,
-      newPrice: parseFloat(item.newPrice) || 0,
+    // Prepare GRV data with correct structure
+    const grvData = {
+      grNumber: `GRV-${Date.now()}`,
+      poNumber: grvPoNumber,
+      supplierName: grvSupplierName,
+      deliveryNote: grvDeliveryNote,
+      notes: grvNotes,
+      items: grvSelectedItems.map(item => ({
+        productId: item.productId,
+        productName: item.productName,
+        productType: item.productType,
+        sku: item.sku,
+        category: item.category,
+        existingStock: item.existingStock || 0,
+        receivedQuantity: parseFloat(item.receivedQuantity) || 0,
+        unitCost: parseFloat(item.unitCost) || 0,
+        newCost: parseFloat(item.newCost) || 0,
+        totalPrice: parseFloat(item.totalPrice) || 0,
+        newPrice: parseFloat(item.newPrice) || 0,
+        storeId: grvSelectedStore?.storeId,
+        currentPrice: parseFloat(item.price) || 0,
+        currentCost: parseFloat(item.cost) || 0,
+        currentStock: item.existingStock || 0,
+        EditorId: item.EditorId || '',
+        adminSynced: item.adminSynced || false
+      })),
+      totalValue: calculateTotalValue(),
       storeId: grvSelectedStore?.storeId,
-      currentPrice: parseFloat(item.price) || 0,
-      currentCost: parseFloat(item.cost) || 0,
-      currentStock: item.existingStock || 0,
-      EditorId: item.EditorId || '',
-      adminSynced: item.adminSynced || false
-    })),
-    totalValue: calculateTotalValue(),
-    storeId: grvSelectedStore?.storeId,
-    storeName: grvSelectedStore?.storeName,
-    createdBy: grvEmail,
-    dateCreated: new Date().toISOString(),
-    status: 'Draft',
-    userId: grvSelectedItems[0]?.userId || ''
-  };
-
-  console.log('GRV Data to save locally:', grvData);
-  
-  // OPTION A: Save to localStorage (temporary)
-  try {
-    // Generate a local ID
-    const localGrvId = `local-grv-${Date.now()}`;
-    grvData.localId = localGrvId;
-    
-    // Save to localStorage
-    localStorage.setItem(localGrvId, JSON.stringify(grvData));
-    
-    // Also save to a list of GRVs in localStorage
-    const existingGrvs = JSON.parse(localStorage.getItem('localGrvs') || '[]');
-    existingGrvs.push({
-      id: localGrvId,
-      grNumber: grvData.grNumber,
-      supplierName: grvData.supplierName,
-      totalValue: grvData.totalValue,
-      status: 'Draft',
+      storeName: grvSelectedStore?.storeName,
+      createdBy: grvEmail,
       dateCreated: new Date().toISOString(),
-      itemsCount: grvData.items.length
-    });
-    localStorage.setItem('localGrvs', JSON.stringify(existingGrvs));
+      status: 'Draft',
+      userId: grvSelectedItems[0]?.userId || ''
+    };
+
+    console.log('GRV Data to save locally:', grvData);
     
-    toast.success('GRV saved locally!');
-    
-    // Navigate to Process screen with local data
-    navigate('/process-grv', { 
-      state: { 
-        grvData: grvData, // Pass the full data
-        isLocal: true // Flag to indicate it's local
-      } 
-    });
-    
-  } catch (error) {
-    console.error('Error saving GRV locally:', error);
-    toast.error('Failed to save GRV locally.');
-  }
-};
+    // OPTION A: Save to localStorage (temporary)
+    try {
+      // Generate a local ID
+      const localGrvId = `local-grv-${Date.now()}`;
+      grvData.localId = localGrvId;
+      
+      // Save to localStorage
+      localStorage.setItem(localGrvId, JSON.stringify(grvData));
+      
+      // Also save to a list of GRVs in localStorage
+      const existingGrvs = JSON.parse(localStorage.getItem('localGrvs') || '[]');
+      existingGrvs.push({
+        id: localGrvId,
+        grNumber: grvData.grNumber,
+        supplierName: grvData.supplierName,
+        totalValue: grvData.totalValue,
+        status: 'Draft',
+        dateCreated: new Date().toISOString(),
+        itemsCount: grvData.items.length
+      });
+      localStorage.setItem('localGrvs', JSON.stringify(existingGrvs));
+      
+      toast.success('GRV saved locally!');
+      
+      // Navigate to Process screen with local data
+      navigate('/process-grv', { 
+        state: { 
+          grvData: grvData, // Pass the full data
+          isLocal: true // Flag to indicate it's local
+        } 
+      });
+      
+    } catch (error) {
+      console.error('Error saving GRV locally:', error);
+      toast.error('Failed to save GRV locally.');
+    }
+  };
 
   const handleGrvCancel = () => {
     navigate('/goods-received');
@@ -492,6 +532,22 @@ const handleGrvSaveAndProcess = async () => {
   return (
     <div className="grv-create-main-container">
       <ToastContainer position="top-right" autoClose={3000} />
+      
+      {/* Products Loading Modal */}
+      {showProductsLoading && (
+        <div className="grv-create-loading-modal">
+          <div className="grv-create-loading-modal-content">
+            <div className="grv-create-loading-spinner">
+              <FaSpinner className="grv-create-loading-icon" />
+            </div>
+            <h3 className="grv-create-loading-title">Loading Products</h3>
+            <p className="grv-create-loading-message">{productsLoadingMessage}</p>
+            <div className="grv-create-loading-progress">
+              <div className="grv-create-loading-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="grv-create-sidebar-toggle-wrapper">
         <button 
@@ -706,122 +762,128 @@ const handleGrvSaveAndProcess = async () => {
                 )}
               </div>
             </div>
-<div className="grv-create-items-table-container">
-  <div className="grv-create-items-table-header">
-    <div className="grv-create-table-header-cell">Item</div>
-    <div className="grv-create-table-header-cell">Existing Stock</div>
-    <div className="grv-create-table-header-cell">Qty Received</div>
-    <div className="grv-create-table-header-cell">Unit Cost</div>
-    <div className="grv-create-table-header-cell">Total</div>
-    <div className="grv-create-table-header-cell">New Selling Price</div>
-    <div className="grv-create-table-header-cell">Original Cost</div>
-    <div className="grv-create-table-header-cell">Actions</div>
-  </div>
-  
-  <div className="grv-create-items-table-body">
-    {grvSelectedItems.length > 0 ? (
-      grvSelectedItems.map((item, index) => (
-        <div key={item.productId} className="grv-create-item-row">
-          <div className="grv-create-item-info">
-            <div className="grv-create-item-name">
-              {item.productName}
-              {getProductTypeIcon(item.productType)}
-            </div>
-            <div className="grv-create-item-details">
-              SKU: {item.sku} 
-            </div>
-          </div>
-          <div className="grv-create-item-existing-stock">
-            {formatDisplay(item.existingStock, item.productType)}
-          </div>
-         <div className="grv-create-item-quantity">
-  <input
-    type="text"
-    inputMode={item.productType === 'Weight' ? 'decimal' : 'numeric'}
-    className="grv-create-quantity-input"
-    value={item.receivedQuantity} // Use raw value directly
-    onChange={(e) => handleQuantityChange(item.productId, e.target.value)}
-    placeholder={item.productType === 'Weight' ? '0.00' : '0'}
-  />
-</div>
-          {/* UNIT COST - EDITABLE (comes after Qty Received) */}
-          <div className="grv-create-item-unit-cost">
-            <input
-              type="text"
-              inputMode="decimal"
-              className="grv-create-price-input"
-              value={item.newCost}
-              onChange={(e) => handlePriceChange(item.productId, 'newCost', e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
-          <div className="grv-create-item-total">
-            {formatDecimal(item.totalPrice)}
-          </div>
-          <div className="grv-create-item-new-price">
-            <input
-              type="text"
-              inputMode="decimal"
-              className="grv-create-price-input"
-              value={item.newPrice}
-              onChange={(e) => handlePriceChange(item.productId, 'newPrice', e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
-          {/* COST - NON-EDITABLE (original cost) */}
-          <div className="grv-create-item-cost">
-            {formatDecimal(item.cost)}
-          </div>
-          <div className="grv-create-item-actions">
-            <button 
-              className="grv-create-remove-btn"
-              onClick={() => handleGrvRemoveProduct(item.productId)}
-            >
-              <FaTimesCircle />
-            </button>
-          </div>
-        </div>
-      ))
-    ) : (
-      <div className="grv-create-empty-message">
-        <FaBox className="grv-create-empty-icon" />
-        <p>No items added. Use the search above to add items.</p>
-      </div>
-    )}
-  </div>
 
-{grvSelectedItems.length > 0 && (
-  <div className="grv-create-totals-row">
-    {/* Spacer for Item column (flex: 2) */}
-    <div className="grv-create-total-label">
-      Total Value:
-    </div>
-    
-    {/* Spacer for Existing Stock column */}
-    <div className="grv-create-total-spacer-1"></div>
-    
-    {/* Spacer for Qty Received column */}
-    <div className="grv-create-total-spacer-2"></div>
-    
-    {/* Spacer for Unit Cost column */}
-    <div className="grv-create-total-spacer-3"></div>
-    
-    {/* Total Value aligned with Total column (5th column) */}
-    <div className="grv-create-total-value">
-      ${formatDecimal(calculateTotalValue())}
-    </div>
-    
-    {/* Spacer for New Selling Price column */}
-    <div className="grv-create-total-spacer-4"></div>
-    
-    {/* Spacer for Cost column */}
-    <div className="grv-create-total-spacer-5"></div>
-    
-    {/* Spacer for Actions column */}
-    <div className="grv-create-total-spacer-6"></div>
-  </div>
-)}
-</div>
+            <div className="grv-create-items-table-container">
+              <div className="grv-create-items-table-header">
+                <div className="grv-create-table-header-cell">Item</div>
+                <div className="grv-create-table-header-cell">Existing Stock</div>
+                <div className="grv-create-table-header-cell">Qty Received</div>
+                <div className="grv-create-table-header-cell">Unit Cost</div>
+                <div className="grv-create-table-header-cell">Total</div>
+                <div className="grv-create-table-header-cell">New Selling Price</div>
+                <div className="grv-create-table-header-cell">Original Cost</div>
+                <div className="grv-create-table-header-cell">Actions</div>
+              </div>
+              
+              <div className="grv-create-items-table-body">
+                {grvSelectedItems.length > 0 ? (
+                  grvSelectedItems.map((item, index) => (
+                    <div key={item.productId} className="grv-create-item-row">
+                      <div className="grv-create-item-info">
+                        <div className="grv-create-item-name">
+                          {item.productName}
+                          {getProductTypeIcon(item.productType)}
+                        </div>
+                        <div className="grv-create-item-details">
+                          SKU: {item.sku} 
+                        </div>
+                      </div>
+                      <div className="grv-create-item-existing-stock">
+                        {formatDisplay(item.existingStock, item.productType)}
+                      </div>
+                      <div className="grv-create-item-quantity">
+                        <input
+                          type="text"
+                          inputMode={item.productType === 'Weight' ? 'decimal' : 'numeric'}
+                          className="grv-create-quantity-input"
+                          value={item.receivedQuantity}
+                          onChange={(e) => handleQuantityChange(item.productId, e.target.value)}
+                          placeholder={item.productType === 'Weight' ? '0.00' : '0'}
+                        />
+                      </div>
+                      {/* UNIT COST - EDITABLE (comes after Qty Received) */}
+                      <div className="grv-create-item-unit-cost">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          className="grv-create-price-input"
+                          value={item.newCost}
+                          onChange={(e) => handlePriceChange(item.productId, 'newCost', e.target.value)}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="grv-create-item-total">
+                        {formatDecimal(item.totalPrice)}
+                      </div>
+                      <div className="grv-create-item-new-price">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          className="grv-create-price-input"
+                          value={item.newPrice}
+                          onChange={(e) => handlePriceChange(item.productId, 'newPrice', e.target.value)}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      {/* COST - NON-EDITABLE (original cost) */}
+                      <div className="grv-create-item-cost">
+                        {formatDecimal(item.cost)}
+                      </div>
+                      <div className="grv-create-item-actions">
+                        <button 
+                          className="grv-create-remove-btn"
+                          onClick={() => handleGrvRemoveProduct(item.productId)}
+                        >
+                          <FaTimesCircle />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="grv-create-empty-message">
+                    <FaBox className="grv-create-empty-icon" />
+                    <p>No items added. Use the search above to add items.</p>
+                    {grvProducts.length === 0 && (
+                      <p style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
+                        No products available for this store.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {grvSelectedItems.length > 0 && (
+                <div className="grv-create-totals-row">
+                  {/* Spacer for Item column (flex: 2) */}
+                  <div className="grv-create-total-label">
+                    Total Value:
+                  </div>
+                  
+                  {/* Spacer for Existing Stock column */}
+                  <div className="grv-create-total-spacer-1"></div>
+                  
+                  {/* Spacer for Qty Received column */}
+                  <div className="grv-create-total-spacer-2"></div>
+                  
+                  {/* Spacer for Unit Cost column */}
+                  <div className="grv-create-total-spacer-3"></div>
+                  
+                  {/* Total Value aligned with Total column (5th column) */}
+                  <div className="grv-create-total-value">
+                    ${formatDecimal(calculateTotalValue())}
+                  </div>
+                  
+                  {/* Spacer for New Selling Price column */}
+                  <div className="grv-create-total-spacer-4"></div>
+                  
+                  {/* Spacer for Cost column */}
+                  <div className="grv-create-total-spacer-5"></div>
+                  
+                  {/* Spacer for Actions column */}
+                  <div className="grv-create-total-spacer-6"></div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grv-create-action-buttons">
