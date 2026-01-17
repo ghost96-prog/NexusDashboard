@@ -252,15 +252,18 @@ const ReceiptsScreen = () => {
         }))
         .filter((receipt) => selectedStoreIds.includes(receipt.storeId));
 
-      // Calculate statistics
+      // Calculate statistics - FIXED VERSION
       const total = filteredReceipts.length;
       const refunded = filteredReceipts.filter(receipt => receipt.label === "Refunded").length;
+      
+      // Use totalAmountUsd directly - it's already in USD
       const totalAmountSum = filteredReceipts.reduce((sum, receipt) => 
-        sum + (receipt.totalAmountUsd || 0) * (receipt.rate || 1), 0);
+        sum + (receipt.totalAmountUsd || 0), 0);
+      
       const refundedAmountSum = filteredReceipts
         .filter(receipt => receipt.label === "Refunded")
         .reduce((sum, receipt) => 
-          sum + (receipt.totalAmountUsd || 0) * (receipt.rate || 1), 0);
+          sum + (receipt.totalAmountUsd || 0), 0);
 
       setTotalReceipts(total);
       setRefundedReceipts(refunded);
@@ -502,14 +505,42 @@ const ReceiptsScreen = () => {
     [receipts, searchTerm]
   );
 
+  // Calculate derived values with useMemo
+  const avgReceiptAmount = useMemo(() => 
+    totalReceipts > 0 ? (totalAmount / totalReceipts).toFixed(2) : 0,
+    [totalReceipts, totalAmount]
+  );
+
+  const avgRefundAmount = useMemo(() => 
+    refundedReceipts > 0 ? (refundedAmount / refundedReceipts).toFixed(2) : 0,
+    [refundedReceipts, refundedAmount]
+  );
+
 // Replace the tableRows useMemo with this version that makes the entire row clickable
 
+// Version with USD conversion
 const tableRows = useMemo(() => 
   filteredReceipts.map((item, index) => {
     const matchedStore = stores.find(
       (store) => store.storeId === item.storeId
     );
     const isRefunded = item.label === "Refunded";
+    const currency = item.selectedCurrency || "USD";
+    const isUSD = currency.toUpperCase() === "USD";
+    
+    const formatMainAmount = () => {
+      if (currency.toUpperCase() === "USD") {
+        return `$${Number(item.totalAmount || 0).toFixed(2)}`;
+      } else if (currency.toUpperCase() === "RAND") {
+        return `RAND ${Number(item.totalAmount || 0).toFixed(2)}`;
+      } else if (currency.toUpperCase() === "EUR") {
+        return `€${Number(item.totalAmount || 0).toFixed(2)}`;
+      } else if (currency.toUpperCase() === "GBP") {
+        return `£${Number(item.totalAmount || 0).toFixed(2)}`;
+      } else {
+        return `${currency} ${Number(item.totalAmount || 0).toFixed(2)}`;
+      }
+    };
     
     return (
       <tr 
@@ -522,34 +553,27 @@ const tableRows = useMemo(() =>
           {item.dateTime ? formatDate(item.dateTime) : 'N/A'}
         </td>
         <td className="receipts-table-cell">{matchedStore?.storeName || 'Unknown Store'}</td>
-        <td className="receipts-table-cell">{item.selectedCurrency || 'N/A'}</td>
+        <td className="receipts-table-cell">{currency}</td>
         <td className="receipts-table-cell">
-          ${(Number(item.totalAmountUsd || 0) * Number(item.rate || 1)).toFixed(2)}
+          <div className="receipts-amount-display">
+            {formatMainAmount()}
+            {!isUSD && item.totalAmountUsd && (
+              <span className="receipts-usd-amount">
+                (${Number(item.totalAmountUsd || 0).toFixed(2)})
+              </span>
+            )}
+          </div>
         </td>
         <td className="receipts-table-cell">
           <span className={`receipts-status ${isRefunded ? 'receipts-status-refunded' : 'receipts-status-completed'}`}>
             {isRefunded ? 'Refunded' : 'Completed'}
           </span>
         </td>
-        {/* Remove the View Details button cell entirely */}
       </tr>
     );
   }),
   [filteredReceipts, stores, handleItemClick]
 );
-
-
-  // Calculate derived values with useMemo
-  const avgReceiptAmount = useMemo(() => 
-    totalReceipts > 0 ? (totalAmount / totalReceipts).toFixed(2) : 0,
-    [totalReceipts, totalAmount]
-  );
-
-  const avgRefundAmount = useMemo(() => 
-    refundedReceipts > 0 ? (refundedAmount / refundedReceipts).toFixed(2) : 0,
-    [refundedReceipts, refundedAmount]
-  );
-
   // Add mobile date picker CSS fix
   useEffect(() => {
     const style = document.createElement('style');
