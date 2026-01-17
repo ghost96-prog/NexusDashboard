@@ -459,7 +459,7 @@ const DiscountsScreen = () => {
               Manage your discount offers and promotions
             </div>
           </div>
-          <div className="discounts-toolbar-actions">
+          {/* <div className="discounts-toolbar-actions">
             <button 
               className="discounts-refresh-btn"
               onClick={onRefresh}
@@ -468,7 +468,7 @@ const DiscountsScreen = () => {
               <IoReload />
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Search and Create Button */}

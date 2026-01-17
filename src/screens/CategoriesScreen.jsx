@@ -410,7 +410,7 @@ const CategoriesScreen = () => {
               Manage your product categories
             </div>
           </div>
-          <div className="categories-toolbar-actions">
+          {/* <div className="categories-toolbar-actions">
             <button 
               className="categories-refresh-btn"
               onClick={onRefresh}
@@ -419,7 +419,7 @@ const CategoriesScreen = () => {
               <IoReload />
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Search and Create Button */}

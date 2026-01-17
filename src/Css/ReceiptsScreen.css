@@ -603,6 +603,244 @@
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
+/* Make table rows clickable */
+.receipts-clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.receipts-clickable-row:hover {
+  background-color: rgba(99, 102, 241, 0.05);
+}
+
+.receipts-clickable-row:active {
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+/* Remove hover effect from the View Details button if it still exists */
+.receipts-view-btn {
+  display: none;
+}
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+  .receipts-clickable-row {
+    position: relative;
+  }
+  
+  /* Add a touch-friendly visual cue for mobile */
+  .receipts-clickable-row:after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid #6366f1;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    opacity: 0.5;
+  }
+}
+
+/* Receipt Modal Container - Small for PC */
+.receipt-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.receipt-modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  animation: modalSlideIn 0.2s ease-out;
+  border: 1px solid #e2e8f0;
+  width: 450px;
+  max-width: 90vw;
+}
+
+/* Animation for modal */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Make modal even smaller on larger PC screens */
+@media (min-width: 1280px) {
+  .receipt-modal-content {
+    width: 420px;
+  }
+}
+
+/* Make modal slightly larger on medium PC screens */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .receipt-modal-content {
+    width: 480px;
+  }
+}
+
+/* For tablets */
+@media (max-width: 1023px) and (min-width: 769px) {
+  .receipt-modal-content {
+    width: 550px;
+  }
+}
+
+/* For mobile */
+@media (max-width: 768px) {
+  .receipt-modal-content {
+    width: 95vw;
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+}
+
+/* Modal Header */
+.receipt-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.receipt-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.receipt-modal-close-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 20px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.receipt-modal-close-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Modal Body */
+.receipt-modal-body {
+  padding: 20px;
+}
+
+/* Modal content sections */
+.receipt-section {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.receipt-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.receipt-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.receipt-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.receipt-detail-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.receipt-detail-value {
+  color: #1e293b;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Items table in modal - make it compact */
+.receipt-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.receipt-items-table th {
+  background: #f8fafc;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.receipt-items-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+}
+
+.receipt-items-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Total amount in modal */
+.receipt-total-amount {
+  background: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: right;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .receipts-control-panel {
@@ -827,6 +1065,21 @@
 }
 
 .receipts-dropdown-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+/* Modal scrollbar */
+.receipt-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.receipt-modal-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.receipt-modal-content::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }

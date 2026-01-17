@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import QRCode from "react-qr-code";
 import "../Css/ReceiptModal.css";
 
 const PAGE_SIZES = [
-  { label: "A4", value: "a4" },
-  { label: "Letter", value: "letter" },
   { label: "A5", value: "a5" },
+  { label: "80mm", value: [226, 1000] },
+  { label: "58mm", value: [226, 800] },
 ];
 
 function ReceiptModal({ receipt, onClose, store, email }) {
@@ -26,7 +25,6 @@ function ReceiptModal({ receipt, onClose, store, email }) {
   const generateAndHandlePdf = async (action = "preview") => {
     setIsGenerating(true);
     try {
-      // Capture the content as canvas
       const canvas = await html2canvas(contentRef.current, {
         scale: 2,
         logging: false,
@@ -35,43 +33,44 @@ function ReceiptModal({ receipt, onClose, store, email }) {
       });
       const imgData = canvas.toDataURL("image/png");
 
-      // Create PDF document
-      const doc = new jsPDF({
-        unit: "pt",
-        format,
-        orientation,
-      });
+      let doc;
+      if (Array.isArray(format)) {
+        // Custom size for thermal paper
+        doc = new jsPDF({
+          unit: "mm",
+          format: format,
+          orientation: "portrait",
+        });
+      } else {
+        doc = new jsPDF({
+          unit: "pt",
+          format,
+          orientation,
+        });
+      }
 
-      // Calculate dimensions and add image
-      const margin = 20;
+      const margin = 5;
       const pageWidth = doc.internal.pageSize.getWidth() - margin * 2;
       const imgHeight = (canvas.height * pageWidth) / canvas.width;
       doc.addImage(imgData, "PNG", margin, margin, pageWidth, imgHeight);
 
-      // Handle different actions
       switch (action) {
         case "download":
-          // Direct download
           doc.save(`receipt_${receipt.ticketNumber}.pdf`);
           break;
-
         case "print":
-          // Open in new window for printing
           const printBlob = doc.output("blob");
           const printUrl = URL.createObjectURL(printBlob);
           const printWindow = window.open(printUrl);
           printWindow.onload = () => {
             printWindow.print();
-            // Clean up after printing
             setTimeout(() => {
               URL.revokeObjectURL(printUrl);
               printWindow.close();
             }, 1000);
           };
           break;
-
-        default: // preview
-          // Set URL for preview
+        default:
           const previewBlob = doc.output("blob");
           setPdfUrl(URL.createObjectURL(previewBlob));
           break;
@@ -84,13 +83,10 @@ function ReceiptModal({ receipt, onClose, store, email }) {
     }
   };
 
-  // Handle iOS devices differently
   const handleDownload = () => {
     if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-      // iOS devices need to open in new tab
       window.open(pdfUrl, "_blank");
     } else {
-      // Standard download for other devices
       const link = document.createElement("a");
       link.href = pdfUrl;
       link.download = `receipt_${receipt.ticketNumber}.pdf`;
@@ -100,7 +96,6 @@ function ReceiptModal({ receipt, onClose, store, email }) {
     }
   };
 
-  // Format currency
   const formatCurrency = (value) => {
     return parseFloat(value || 0).toLocaleString('en-US', {
       minimumFractionDigits: 2,
@@ -108,164 +103,118 @@ function ReceiptModal({ receipt, onClose, store, email }) {
     });
   };
 
-  // Generate QR code data
-  const generateQRData = () => {
-    const data = {
-      receiptNumber: receipt.ticketNumber,
-      date: receipt.dateTime,
-      store: store?.storeName,
-      total: receipt.totalAmount,
-      currency: receipt.selectedCurrency,
-    };
-    return JSON.stringify(data);
-  };
-
   return (
-    <div className="receipt-modal-overlay">
-      <div className="receipt-modal-content">
-        <button 
-          className="receipt-modal-close-btn" 
-          onClick={onClose}
-        >
+    <div className="receipt-modal-overlay" onClick={onClose}>
+      <div className="receipt-modal-content" onClick={(e) => e.stopPropagation()}>
+        <button className="receipt-modal-close-btn" onClick={onClose}>
           ×
         </button>
 
-        <h2 className="receipt-modal-title">📋 Receipt Details</h2>
 
-        {/* PDF format controls */}
-        <div className="receipt-modal-format-controls">
-          <div className="receipt-modal-control-group">
-            <label>📄 Page Size</label>
-            <select
-              value={format}
-              onChange={(e) => setFormat(e.target.value)}
-              disabled={isGenerating}
-            >
-              {PAGE_SIZES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="receipt-modal-control-group">
-            <label>🔄 Orientation</label>
-            <select
-              value={orientation}
-              onChange={(e) => setOrientation(e.target.value)}
-              disabled={isGenerating}
-            >
-              <option value="portrait">Portrait</option>
-              <option value="landscape">Landscape</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Receipt content to be converted to PDF */}
+        {/* Compact receipt content */}
         <div ref={contentRef} className="receipt-modal-invoice-content">
-          {/* Header with decorative elements */}
-          <div className="receipt-modal-decor-top">
-            <div className="receipt-modal-decor-line"></div>
-            <div className="receipt-modal-store-icon">🛒</div>
-            <div className="receipt-modal-decor-line"></div>
+          {/* Store header */}
+          <div className="receipt-modal-store-header">
+            <div className="receipt-modal-store-name">{store?.storeName || "STORE NAME"}</div>
+            <div className="receipt-modal-store-address">{store?.address || "Store Address"}</div>
+            <div className="receipt-modal-store-contact">
+              📞 {store?.phone || "(000) 000-0000"}
+            </div>
+            <div className="receipt-modal-store-email">✉️ {email || "store@example.com"}</div>
           </div>
 
-          {/* Header */}
-          <div className="receipt-modal-header">
-            <div className="company-info">
-              <h1 className="receipt-modal-store-name">{store?.storeName || "STORE NAME"}</h1>
-              <p className="receipt-modal-store-details">{store?.address || "Store Address"}</p>
-              <p className="receipt-modal-store-details">📞 {store?.phone || "(000) 000-0000"}</p>
-              <p className="receipt-modal-store-email">✉️ {email || "store@example.com"}</p>
-            </div>
-          </div>
+          <hr className="receipt-divider" />
 
-          {/* Receipt details */}
-          <div className="receipt-modal-details">
-            <div className="receipt-modal-detail-row">
-              <span className="receipt-modal-detail-label">Receipt #:</span>
-              <span className="receipt-modal-detail-value">#{receipt.ticketNumber}</span>
+          {/* Receipt info */}
+          <div className="receipt-info">
+            <div className="receipt-info-row">
+              <span>Receipt #:</span>
+              <span><strong>#{receipt.ticketNumber}</strong></span>
             </div>
-            <div className="receipt-modal-detail-row">
-              <span className="receipt-modal-detail-label">Date & Time:</span>
-              <span className="receipt-modal-detail-value">
-                {new Date(receipt.dateTime).toLocaleString()}
-              </span>
+            <div className="receipt-info-row">
+              <span>Date:</span>
+              <span>{new Date(receipt.dateTime).toLocaleDateString()}</span>
             </div>
-            <div className="receipt-modal-detail-row">
-              <span className="receipt-modal-detail-label">Cashier:</span>
-              <span className="receipt-modal-detail-value">👤 {receipt.createdBy}</span>
+            <div className="receipt-info-row">
+              <span>Time:</span>
+              <span>{new Date(receipt.dateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+            <div className="receipt-info-row">
+              <span>Cashier:</span>
+              <span>{receipt.createdBy}</span>
             </div>
           </div>
 
-          {receipt.label && (
-            <div className="receipt-modal-refund-badge">
-              ⚠️ {receipt.label}
-            </div>
-          )}
+          <hr className="receipt-divider" />
 
-          {/* Items Table */}
-          <div className="receipt-modal-items-section">
-            <div className="receipt-modal-table-header">
-              <div className="receipt-modal-col-item">Item</div>
-              <div className="receipt-modal-col-qty">Qty</div>
-              <div className="receipt-modal-col-price">Unit Price</div>
-              <div className="receipt-modal-col-total">Total</div>
-            </div>
+          {/* Items table - compact */}
+          <table className="receipt-items-table">
+            <thead>
+              <tr>
+                <th className="item-name">Item</th>
+                <th className="item-qty">Qty</th>
+                <th className="item-price">Price</th>
+                <th className="item-total">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {receipt.items.map((item, i) => (
+                <tr key={i}>
+                  <td className="item-name">{item.productName}</td>
+                  <td className="item-qty">{item.quantity}</td>
+                  <td className="item-price">
+                    {receipt.selectedCurrency} {formatCurrency(receipt.rate * item.unitPrice)}
+                  </td>
+                  <td className="item-total">
+                    {receipt.selectedCurrency} {formatCurrency(receipt.rate * item.actualTotal)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-            {receipt.items.map((item, i) => (
-              <div key={i} className="receipt-modal-item-row">
-                <div className="receipt-modal-col-item">{item.productName}</div>
-                <div className="receipt-modal-col-qty">{item.quantity}</div>
-                <div className="receipt-modal-col-price">
-                  {receipt.selectedCurrency} {formatCurrency(receipt.rate * item.unitPrice)}
-                </div>
-                <div className="receipt-modal-col-total">
-                  {receipt.selectedCurrency} {formatCurrency(receipt.rate * item.actualTotal)}
-                </div>
-              </div>
-            ))}
-          </div>
+          <hr className="receipt-divider" />
 
-          {/* Summary */}
-          <div className="receipt-modal-summary-section">
-            <div className="receipt-modal-summary-row">
+          {/* Totals section */}
+          <div className="receipt-totals">
+            <div className="receipt-total-row">
               <span>Subtotal:</span>
-              <span>
-                {receipt.selectedCurrency} {formatCurrency(receipt.totalSales)}
-              </span>
+              <span>{receipt.selectedCurrency} {formatCurrency(receipt.totalSales)}</span>
             </div>
-
-            <div className="receipt-modal-summary-row discount">
-              <span>Discount:</span>
-              <span>
-                - {receipt.selectedCurrency} {formatCurrency(receipt.rate * receipt.discountApplied)}
-              </span>
-            </div>
-
-            <div className="receipt-modal-summary-row total">
-              <span>💰 TOTAL:</span>
-              <span>
-                {receipt.selectedCurrency} {formatCurrency(receipt.totalAmount)}
-              </span>
-            </div>
-
-            <div className="receipt-modal-payment-details">
-              <div className="receipt-modal-summary-row">
-                <span>💵 Received:</span>
-                <span>
-                  {receipt.selectedCurrency} {formatCurrency(receipt.received)}
-                </span>
+            
+            {receipt.discountApplied > 0 && (
+              <div className="receipt-total-row discount">
+                <span>Discount:</span>
+                <span>- {receipt.selectedCurrency} {formatCurrency(receipt.rate * receipt.discountApplied)}</span>
               </div>
-              <div className="receipt-modal-summary-row">
-                <span>🪙 Change:</span>
-                <span>
-                  {receipt.selectedCurrency} {formatCurrency(receipt.change)}
-                </span>
+            )}
+
+            <div className="receipt-total-row grand-total">
+              <span>TOTAL:</span>
+              <span><strong>{receipt.selectedCurrency} {formatCurrency(receipt.totalAmount)}</strong></span>
+            </div>
+
+            <div className="receipt-payment-details">
+              <div className="receipt-total-row">
+                <span>Received:</span>
+                <span>{receipt.selectedCurrency} {formatCurrency(receipt.received)}</span>
+              </div>
+              <div className="receipt-total-row">
+                <span>Change:</span>
+                <span>{receipt.selectedCurrency} {formatCurrency(receipt.change)}</span>
               </div>
             </div>
           </div>
 
+          <hr className="receipt-divider" />
+
+          {/* Footer */}
+          <div className="receipt-footer">
+           
+            <div className="receipt-date-print">
+              Date: {new Date(receipt.dateTime).toLocaleDateString()}: {new Date(receipt.dateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} 
+            </div>
+          </div>
         </div>
 
         {/* Action buttons */}
@@ -282,7 +231,7 @@ function ReceiptModal({ receipt, onClose, store, email }) {
               </>
             ) : (
               <>
-                👁️ <span>Preview PDF</span>
+                👁️ <span>Preview</span>
               </>
             )}
           </button>
@@ -307,7 +256,7 @@ function ReceiptModal({ receipt, onClose, store, email }) {
           )}
         </div>
 
-        {/* PDF preview */}
+        {/* PDF preview - only if needed */}
         {pdfUrl && (
           <div className="receipt-modal-pdf-preview-container">
             <iframe 

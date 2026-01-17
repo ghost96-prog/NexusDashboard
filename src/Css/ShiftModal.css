@@ -1,390 +1,277 @@
-/* Shift Modal - Modern & Beautiful Design */
+/* ShiftModal.css - RECEIPT STYLE */
+
 .shift-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
   padding: 20px;
-  backdrop-filter: blur(4px);
 }
 
-.shift-modal {
+/* Receipt Container */
+.shift-modal-receipt {
   background: white;
-  border-radius: 16px;
-  padding: 15px;
-  max-width: 500px;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 350px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
-  animation: modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
   position: relative;
-  border: 1px solid #e9ecef;
+  font-family: 'Courier New', monospace;
+  border: 1px solid #ddd;
 }
 
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-25px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Modal Header */
-.shift-modal-header {
+/* Receipt Header */
+.receipt-header {
   text-align: center;
-  margin-bottom: 5px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.shift-modal-icon {
-  font-size: 48px;
-  display: block;
-  margin-bottom: 5px;
-  color: #1a5b7b;
-}
-
-.shift-modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1a447b;
-  margin: 0 0 8px 0;
-}
-
-.shift-modal-subtitle {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.store-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #444;
-}
-
-.shift-number {
-  font-size: 14px;
-  color: #666;
-  background: #f8f9fa;
-  padding: 4px 12px;
-  border-radius: 20px;
-  display: inline-block;
-  margin-top: 4px;
-}
-
-/* Close Button */
-.shift-modal-close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: #f8f9fa;
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #666;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.shift-modal-close-btn:hover {
-  background: #e9ecef;
-  color: #dc3545;
-  transform: rotate(90deg);
-}
-
-/* Section Cards */
-.shift-section-card {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 20px;
   margin-bottom: 15px;
-  border: 1px solid #e9ecef;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.shift-section-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 5px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid rgba(26, 91, 123, 0.2);
-}
-
-.section-icon {
-  font-size: 18px;
-  color: #1a5b7b;
-}
-
-.section-header h3 {
+.receipt-store {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: bold;
   color: #1a5b7b;
-  margin: 0;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Data Grid */
-.data-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.receipt-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5px;
 }
 
-.data-item {
+.receipt-number {
+  font-size: 13px;
+  color: #666;
+  background: #f5f5f5;
+  padding: 4px 12px;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+/* Dividers */
+.receipt-divider {
+  border: none;
+  border-top: 1px dashed #999;
+  margin: 15px 0;
+}
+
+/* Sections */
+.receipt-section {
+  margin-bottom: 15px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #1a5b7b;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+  letter-spacing: 0.5px;
+}
+
+/* Rows */
+.receipt-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 1px dashed #f0f0f0;
 }
 
-.data-item.total,
-.data-item.profit {
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  margin-top: 4px;
+.receipt-row:last-child {
+  border-bottom: none;
 }
 
-.data-label {
-  font-size: 13px;
-  color: #666;
-  font-weight: 500;
+.receipt-row span:first-child {
+  color: #555;
 }
 
-.data-value {
-  font-size: 14px;
+.receipt-row span:last-child {
+  color: #333;
   font-weight: 600;
-  color: #444;
+  text-align: right;
 }
 
-.data-value.highlight {
-  color: #1a5b7b;
-}
-
-.data-value.positive {
-  color: #28a745;
-}
-
-.data-value.negative {
-  color: #dc3545;
-}
-
-.data-value.total-amount {
-  font-size: 16px;
-  color: #1a5b7b;
-}
-
-.data-value.profit-amount {
-  font-size: 16px;
-  color: #28a745;
-}
-
-.data-item.variance {
-  background: rgba(220, 53, 69, 0.05);
-  padding: 10px;
-  border-radius: 6px;
+/* Special row styles */
+.receipt-row.total {
+  font-weight: bold;
+  border-top: 1px solid #ccc;
+  padding-top: 10px;
   margin-top: 5px;
+  font-size: 13px;
 }
 
-.data-item.variance.positive {
-  background: rgba(40, 167, 69, 0.05);
+.receipt-row.total span:last-child {
+  color: #1a5b7b;
+}
+
+.receipt-row.profit {
+  font-weight: bold;
+  border-top: 2px solid #ccc;
+  padding-top: 12px;
+  margin-top: 10px;
+  font-size: 13px;
+  background: #f8fff9;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.receipt-row.profit span:last-child {
+  color: #28a745;
+}
+
+.receipt-row.positive span:last-child {
+  color: #28a745;
+}
+
+.receipt-row.negative span:last-child {
+  color: #dc3545;
 }
 
 /* Currency Grid */
 .currency-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
+  margin-top: 5px;
 }
 
-.currency-item {
-  background: white;
-  padding: 10px;
-  border-radius: 8px;
+/* Receipt Footer */
+.receipt-footer {
   text-align: center;
-  border: 1px solid #e9ecef;
-  transition: all 0.3s ease;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed #ccc;
 }
 
-.currency-item:hover {
-  border-color: #1a5b7b;
-  transform: translateY(-2px);
+.generated-time {
+  font-size: 11px;
+  color: #777;
+  font-style: italic;
 }
 
-.currency-label {
-  display: block;
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.currency-value {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #444;
-}
-
-/* Modal Actions */
-.shift-modal-actions {
+/* Actions */
+.receipt-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 25px;
+  gap: 10px;
+  margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #e9ecef;
 }
 
-.shift-modal-download,
-.shift-modal-close {
+.receipt-btn {
   flex: 1;
-  padding: 14px 20px;
+  padding: 12px;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
 }
 
-.shift-modal-download {
+.receipt-btn.download {
   background: linear-gradient(135deg, #1a5b7b, #276482);
   color: white;
-  box-shadow: 0 4px 12px rgba(26, 91, 123, 0.3);
 }
 
-.shift-modal-download:hover:not(:disabled) {
+.receipt-btn.download:hover:not(:disabled) {
   background: linear-gradient(135deg, #276482, #1a5b7b);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(26, 91, 123, 0.4);
 }
 
-.shift-modal-download:disabled {
+.receipt-btn.download:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.shift-modal-close {
+.receipt-btn.close {
   background: #f8f9fa;
   color: #666;
   border: 1px solid #dee2e6;
 }
 
-.shift-modal-close:hover {
+.receipt-btn.close:hover {
   background: #e9ecef;
   color: #444;
   transform: translateY(-2px);
 }
 
-/* Modal Footer */
-.shift-modal-footer {
-  text-align: center;
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #e9ecef;
+/* Loading Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-.generated-time {
-  font-size: 12px;
-  color: #999;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Responsive Design */
-@media (max-width: 600px) {
+/* Scrollbar */
+.shift-modal-receipt::-webkit-scrollbar {
+  width: 6px;
+}
+
+.shift-modal-receipt::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.shift-modal-receipt::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
   .shift-modal-overlay {
     padding: 15px;
   }
   
-  .shift-modal {
-    padding: 20px 15px;
-    max-height: 90vh;
-  }
-  
-  .shift-modal-title {
-    font-size: 20px;
-  }
-  
-  .shift-modal-icon {
-    font-size: 40px;
-  }
-  
-  .shift-section-card {
+  .shift-modal-receipt {
     padding: 15px;
+    max-width: 95%;
   }
   
-  .currency-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  .receipt-store {
+    font-size: 14px;
   }
   
-  .shift-modal-actions {
+  .receipt-title {
+    font-size: 13px;
+  }
+  
+  .receipt-row {
+    font-size: 11px;
+  }
+  
+  .receipt-actions {
     flex-direction: column;
   }
   
-  .shift-modal-download,
-  .shift-modal-close {
+  .receipt-btn {
     width: 100%;
   }
-}
-
-@media (max-width: 400px) {
-  .shift-modal {
-    padding: 15px 12px;
-  }
-  
-  .data-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  
-  .data-value {
-    align-self: flex-end;
-  }
-  
-  .currency-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Scrollbar Styling */
-.shift-modal::-webkit-scrollbar {
-  width: 8px;
-}
-
-.shift-modal::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.shift-modal::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.shift-modal::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
 }

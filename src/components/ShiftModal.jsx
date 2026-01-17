@@ -1,10 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import "../Css/ShiftModal.css";
 
 function ShiftModal({ onClose, store, email, selectedShift }) {
-  const contentRef = useRef();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDownloadPdf = async () => {
@@ -21,20 +19,20 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       // Title
       pdf.setFontSize(20);
       pdf.setFont(undefined, "bold");
-      pdf.setTextColor(26, 91, 123); // #1a5b7b
+      pdf.setTextColor(26, 91, 123);
       pdf.text(`Shift Summary`, pageWidth / 2, y, { align: "center" });
       y += 8;
 
       // Store name
       pdf.setFontSize(14);
-      pdf.setTextColor(102, 102, 102); // #666
+      pdf.setTextColor(102, 102, 102);
       pdf.text(`${store.storeName}`, pageWidth / 2, y, { align: "center" });
       y += 10;
 
       // Shift number
       pdf.setFontSize(16);
       pdf.setFont(undefined, "bold");
-      pdf.setTextColor(26, 91, 123); // #1a5b7b
+      pdf.setTextColor(26, 91, 123);
       pdf.text(`Shift #${selectedShift.shiftNumber}`, pageWidth / 2, y, {
         align: "center",
       });
@@ -43,10 +41,10 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       // Helper function to add label-value pairs
       const addRow = (label, value, yPos, isBold = false) => {
         pdf.setFont(undefined, "bold");
-        pdf.setTextColor(51, 51, 51); // #333
+        pdf.setTextColor(51, 51, 51);
         pdf.text(`${label}:`, margin, yPos);
         pdf.setFont(undefined, isBold ? "bold" : "normal");
-        pdf.setTextColor(68, 68, 68); // #444
+        pdf.setTextColor(68, 68, 68);
         pdf.text(value, pageWidth - margin, yPos, { align: "right" });
       };
 
@@ -56,7 +54,7 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       // Shift details section
       pdf.setFontSize(14);
       pdf.setFont(undefined, "bold");
-      pdf.setTextColor(26, 91, 123); // #1a5b7b
+      pdf.setTextColor(26, 91, 123);
       pdf.text("Shift Details", margin, y);
       y += 10;
 
@@ -92,16 +90,16 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       y += 7;
       addRow("Actual Amount", formatCurrency(selectedShift.actualAmount), y);
       y += 7;
-   // Fix the RGB color syntax
-pdf.setFont(undefined, "bold");
-if (selectedShift.variance >= 0) {
-  pdf.setTextColor(40, 167, 69); // Green
-} else {
-  pdf.setTextColor(220, 53, 69); // Red
-}
-addRow("Variance", formatCurrency(selectedShift.variance), y);
-pdf.setTextColor(68, 68, 68); // Reset color
-y += 12;
+      
+      pdf.setFont(undefined, "bold");
+      if (selectedShift.variance >= 0) {
+        pdf.setTextColor(40, 167, 69);
+      } else {
+        pdf.setTextColor(220, 53, 69);
+      }
+      addRow("Variance", formatCurrency(selectedShift.variance), y);
+      pdf.setTextColor(68, 68, 68);
+      y += 12;
 
       // Sales Summary
       pdf.setFontSize(14);
@@ -122,7 +120,7 @@ y += 12;
       addRow("Cost of Goods Sold", formatCurrency(selectedShift.totalCOGS), y);
       y += 7;
       pdf.setFont(undefined, "bold");
-      pdf.setTextColor(40, 167, 69); // Green for profit
+      pdf.setTextColor(40, 167, 69);
       addRow("Net Profit", formatCurrency(selectedShift.profit), y, true);
       y += 12;
 
@@ -137,16 +135,17 @@ y += 12;
         pdf.setFontSize(12);
         pdf.setTextColor(68, 68, 68);
         selectedShift.salesBreakdown.forEach(({ currency, totalAmount }) => {
-const formattedAmount = selectedShift.baseCurrency === "USD" 
-  ? `$${totalAmount?.toFixed(2)}`
-  : `${selectedShift.baseCurrency}${totalAmount?.toFixed(2)}`;          addRow(currency, formattedAmount, y);
+          const formattedAmount = selectedShift.baseCurrency === "USD" 
+            ? `$${totalAmount?.toFixed(2)}`
+            : `${selectedShift.baseCurrency}${totalAmount?.toFixed(2)}`;
+          addRow(currency, formattedAmount, y);
           y += 7;
         });
       }
 
       // Timestamp
       pdf.setFontSize(10);
-      pdf.setTextColor(102, 102, 102); // #666
+      pdf.setTextColor(102, 102, 102);
       pdf.text(
         `Generated on ${new Date().toLocaleString()}`,
         pageWidth / 2,
@@ -168,199 +167,172 @@ const formattedAmount = selectedShift.baseCurrency === "USD"
 
   if (!selectedShift) return null;
 
-const formatCurrency = (value) => {
-  const formattedNumber = value?.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  
-  // Match the React Native logic
-  if (selectedShift.baseCurrency === "USD") {
-    return `$${formattedNumber}`;
-  } else {
-    // For non-USD, show the currency code
-    return `${selectedShift.baseCurrency}${formattedNumber}`;
-  }
-};
+  const formatCurrency = (value) => {
+    const formattedNumber = value?.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    
+    if (selectedShift.baseCurrency === "USD") {
+      return `$${formattedNumber}`;
+    } else {
+      return `${selectedShift.baseCurrency}${formattedNumber}`;
+    }
+  };
 
   return (
-    <div className="modal-overlay shift-modal-overlay">
-      <div className="shift-modal" ref={contentRef}>
-        <div className="shift-modal-header">
-          <span className="shift-modal-icon">📊</span>
-          <h2 className="shift-modal-title">Shift Summary</h2>
-          <div className="shift-modal-subtitle">
-            <span className="store-name">{store.storeName}</span>
-            <span className="shift-number">Shift #{selectedShift.shiftNumber}</span>
+    <div className="modal-overlay shift-modal-overlay" onClick={onClose}>
+      <div className="shift-modal-receipt" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="receipt-header">
+          <div className="receipt-store">📊 {store.storeName}</div>
+          <div className="receipt-title">SHIFT SUMMARY</div>
+          <div className="receipt-number"># {selectedShift.shiftNumber}</div>
+        </div>
+
+        <div className="receipt-divider"></div>
+
+        {/* Shift Details */}
+        <div className="receipt-section">
+          <div className="section-title">SHIFT DETAILS</div>
+          <div className="receipt-row">
+            <span>Opened By:</span>
+            <span>{selectedShift.createdBy}</span>
+          </div>
+          <div className="receipt-row">
+            <span>Opened:</span>
+            <span>{new Date(selectedShift.openingDate).toLocaleString()}</span>
+          </div>
+          <div className="receipt-row">
+            <span>Closed By:</span>
+            <span>{selectedShift.closedBy}</span>
+          </div>
+          <div className="receipt-row">
+            <span>Closed:</span>
+            <span>{new Date(selectedShift.closingDate).toLocaleString()}</span>
           </div>
         </div>
 
-        <button className="shift-modal-close-btn" onClick={onClose}>
-          <i className="fas fa-times"></i>
-        </button>
+        <div className="receipt-divider"></div>
 
-        <div className="shift-modal-content">
-          {/* Shift Details Card */}
-          <div className="shift-section-card">
-            <div className="section-header">
-              <i className="fas fa-clock section-icon"></i>
-              <h3>Shift Details</h3>
-            </div>
-            <div className="section-content">
-              <div className="data-grid">
-                <div className="data-item">
-                  <span className="data-label">Opened By</span>
-                  <span className="data-value highlight">{selectedShift.createdBy}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Opened</span>
-                  <span className="data-value">{new Date(selectedShift.openingDate).toLocaleString()}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Closed By</span>
-                  <span className="data-value highlight">{selectedShift.closedBy}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Closed</span>
-                  <span className="data-value">{new Date(selectedShift.closingDate).toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
+        {/* Cash Drawer */}
+        <div className="receipt-section">
+          <div className="section-title">CASH DRAWER SUMMARY</div>
+          <div className="receipt-row">
+            <span>Net Sales:</span>
+            <span>{formatCurrency(selectedShift.netSales)}</span>
           </div>
-
-          {/* Cash Drawer Card */}
-          <div className="shift-section-card">
-            <div className="section-header">
-              <i className="fas fa-cash-register section-icon"></i>
-              <h3>Cash Drawer Summary</h3>
-            </div>
-            <div className="section-content">
-              <div className="data-grid">
-                <div className="data-item">
-                  <span className="data-label">Net Sales</span>
-                  <span className="data-value">{formatCurrency(selectedShift.netSales)}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Starting Cash</span>
-                  <span className="data-value">{formatCurrency(selectedShift.startingCash)}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Laybye Payments</span>
-                  <span className="data-value positive">{formatCurrency(selectedShift.laybye)}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Income</span>
-                  <span className="data-value positive">{formatCurrency(selectedShift.income)}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Expenses</span>
-                  <span className="data-value negative">-{formatCurrency(selectedShift.expenses)}</span>
-                </div>
-                <div className="data-item total">
-                  <span className="data-label">Total Expected Cash</span>
-                  <span className="data-value total-amount">{formatCurrency(selectedShift.expectedCash)}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Actual Amount</span>
-                  <span className="data-value">{formatCurrency(selectedShift.actualAmount)}</span>
-                </div>
-                <div className={`data-item variance ${selectedShift.variance >= 0 ? 'positive' : 'negative'}`}>
-                  <span className="data-label">Variance</span>
-                  <span className="data-value">
-                    {selectedShift.variance >= 0 ? '+' : ''}{formatCurrency(selectedShift.variance)}
-                  </span>
-                </div>
-              </div>
-            </div>
+          <div className="receipt-row">
+            <span>Starting Cash:</span>
+            <span>{formatCurrency(selectedShift.startingCash)}</span>
           </div>
-
-          {/* Sales Summary Card */}
-          <div className="shift-section-card">
-            <div className="section-header">
-              <i className="fas fa-chart-line section-icon"></i>
-              <h3>Sales Summary</h3>
-            </div>
-            <div className="section-content">
-              <div className="data-grid">
-                <div className="data-item">
-                  <span className="data-label">Gross Sales (USD)</span>
-                  <span className="data-value">{formatCurrency(selectedShift.totalGrossSalesUSD)}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Refunds</span>
-                  <span className="data-value negative">-{formatCurrency(selectedShift.totalRefunds)}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Discounts</span>
-                  <span className="data-value negative">-{formatCurrency(selectedShift.totalDiscounts)}</span>
-                </div>
-                <div className="data-item total">
-                  <span className="data-label">Net Sales (USD)</span>
-                  <span className="data-value total-amount">{formatCurrency(selectedShift.netSales)}</span>
-                </div>
-                <div className="data-item">
-                  <span className="data-label">Cost of Goods Sold</span>
-                  <span className="data-value negative">-{formatCurrency(selectedShift.totalCOGS)}</span>
-                </div>
-                <div className="data-item profit">
-                  <span className="data-label">Net Profit</span>
-                  <span className="data-value profit-amount">{formatCurrency(selectedShift.profit)}</span>
-                </div>
-              </div>
-            </div>
+          <div className="receipt-row">
+            <span>Laybye Payments:</span>
+            <span className="positive">{formatCurrency(selectedShift.laybye)}</span>
           </div>
-
-          {/* Sales Breakdown Card */}
-          {selectedShift.salesBreakdown?.length > 0 && (
-            <div className="shift-section-card">
-              <div className="section-header">
-                <i className="fas fa-globe section-icon"></i>
-                <h3>Sales Breakdown</h3>
-              </div>
-              <div className="section-content">
-                <div className="currency-grid">
-                  {selectedShift.salesBreakdown.map(({ currency, totalAmount }) => (
-                    <div className="currency-item" key={currency}>
-                      <span className="currency-label">{currency}</span>
-                      <span className="currency-value">
-                        {currency === "USD" ? "$" : ""}{totalAmount?.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="receipt-row">
+            <span>Income:</span>
+            <span className="positive">{formatCurrency(selectedShift.income)}</span>
+          </div>
+          <div className="receipt-row">
+            <span>Expenses:</span>
+            <span className="negative">-{formatCurrency(selectedShift.expenses)}</span>
+          </div>
+          <div className="receipt-row total">
+            <span>Total Expected:</span>
+            <span>{formatCurrency(selectedShift.expectedCash)}</span>
+          </div>
+          <div className="receipt-row">
+            <span>Actual Amount:</span>
+            <span>{formatCurrency(selectedShift.actualAmount)}</span>
+          </div>
+          <div className={`receipt-row ${selectedShift.variance >= 0 ? 'positive' : 'negative'}`}>
+            <span>Variance:</span>
+            <span>{selectedShift.variance >= 0 ? '+' : ''}{formatCurrency(selectedShift.variance)}</span>
+          </div>
         </div>
 
-        <div className="shift-modal-actions">
+        <div className="receipt-divider"></div>
+
+        {/* Sales Summary */}
+        <div className="receipt-section">
+          <div className="section-title">SALES SUMMARY</div>
+          <div className="receipt-row">
+            <span>Gross Sales (USD):</span>
+            <span>{formatCurrency(selectedShift.totalGrossSalesUSD)}</span>
+          </div>
+          <div className="receipt-row">
+            <span>Refunds:</span>
+            <span className="negative">-{formatCurrency(selectedShift.totalRefunds)}</span>
+          </div>
+          <div className="receipt-row">
+            <span>Discounts:</span>
+            <span className="negative">-{formatCurrency(selectedShift.totalDiscounts)}</span>
+          </div>
+          <div className="receipt-row total">
+            <span>Net Sales (USD):</span>
+            <span>{formatCurrency(selectedShift.netSales)}</span>
+          </div>
+          <div className="receipt-row">
+            <span>Cost of Goods Sold:</span>
+            <span className="negative">-{formatCurrency(selectedShift.totalCOGS)}</span>
+          </div>
+          <div className="receipt-row profit">
+            <span>Net Profit:</span>
+            <span>{formatCurrency(selectedShift.profit)}</span>
+          </div>
+        </div>
+
+        {/* Sales Breakdown */}
+        {selectedShift.salesBreakdown?.length > 0 && (
+          <>
+            <div className="receipt-divider"></div>
+            <div className="receipt-section">
+              <div className="section-title">SALES BREAKDOWN</div>
+              <div className="currency-grid">
+                {selectedShift.salesBreakdown.map(({ currency, totalAmount }) => (
+                  <div className="receipt-row" key={currency}>
+                    <span>{currency}:</span>
+                    <span>
+                      {currency === "USD" ? "$" : ""}{totalAmount?.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="receipt-divider"></div>
+
+
+        {/* Actions */}
+        <div className="receipt-actions">
           <button 
-            className="shift-modal-download"
+            className="receipt-btn download"
             onClick={handleDownloadPdf}
             disabled={isLoading}
           >
             {isLoading ? (
               <>
-                <i className="fas fa-spinner fa-spin"></i>
+                <span className="spinner"></span>
                 <span>Generating PDF...</span>
               </>
             ) : (
               <>
-                <i className="fas fa-download"></i>
+                <span>📥</span>
                 <span>Download PDF</span>
               </>
             )}
           </button>
           <button 
-            className="shift-modal-close"
+            className="receipt-btn close"
             onClick={onClose}
           >
-            <i className="fas fa-times"></i>
+            <span>✕</span>
             <span>Close</span>
           </button>
         </div>
-
-        
       </div>
     </div>
   );

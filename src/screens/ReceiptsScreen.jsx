@@ -502,42 +502,42 @@ const ReceiptsScreen = () => {
     [receipts, searchTerm]
   );
 
-  const tableRows = useMemo(() => 
-    filteredReceipts.map((item, index) => {
-      const matchedStore = stores.find(
-        (store) => store.storeId === item.storeId
-      );
-      const isRefunded = item.label === "Refunded";
-      
-      return (
-        <tr key={index} className={`receipts-table-row ${isRefunded ? 'receipts-refunded-row' : ''}`}>
-          <td className="receipts-table-cell">{item.ticketNumber || 'N/A'}</td>
-          <td className="receipts-table-cell">
-            {item.dateTime ? formatDate(item.dateTime) : 'N/A'}
-          </td>
-          <td className="receipts-table-cell">{matchedStore?.storeName || 'Unknown Store'}</td>
-          <td className="receipts-table-cell">{item.selectedCurrency || 'N/A'}</td>
-          <td className="receipts-table-cell">
-            ${(Number(item.totalAmountUsd || 0) * Number(item.rate || 1)).toFixed(2)}
-          </td>
-          <td className="receipts-table-cell">
-            <span className={`receipts-status ${isRefunded ? 'receipts-status-refunded' : 'receipts-status-completed'}`}>
-              {isRefunded ? 'Refunded' : 'Completed'}
-            </span>
-          </td>
-          <td className="receipts-table-cell">
-            <button 
-              className="receipts-view-btn"
-              onClick={() => handleItemClick(item)}
-            >
-              View Details
-            </button>
-          </td>
-        </tr>
-      );
-    }),
-    [filteredReceipts, stores, handleItemClick]
-  );
+// Replace the tableRows useMemo with this version that makes the entire row clickable
+
+const tableRows = useMemo(() => 
+  filteredReceipts.map((item, index) => {
+    const matchedStore = stores.find(
+      (store) => store.storeId === item.storeId
+    );
+    const isRefunded = item.label === "Refunded";
+    
+    return (
+      <tr 
+        key={index} 
+        className={`receipts-table-row ${isRefunded ? 'receipts-refunded-row' : ''} receipts-clickable-row`}
+        onClick={() => handleItemClick(item)}
+      >
+        <td className="receipts-table-cell">{item.ticketNumber || 'N/A'}</td>
+        <td className="receipts-table-cell">
+          {item.dateTime ? formatDate(item.dateTime) : 'N/A'}
+        </td>
+        <td className="receipts-table-cell">{matchedStore?.storeName || 'Unknown Store'}</td>
+        <td className="receipts-table-cell">{item.selectedCurrency || 'N/A'}</td>
+        <td className="receipts-table-cell">
+          ${(Number(item.totalAmountUsd || 0) * Number(item.rate || 1)).toFixed(2)}
+        </td>
+        <td className="receipts-table-cell">
+          <span className={`receipts-status ${isRefunded ? 'receipts-status-refunded' : 'receipts-status-completed'}`}>
+            {isRefunded ? 'Refunded' : 'Completed'}
+          </span>
+        </td>
+        {/* Remove the View Details button cell entirely */}
+      </tr>
+    );
+  }),
+  [filteredReceipts, stores, handleItemClick]
+);
+
 
   // Calculate derived values with useMemo
   const avgReceiptAmount = useMemo(() => 
@@ -816,7 +816,6 @@ const ReceiptsScreen = () => {
                   <th>Payment Type</th>
                   <th>Total Amount</th>
                   <th>Status</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
