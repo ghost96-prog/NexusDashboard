@@ -961,7 +961,7 @@ useEffect(() => {
                     </button>
                   </div>
                   <div className="inventory-history-dropdown-content">
-                    {['Sale', 'Add', 'Refund', 'Create', 'Override', 'Stock Count','Goods Received'].map((type) => (
+                    {['Sale', 'Add', 'Refund', 'Create', 'Override', 'Stock Count','Goods Received', 'Stock Transfer Out'].map((type) => (
                       <div
                         className="inventory-history-dropdown-item"
                         key={type}

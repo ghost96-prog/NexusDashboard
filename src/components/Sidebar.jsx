@@ -176,8 +176,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       gradient: "linear-gradient(135deg, #10b981, #34d399)",
       subItems: [
         { label: "Products", path: "/products" },
-        // { label: "Categories", path: "/categories" },
-        // { label: "Discounts", path: "/discounts" },
+        { label: "Categories", path: "/categories" },
+        { label: "Discounts", path: "/discounts" },
       ],
     },
     {
