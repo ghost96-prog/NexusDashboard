@@ -427,7 +427,7 @@ const calculateCashManagementTotals = () => {
                         
                         {activity.comment && (
                           <div className="activity-comment">
-                            "{activity.comment}"
+                            Reason: "{activity.comment}"
                           </div>
                         )}
                         
