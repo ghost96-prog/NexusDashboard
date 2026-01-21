@@ -275,3 +275,183 @@
     width: 100%;
   }
 }
+/* Cash Management Activities Styles */
+.cash-management-totals {
+  display: flex;
+  gap: 15px;
+  margin: 15px 0 20px 0;
+}
+
+.cash-total-card {
+  flex: 1;
+  padding: 15px;
+  border-radius: 8px;
+  background: #f8f9fa;
+  border: 2px solid;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.cash-total-card.pay-in {
+  border-color: #28a745;
+  background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%);
+}
+
+.cash-total-card.pay-out {
+  border-color: #dc3545;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffebee 100%);
+}
+
+.cash-total-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cash-total-icon {
+  font-size: 18px;
+}
+
+.cash-total-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.cash-total-amount {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.cash-total-amount.positive {
+  color: #28a745;
+}
+
+.cash-total-amount.negative {
+  color: #dc3545;
+}
+
+.activities-list {
+  margin-top: 25px;
+}
+
+.activities-list-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.activities-container {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.activity-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.activity-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: #dee2e6;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.activity-type-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.activity-type-badge.pay-in {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.activity-type-badge.pay-out {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.activity-amount {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.activity-amount.positive {
+  color: #28a745;
+}
+
+.activity-amount.negative {
+  color: #dc3545;
+}
+
+.activity-comment {
+  font-size: 14px;
+  color: #6c757d;
+  font-style: italic;
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #6c757d;
+}
+
+.activity-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f3f5;
+}
+
+.activity-time,
+.activity-editor {
+  font-size: 11px;
+  color: #adb5bd;
+}
+
+/* Scrollbar styling for activities container */
+.activities-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.activities-container::-webkit-scrollbar-track {
+  background: #f1f3f5;
+  border-radius: 10px;
+}
+
+.activities-container::-webkit-scrollbar-thumb {
+  background: #adb5bd;
+  border-radius: 10px;
+}
+
+.activities-container::-webkit-scrollbar-thumb:hover {
+  background: #6c757d;
+}

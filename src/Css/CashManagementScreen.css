@@ -841,3 +841,97 @@
   font-weight: 600;
   display: inline-block;
 }
+/* Shift Info Cell Styles */
+.shift-info-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.shift-number-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.shift-number-icon {
+  color: #6366f1;
+  font-size: 12px;
+}
+
+.shift-number {
+  font-family: 'Courier New', monospace;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  font-size: 13px;
+}
+
+.shift-status {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.shift-status.open {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.shift-status.closed {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+/* Update column widths for the new shift column */
+.cash-management-table thead th:nth-child(1) {
+  width: 100px;
+}
+
+.cash-management-table tbody td:nth-child(1) {
+  width: 100px;
+}
+
+/* Adjust other column widths */
+.cash-management-table thead th:nth-child(2) {
+  width: 200px;
+}
+
+.cash-management-table tbody td:nth-child(2) {
+  width: 200px;
+}
+
+.cash-management-table thead th:nth-child(3),
+.cash-management-table tbody td:nth-child(3) {
+  width: 100px;
+}
+
+.cash-management-table thead th:nth-child(4),
+.cash-management-table tbody td:nth-child(4) {
+  width: 80px;
+}
+
+.cash-management-table thead th:nth-child(5),
+.cash-management-table tbody td:nth-child(5) {
+  width: 120px;
+}
+
+.cash-management-table thead th:nth-child(6),
+.cash-management-table tbody td:nth-child(6) {
+  width: 180px;
+}
+
+/* Update empty state column span */
+.cash-management-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}

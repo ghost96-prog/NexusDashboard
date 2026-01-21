@@ -143,6 +143,73 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
         });
       }
 
+      // Cash Management Activities
+      if (selectedShift.cashManagementActivities?.length > 0) {
+        y += 12;
+        pdf.setFontSize(14);
+        pdf.setFont(undefined, "bold");
+        pdf.setTextColor(26, 91, 123);
+        pdf.text("Cash Management Activities", margin, y);
+        y += 10;
+
+        pdf.setFontSize(12);
+        
+        // Calculate totals
+        let totalPayIn = 0;
+        let totalPayOut = 0;
+        
+        selectedShift.cashManagementActivities.forEach(activity => {
+          const amount = parseFloat(activity.amount) || 0;
+          if (activity.type === "PAY IN") {
+            totalPayIn += amount;
+          } else if (activity.type === "PAY OUT") {
+            totalPayOut += amount;
+          }
+        });
+
+        addRow("Total Pay In", formatCurrency(totalPayIn), y);
+        y += 7;
+        addRow("Total Pay Out", formatCurrency(totalPayOut), y);
+        y += 10;
+
+        // Add individual activities
+        pdf.setFontSize(11);
+        pdf.setTextColor(102, 102, 102);
+        pdf.text("Individual Activities:", margin, y);
+        y += 7;
+
+        selectedShift.cashManagementActivities.forEach((activity, index) => {
+          if (y > 250) {
+            pdf.addPage();
+            y = 20;
+          }
+          
+          const amount = parseFloat(activity.amount) || 0;
+          const symbol = activity.currency === "USD" ? "$" : activity.currency;
+          const amountStr = `${symbol}${amount.toFixed(2)}`;
+          
+          pdf.setFont(undefined, "normal");
+          pdf.setTextColor(68, 68, 68);
+          pdf.text(`${index + 1}. ${activity.type}:`, margin, y);
+          pdf.text(`${amountStr}`, pageWidth - margin, y, { align: "right" });
+          y += 5;
+          
+          if (activity.comment) {
+            pdf.setFontSize(10);
+            pdf.setTextColor(102, 102, 102);
+            pdf.text(`   "${activity.comment}"`, margin, y);
+            y += 5;
+            pdf.setFontSize(11);
+          }
+          
+          pdf.setFontSize(9);
+          pdf.setTextColor(136, 136, 136);
+          pdf.text(`   By: ${activity.createdBy} at ${new Date(activity.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, margin, y);
+          y += 8;
+          pdf.setFontSize(11);
+        });
+      }
+
       // Timestamp
       pdf.setFontSize(10);
       pdf.setTextColor(102, 102, 102);
@@ -179,6 +246,26 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       return `${selectedShift.baseCurrency}${formattedNumber}`;
     }
   };
+
+  // Calculate cash management totals
+  const calculateCashManagementTotals = () => {
+    let totalPayIn = 0;
+    let totalPayOut = 0;
+    const activities = selectedShift.cashManagementActivities || [];
+    
+    activities.forEach(activity => {
+      const amount = parseFloat(activity.amount) || 0;
+      if (activity.type === "PAY IN") {
+        totalPayIn += amount;
+      } else if (activity.type === "PAY OUT") {
+        totalPayOut += amount;
+      }
+    });
+    
+    return { totalPayIn, totalPayOut, activities };
+  };
+
+  const { totalPayIn, totalPayOut, activities } = calculateCashManagementTotals();
 
   return (
     <div className="modal-overlay shift-modal-overlay" onClick={onClose}>
@@ -303,8 +390,86 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
           </>
         )}
 
-        <div className="receipt-divider"></div>
+        {/* Cash Management Activities */}
+        {activities.length > 0 && (
+          <>
+            <div className="receipt-divider"></div>
+            <div className="receipt-section">
+              <div className="section-title">CASH MANAGEMENT ACTIVITIES</div>
+              
+              {/* Totals Summary */}
+              <div className="cash-management-totals">
+                <div className="cash-total-card pay-in">
+                  <div className="cash-total-header">
+                    <span className="cash-total-icon">⬇️</span>
+                    <span className="cash-total-label">TOTAL PAY IN</span>
+                  </div>
+                  <div className="cash-total-amount positive">
+                    {formatCurrency(totalPayIn)}
+                  </div>
+                </div>
+                <div className="cash-total-card pay-out">
+                  <div className="cash-total-header">
+                    <span className="cash-total-icon">⬆️</span>
+                    <span className="cash-total-label">TOTAL PAY OUT</span>
+                  </div>
+                  <div className="cash-total-amount negative">
+                    {formatCurrency(totalPayOut)}
+                  </div>
+                </div>
+              </div>
 
+              {/* Activities List */}
+              <div className="activities-list">
+                <div className="activities-list-title">Individual Activities:</div>
+                <div className="activities-container">
+                  {activities.map((activity, index) => {
+                    const amount = parseFloat(activity.amount) || 0;
+                    const symbol = activity.currency === "USD" ? "$" : activity.currency;
+                    const currencyData = typeof activity.currencyData === 'string' 
+                      ? JSON.parse(activity.currencyData) 
+                      : activity.currencyData;
+                    const currencySymbol = currencyData?.name === "USD" ? "$" : currencyData?.name || activity.currency;
+                    
+                    return (
+                      <div key={index} className="activity-item">
+                        <div className="activity-header">
+                          <div className={`activity-type-badge ${activity.type === "PAY IN" ? 'pay-in' : 'pay-out'}`}>
+                            {activity.type === "PAY IN" ? "⬇️ PAY IN" : "⬆️ PAY OUT"}
+                          </div>
+                          <div className={`activity-amount ${activity.type === "PAY IN" ? 'positive' : 'negative'}`}>
+                            {currencySymbol}
+                            {amount.toFixed(2)}
+                          </div>
+                        </div>
+                        
+                        {activity.comment && (
+                          <div className="activity-comment">
+                            "{activity.comment}"
+                          </div>
+                        )}
+                        
+                        <div className="activity-footer">
+                          <div className="activity-time">
+                            {new Date(activity.date).toLocaleTimeString([], { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </div>
+                          <div className="activity-editor">
+                            By: {activity.createdBy}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="receipt-divider"></div>
 
         {/* Actions */}
         <div className="receipt-actions">
