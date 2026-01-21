@@ -538,14 +538,14 @@ function CashManagementScreen() {
             color="#ef4444"
           />
           
-          <StatCard
+          {/* <StatCard
             title="Net Cash Flow"
             value={netCashFlow}
             icon={<FaExchangeAlt />}
             isPositive={netCashFlow >= 0}
             percentage={netCashFlow >= 0 ? "Positive" : "Negative"}
             color={netCashFlow >= 0 ? "#10b981" : "#ef4444"}
-          />
+          /> */}
         </div>
 
         {/* Search and Filter */}
