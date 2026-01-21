@@ -636,14 +636,16 @@ function CashManagementScreen() {
                         <td className="cash-management-table-cell">
                           {item.currency?.name || 'USD'}
                         </td>
-                        <td className="cash-management-table-cell">
-                          <span style={{ 
-                            color: typeLower.includes('PAY OUT') ? '#dc2626' : '#16a34a',
-                            fontWeight: '600'
-                          }}>
-                            {typeLower.includes('PAY OUT') ? '-$' : '+$'}{amount.toFixed(2)}
-                          </span>
-                        </td>
+                       <td className="cash-management-table-cell">
+  <span style={{ 
+    color: typeLower.includes('PAY OUT') ? '#dc2626' : '#16a34a',
+    fontWeight: '600'
+  }}>
+    {typeLower.includes('PAY OUT') ? '-' : '+'}
+    {item.currency?.name === 'USD' ? '$' : (item.currency?.name || '')}
+    {amount.toFixed(2)}
+  </span>
+</td>
                         <td className="cash-management-table-cell">
                           {item.date ? new Date(item.date).toLocaleString() : 'N/A'}
                         </td>
