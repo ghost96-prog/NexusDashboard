@@ -144,33 +144,25 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       }
 
       // Cash Management Activities
-      if (selectedShift.cashManagementActivities?.length > 0) {
-        y += 12;
-        pdf.setFontSize(14);
-        pdf.setFont(undefined, "bold");
-        pdf.setTextColor(26, 91, 123);
-        pdf.text("Cash Management Activities", margin, y);
-        y += 10;
+if (selectedShift.cashManagementActivities?.length > 0) {
+  y += 12;
+  pdf.setFontSize(14);
+  pdf.setFont(undefined, "bold");
+  pdf.setTextColor(26, 91, 123);
+  pdf.text("Cash Management Activities", margin, y);
+  y += 10;
 
-        pdf.setFontSize(12);
-        
-        // Calculate totals
-        let totalPayIn = 0;
-        let totalPayOut = 0;
-        
-        selectedShift.cashManagementActivities.forEach(activity => {
-          const amount = parseFloat(activity.amount) || 0;
-          if (activity.type === "PAY IN") {
-            totalPayIn += amount;
-          } else if (activity.type === "PAY OUT") {
-            totalPayOut += amount;
-          }
-        });
+  pdf.setFontSize(12);
+  
+  // Use the shift's income and expenses fields directly
+  const totalPayIn = selectedShift.income || 0;
+  const totalPayOut = selectedShift.expenses || 0;
 
-        addRow("Total Pay In", formatCurrency(totalPayIn), y);
-        y += 7;
-        addRow("Total Pay Out", formatCurrency(totalPayOut), y);
-        y += 10;
+  addRow("Total Pay In", formatCurrency(totalPayIn), y);
+  y += 7;
+  addRow("Total Pay Out", formatCurrency(totalPayOut), y);
+  y += 10;
+
 
         // Add individual activities
         pdf.setFontSize(11);
@@ -184,7 +176,7 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
             y = 20;
           }
           
-          const amount = parseFloat(activity.amount) || 0;
+          const amount = parseFloat(activity.amountString) || 0; // Use amountString
           const symbol = activity.currency === "USD" ? "$" : activity.currency;
           const amountStr = `${symbol}${amount.toFixed(2)}`;
           
@@ -247,23 +239,15 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
     }
   };
 
-  // Calculate cash management totals
-  const calculateCashManagementTotals = () => {
-    let totalPayIn = 0;
-    let totalPayOut = 0;
-    const activities = selectedShift.cashManagementActivities || [];
-    
-    activities.forEach(activity => {
-      const amount = parseFloat(activity.amount) || 0;
-      if (activity.type === "PAY IN") {
-        totalPayIn += amount;
-      } else if (activity.type === "PAY OUT") {
-        totalPayOut += amount;
-      }
-    });
-    
-    return { totalPayIn, totalPayOut, activities };
-  };
+  // Calculate cash management totals - USE amountString (original amount)
+// Calculate cash management totals - USE shift's income and expenses fields
+const calculateCashManagementTotals = () => {
+  const totalPayIn = selectedShift.income || 0;
+  const totalPayOut = selectedShift.expenses || 0;
+  const activities = selectedShift.cashManagementActivities || [];
+  
+  return { totalPayIn, totalPayOut, activities };
+};
 
   const { totalPayIn, totalPayOut, activities } = calculateCashManagementTotals();
 
@@ -398,38 +382,36 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
               <div className="section-title">CASH MANAGEMENT ACTIVITIES</div>
               
               {/* Totals Summary */}
-              <div className="cash-management-totals">
-                <div className="cash-total-card pay-in">
-                  <div className="cash-total-header">
-                    <span className="cash-total-icon">⬇️</span>
-                    <span className="cash-total-label">TOTAL PAY IN</span>
-                  </div>
-                  <div className="cash-total-amount positive">
-                    {formatCurrency(totalPayIn)}
-                  </div>
-                </div>
-                <div className="cash-total-card pay-out">
-                  <div className="cash-total-header">
-                    <span className="cash-total-icon">⬆️</span>
-                    <span className="cash-total-label">TOTAL PAY OUT</span>
-                  </div>
-                  <div className="cash-total-amount negative">
-                    {formatCurrency(totalPayOut)}
-                  </div>
-                </div>
-              </div>
+          {/* Totals Summary */}
+<div className="cash-management-totals">
+  <div className="cash-total-card pay-in">
+    <div className="cash-total-header">
+      <span className="cash-total-icon">⬇️</span>
+      <span className="cash-total-label">TOTAL PAY IN</span>
+    </div>
+    <div className="cash-total-amount positive">
+      {formatCurrency(selectedShift.income || 0)}
+    </div>
+  </div>
+  <div className="cash-total-card pay-out">
+    <div className="cash-total-header">
+      <span className="cash-total-icon">⬆️</span>
+      <span className="cash-total-label">TOTAL PAY OUT</span>
+    </div>
+    <div className="cash-total-amount negative">
+      {formatCurrency(selectedShift.expenses || 0)}
+    </div>
+  </div>
+</div>
 
               {/* Activities List */}
               <div className="activities-list">
                 <div className="activities-list-title">Individual Activities:</div>
                 <div className="activities-container">
                   {activities.map((activity, index) => {
-                    const amount = parseFloat(activity.amount) || 0;
-                    const symbol = activity.currency === "USD" ? "$" : activity.currency;
-                    const currencyData = typeof activity.currencyData === 'string' 
-                      ? JSON.parse(activity.currencyData) 
-                      : activity.currencyData;
-                    const currencySymbol = currencyData?.name === "USD" ? "$" : currencyData?.name || activity.currency;
+                    const amount = parseFloat(activity.amountString) || 0; // Use amountString
+                    const currency = activity.currency || "USD";
+                    const currencySymbol = currency === "USD" ? "$" : currency;
                     
                     return (
                       <div key={index} className="activity-item">
