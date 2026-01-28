@@ -38,7 +38,7 @@ const ProductListScreen = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [email, setEmail] = useState(null);
   const [products, setProducts] = useState([]);
-  const [displayProducts, setDisplayProducts] = useState([]); // Add this state
+  const [displayProducts, setDisplayProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectStockOption, setSelectStockOption] = useState("All Items");
   const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false);
@@ -46,8 +46,8 @@ const ProductListScreen = () => {
   const [isSubscribedAdmin, setIsSubscribedAdmin] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
-  // Add a flag to track if we have initial data
-  const [hasInitialData, setHasInitialData] = useState(false);
+  // Track if we have loaded data at least once
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -74,17 +74,14 @@ const ProductListScreen = () => {
 
   useEffect(() => {
     if (selectedStores.length > 0) {
-      onRefresh();
+      fetchProducts();
     }
   }, [selectedStores]);
 
   // Update displayProducts whenever filters change OR when products update
   useEffect(() => {
-    if (products.length > 0) {
-      const filtered = applyFilters(products);
-      setDisplayProducts(filtered);
-      setHasInitialData(true);
-    }
+    const filtered = applyFilters(products);
+    setDisplayProducts(filtered);
   }, [products, selectedStores, selectedCategories, selectStockOption, searchTerm]);
 
   const fetchAdminSubscriptionStatus = async () => {
@@ -160,6 +157,7 @@ const ProductListScreen = () => {
       const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token is missing.");
+        setIsRefreshing(false);
         return;
       }
 
@@ -189,17 +187,18 @@ const ProductListScreen = () => {
         a.productName.localeCompare(b.productName)
       );
 
-      // Only update products state - displayProducts will update via useEffect
+      // Update products state
       setProducts(filteredProducts);
-      setIsRefreshing(false);
+      setHasLoadedOnce(true);
     } catch (error) {
-      setIsRefreshing(false);
       if (!navigator.onLine) {
         toast.error("No internet connection. Please check your network.");
       } else {
         toast.error("An error occurred while fetching products.");
       }
       console.error("Error fetching products:", error);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -472,8 +471,8 @@ const ProductListScreen = () => {
               onClick={onRefresh}
               disabled={isRefreshing}
             >
-              <IoReload />
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              <IoReload className={isRefreshing ? "spin" : ""} />
+              Refresh
             </button>
           </div>
         </div>
@@ -713,14 +712,12 @@ const ProductListScreen = () => {
         
         </div>
 
-        {/* Table Container - Show loading or existing data */}
+        {/* Table Container - Always show whatever data we have */}
         <div className="product-list-table-container">
           <div className="product-list-table-header">
             <h3>Product Details</h3>
             <span className="product-list-table-count">
-              {isRefreshing ? 'Refreshing...' : 
-               hasInitialData ? `Showing ${displayProducts.length} of ${products.length} products` : 
-               'Loading products...'}
+              {`${displayProducts.length} product${displayProducts.length !== 1 ? 's' : ''}`}
             </span>
           </div>
           
@@ -773,7 +770,6 @@ const ProductListScreen = () => {
                             {stockStatus.text}
                           </span>
                         </td>
-                     
                       </tr>
                     );
                   })
@@ -782,14 +778,12 @@ const ProductListScreen = () => {
                     <td colSpan="7" className="product-list-empty-state">
                       <FaBox className="product-list-empty-icon" />
                       <h3 className="product-list-empty-title">
-                        {isRefreshing ? 'Refreshing products...' : 
-                         hasInitialData ? 'No Products Found' : 
-                         'Loading products...'}
+                        No Products Found
                       </h3>
                       <p className="product-list-empty-description">
-                        {searchTerm ? `No products found for "${searchTerm}"` : 
-                         hasInitialData ? "No products available for the selected filters" :
-                         "Please wait while we load your products..."}
+                        {searchTerm 
+                          ? `No products found for "${searchTerm}"` 
+                          : "No products available for the selected filters"}
                       </p>
                     </td>
                   </tr>
@@ -807,6 +801,17 @@ const ProductListScreen = () => {
         onClose={() => setShowSubscriptionModal(false)}
       />
       <ToastContainer position="bottom-right" />
+      
+      {/* Add CSS for spinning animation */}
+      <style jsx="true">{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .spin {
+          animation: spin 1s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };
