@@ -459,9 +459,9 @@ const CreateProductScreen = () => {
       newErrors.price = "Valid price is required";
     }
 
-    if (!cost || isNaN(Number(cost)) || Number(cost) < 0) {
-      newErrors.cost = "Valid cost is required";
-    }
+    // if (!cost || isNaN(Number(cost)) || Number(cost) < 0) {
+    //   newErrors.cost = "Valid cost is required";
+    // }
 
     if (trackStock && (!stock || isNaN(Number(stock)) || Number(stock) < 0)) {
       newErrors.stock = "Valid stock quantity is required";

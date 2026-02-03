@@ -34,6 +34,7 @@ import StockTransferScreen from "./screens/StockTransferScreen";
 import CreateStockTransferScreen from "./screens/CreateStockTransferScreen";
 import ProcessStockTransferScreen from "./screens/ProcessStockTransferScreen";
 import StockTransferDetailsScreen from "./screens/StockTransferDetailsScreen";
+import ImportProductsScreen from "./screens/ImportProductsScreen";
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
           <Route path="/receiptsScreen" element={<ReceiptsScreen />} />
           <Route path="/soldItems" element={<TopSellingProducts />} />
           <Route path="/products" element={<ProductListScreen />} />
+          <Route path="/import-products" element={<ImportProductsScreen />} />
           <Route path="/create-products" element={<CreateProductScreen />} />
           <Route path="/edit-products" element={<EditProductScreen />} />
           <Route path="/inventory" element={<InventoryHistoryScreen />} />

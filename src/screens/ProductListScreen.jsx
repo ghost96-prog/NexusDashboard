@@ -10,7 +10,9 @@ import {
   FaFileAlt,
   FaBox,
   FaFilter,
-  FaPlus
+  FaPlus,
+    FaFileImport // Add this import
+
 } from "react-icons/fa";
 import { IoReload } from "react-icons/io5";
 import "../Css/ProductListScreen.css";
@@ -360,7 +362,13 @@ const ProductListScreen = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   });
-
+  const handleImportProducts = () => {
+    if (!isSubscribedAdmin) {
+      setShowSubscriptionModal(true);
+      return;
+    }
+    navigate("/import-products");
+  };
   const handleItemClick = (item) => {
     if (!isSubscribedAdmin) {
       setShowSubscriptionModal(true);
@@ -410,37 +418,56 @@ const ProductListScreen = () => {
     setIsExportDropdownOpen(false);
   };
 
-  const exportToCSV = () => {
-    const headers = ["Product Name", "Category", "Price", "Cost", "Stock", "Status"];
-    const rows = displayProducts.map((p) => [
-      `"${p.productName}"`,
-      `"${p.category || "No Category"}"`,
-      `"$${Number(p.price).toFixed(2)}"`,
-      `"$${Number(p.cost).toFixed(2)}"`,
-      `"${p.productType === "Weight" ? Number(p.stock).toFixed(2) : p.stock}"`,
-      `"${getStockStatus(p.stock, p.lowStockNotification).text}"`
-    ]);
+const exportToCSV = () => {
+  const headers = [
+    "Product SKU",
+    "Product Name",
+    "Category",
+    "Product Type",
+    "Product Id",
+    "Low Stock",
+    "Track Stock",
+    "Price",
+    "Cost",
+    "Stock"
+  ];
+  
+  const rows = displayProducts.map((p) => [
+    p.sku || "",
+    p.productName || "", // NO QUOTES - match your app
+    p.category || "No Category", // NO QUOTES
+    p.productType || "Each", // NO QUOTES
+    p.productId || "",
+    p.lowStockNotification || 0,
+    p.trackStock ? "TRUE" : "FALSE",
+    Number(p.price).toFixed(2),
+    Number(p.cost).toFixed(2),
+    p.productType === "Weight" ? Number(p.stock).toFixed(2) : p.stock
+  ]);
 
-    const dateTime = new Date().toLocaleString();
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [
-        [`Product List`, `Exported on: ${dateTime}`],
-        headers,
-        ...rows,
-      ]
-        .map((e) => e.join(","))
-        .join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `products_${dateTime.replace(/[/:]/g, '-')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setIsExportDropdownOpen(false);
-  };
+  // NO "Product List" header row - just headers then data
+  const csvArray = [
+    headers,
+    ...rows,
+  ];
+  
+  const csvString = csvArray.map(e => e.join(",")).join("\n");
+  
+  // Use Blob approach
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `products_${new Date().toLocaleString().replace(/[/:]/g, '-')}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  setIsExportDropdownOpen(false);
+};
 
   return (
     <div className="product-list-container">
@@ -689,6 +716,13 @@ const ProductListScreen = () => {
           >
             <FaPlus />
             Create Product
+          </button>
+           <button 
+            className="product-list-import-btn"
+            onClick={handleImportProducts}
+          >
+            <FaFileImport />
+            Import Products
           </button>
           <div className="product-list-search-container">
             <FaSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
