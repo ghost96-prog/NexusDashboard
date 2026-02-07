@@ -251,7 +251,10 @@ const ShiftScreen = () => {
       minute: '2-digit'
     });
   };
-
+const formatCurrency = (shift, amount) => {
+  const currencySymbol = shift.baseCurrency === "USD" ? "$" : shift.baseCurrency || "$";
+  return `${currencySymbol}${Number(amount || 0).toFixed(2)}`;
+};
   return (
     <div className="shift-container">
       <div className="shift-sidebar-toggle-wrapper">
@@ -428,11 +431,11 @@ const ShiftScreen = () => {
                         <td className="shift-table-cell">
                           {item.closingDate ? formatDate(item.closingDate) : 'Still Open'}
                         </td>
-                        <td className="shift-table-cell">
-                          <span className="shift-amount-badge">
-                            ${Number(item.expectedCash || 0).toFixed(2)}
-                          </span>
-                        </td>
+                     <td className="shift-table-cell">
+  <span className="shift-amount-badge">
+    {formatCurrency(item, item.expectedCash)}
+  </span>
+</td>
                       </tr>
                     );
                   })

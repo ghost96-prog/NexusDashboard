@@ -4,6 +4,27 @@ import "../Css/ShiftModal.css";
 
 function ShiftModal({ onClose, store, email, selectedShift }) {
   const [isLoading, setIsLoading] = useState(false);
+  const formatCurrencyForPDF = (value) => {
+    const formattedNumber = value?.toFixed(2) || "0.00";
+    
+    if (selectedShift.baseCurrency === "USD") {
+      return `$${formattedNumber}`;
+    } else {
+      // Use the actual currency code/symbol
+      return `${selectedShift.baseCurrency}${formattedNumber}`;
+    }
+  };
+
+  // Helper function for sales breakdown items (they have their own currency field)
+  const formatSalesBreakdownAmount = (currency, amount) => {
+    const formattedNumber = amount?.toFixed(2) || "0.00";
+    
+    if (currency === "USD") {
+      return `$${formattedNumber}`;
+    } else {
+      return `${currency}${formattedNumber}`;
+    }
+  };
 
   const handleDownloadPdf = async () => {
     setIsLoading(true);
@@ -38,6 +59,15 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       });
       y += 15;
 
+      // Currency display
+      pdf.setFontSize(11);
+      pdf.setFont(undefined, "italic");
+      pdf.setTextColor(102, 102, 102);
+      pdf.text(`All amounts in ${selectedShift.baseCurrency} unless specified`, pageWidth / 2, y, {
+        align: "center",
+      });
+      y += 10;
+
       // Helper function to add label-value pairs
       const addRow = (label, value, yPos, isBold = false) => {
         pdf.setFont(undefined, "bold");
@@ -47,9 +77,6 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
         pdf.setTextColor(68, 68, 68);
         pdf.text(value, pageWidth - margin, yPos, { align: "right" });
       };
-
-      // Helper function for currency values
-      const formatCurrency = (value) => `$${value?.toFixed(2) || "0.00"}`;
 
       // Shift details section
       pdf.setFontSize(14);
@@ -76,19 +103,19 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       y += 10;
 
       pdf.setFontSize(12);
-      addRow("Net Sales", formatCurrency(selectedShift.netSales), y);
+      addRow("Net Sales", formatCurrencyForPDF(selectedShift.netSales), y);
       y += 7;
-      addRow("Starting Cash", formatCurrency(selectedShift.startingCash), y);
+      addRow("Starting Cash", formatCurrencyForPDF(selectedShift.startingCash), y);
       y += 7;
-      addRow("Laybye Payments", formatCurrency(selectedShift.laybye), y);
+      addRow("Laybye Payments", formatCurrencyForPDF(selectedShift.laybye), y);
       y += 7;
-      addRow("Income", formatCurrency(selectedShift.income), y);
+      addRow("Income", formatCurrencyForPDF(selectedShift.income), y);
       y += 7;
-      addRow("Expenses", `-${formatCurrency(selectedShift.expenses)}`, y);
+      addRow("Expenses", `-${formatCurrencyForPDF(selectedShift.expenses)}`, y);
       y += 7;
-      addRow("Total Expected", formatCurrency(selectedShift.expectedCash), y, true);
+      addRow("Total Expected", formatCurrencyForPDF(selectedShift.expectedCash), y, true);
       y += 7;
-      addRow("Actual Amount", formatCurrency(selectedShift.actualAmount), y);
+      addRow("Actual Amount", formatCurrencyForPDF(selectedShift.actualAmount), y);
       y += 7;
       
       pdf.setFont(undefined, "bold");
@@ -97,7 +124,7 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       } else {
         pdf.setTextColor(220, 53, 69);
       }
-      addRow("Variance", formatCurrency(selectedShift.variance), y);
+      addRow("Variance", formatCurrencyForPDF(selectedShift.variance), y);
       pdf.setTextColor(68, 68, 68);
       y += 12;
 
@@ -109,19 +136,24 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
       y += 10;
 
       pdf.setFontSize(12);
-      addRow("Gross Sales (USD)", formatCurrency(selectedShift.totalGrossSalesUSD), y);
+      
+      // For USD-specific fields, keep USD notation
+      if (selectedShift.totalGrossSalesUSD !== undefined) {
+        addRow("Gross Sales (USD)", `$${selectedShift.totalGrossSalesUSD?.toFixed(2) || "0.00"}`, y);
+        y += 7;
+      }
+      
+      addRow("Refunds", formatCurrencyForPDF(selectedShift.totalRefunds), y);
       y += 7;
-      addRow("Refunds", formatCurrency(selectedShift.totalRefunds), y);
+      addRow("Discounts", formatCurrencyForPDF(selectedShift.totalDiscounts), y);
       y += 7;
-      addRow("Discounts", formatCurrency(selectedShift.totalDiscounts), y);
+      addRow("Net Sales", formatCurrencyForPDF(selectedShift.netSales), y, true);
       y += 7;
-      addRow("Net Sales (USD)", formatCurrency(selectedShift.netSales), y, true);
-      y += 7;
-      addRow("Cost of Goods Sold", formatCurrency(selectedShift.totalCOGS), y);
+      addRow("Cost of Goods Sold", formatCurrencyForPDF(selectedShift.totalCOGS), y);
       y += 7;
       pdf.setFont(undefined, "bold");
       pdf.setTextColor(40, 167, 69);
-      addRow("Net Profit", formatCurrency(selectedShift.profit), y, true);
+      addRow("Net Profit", formatCurrencyForPDF(selectedShift.profit), y, true);
       y += 12;
 
       // Sales Breakdown
@@ -135,34 +167,29 @@ function ShiftModal({ onClose, store, email, selectedShift }) {
         pdf.setFontSize(12);
         pdf.setTextColor(68, 68, 68);
         selectedShift.salesBreakdown.forEach(({ currency, totalAmount }) => {
-          const formattedAmount = selectedShift.baseCurrency === "USD" 
-            ? `$${totalAmount?.toFixed(2)}`
-            : `${selectedShift.baseCurrency}${totalAmount?.toFixed(2)}`;
-          addRow(currency, formattedAmount, y);
+          addRow(currency, formatSalesBreakdownAmount(currency, totalAmount), y);
           y += 7;
         });
       }
 
       // Cash Management Activities
-if (selectedShift.cashManagementActivities?.length > 0) {
-  y += 12;
-  pdf.setFontSize(14);
-  pdf.setFont(undefined, "bold");
-  pdf.setTextColor(26, 91, 123);
-  pdf.text("Cash Management Activities", margin, y);
-  y += 10;
+      if (selectedShift.cashManagementActivities?.length > 0) {
+        y += 12;
+        pdf.setFontSize(14);
+        pdf.setFont(undefined, "bold");
+        pdf.setTextColor(26, 91, 123);
+        pdf.text("Cash Management Activities", margin, y);
+        y += 10;
 
-  pdf.setFontSize(12);
-  
-  // Use the shift's income and expenses fields directly
-  const totalPayIn = selectedShift.income || 0;
-  const totalPayOut = selectedShift.expenses || 0;
+        pdf.setFontSize(12);
+        
+        const totalPayIn = selectedShift.income || 0;
+        const totalPayOut = selectedShift.expenses || 0;
 
-  addRow("Total Pay In", formatCurrency(totalPayIn), y);
-  y += 7;
-  addRow("Total Pay Out", formatCurrency(totalPayOut), y);
-  y += 10;
-
+        addRow("Total Pay In", formatCurrencyForPDF(totalPayIn), y);
+        y += 7;
+        addRow("Total Pay Out", formatCurrencyForPDF(totalPayOut), y);
+        y += 10;
 
         // Add individual activities
         pdf.setFontSize(11);
@@ -176,9 +203,9 @@ if (selectedShift.cashManagementActivities?.length > 0) {
             y = 20;
           }
           
-          const amount = parseFloat(activity.amountString) || 0; // Use amountString
-          const symbol = activity.currency === "USD" ? "$" : activity.currency;
-          const amountStr = `${symbol}${amount.toFixed(2)}`;
+          const amount = parseFloat(activity.amountString) || 0;
+          const currency = activity.currency || selectedShift.baseCurrency;
+          const amountStr = currency === "USD" ? `$${amount.toFixed(2)}` : `${currency}${amount.toFixed(2)}`;
           
           pdf.setFont(undefined, "normal");
           pdf.setTextColor(68, 68, 68);
