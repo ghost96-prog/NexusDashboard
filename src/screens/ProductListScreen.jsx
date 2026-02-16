@@ -188,6 +188,7 @@ const ProductListScreen = () => {
       filteredProducts.sort((a, b) =>
         a.productName.localeCompare(b.productName)
       );
+console.log(filteredProducts);
 
       // Update products state
       setProducts(filteredProducts);
@@ -204,46 +205,50 @@ const ProductListScreen = () => {
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Authentication token is missing.");
-        return;
-      }
-
-      const decoded = jwtDecode(token);
-      const userEmail = decoded.email;
-
-      const response = await fetch(
-        `https://nexuspos.onrender.com/api/categoryRouter/categories?email=${encodeURIComponent(
-          userEmail
-        )}`
-      );
-      
-      const data = await response.json();
-      if (!response.ok) {
-        const errorMessage = await response.text();
-        toast.error(`Error: ${"User not found or invalid email."}`);
-        return;
-      }
-      
-      if (data.success) {
-        setCategories(data.data);
-        // Select all categories by default
-        setSelectedCategories(data.data);
-      } else {
-        console.error("Error fetching categories:", data.error);
-      }
-    } catch (error) {
-      if (!navigator.onLine) {
-        toast.error("No internet connection. Please check your network.");
-      } else {
-        toast.error("An error occurred while fetching categories.");
-      }
-      console.error("Error fetching categories:", error);
+ const fetchCategories = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication token is missing.");
+      return;
     }
-  };
+
+    const decoded = jwtDecode(token);
+    const userEmail = decoded.email;
+
+    const response = await fetch(
+      `https://nexuspos.onrender.com/api/categoryRouter/categories?email=${encodeURIComponent(
+        userEmail
+      )}`
+    );
+    
+    const data = await response.json();
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      toast.error(`Error: ${"User not found or invalid email."}`);
+      return;
+    }
+    
+    if (data.success) {
+      setCategories(data.data);
+      // Select ALL categories including "No Category" by default
+      const allCategories = [
+        ...data.data,
+        { categoryName: "NO CATEGORY", categoryId: "no-category" }
+      ];
+      setSelectedCategories(allCategories);
+    } else {
+      console.error("Error fetching categories:", data.error);
+    }
+  } catch (error) {
+    if (!navigator.onLine) {
+      toast.error("No internet connection. Please check your network.");
+    } else {
+      toast.error("An error occurred while fetching categories.");
+    }
+    console.error("Error fetching categories:", error);
+  }
+};
 
   const onRefresh = async () => {
     NProgress.start();
@@ -272,59 +277,130 @@ const ProductListScreen = () => {
     }
   };
 
-  const handleCategorySelect = (category) => {
-    if (category === "All Categories") {
-      if (selectedCategories.length === categories.length) {
-        setSelectedCategories([]);
-      } else {
-        setSelectedCategories([...categories]);
-      }
+const handleCategorySelect = (category) => {
+  // Handle "All Categories" selection
+  if (category === "All Categories") {
+    const totalCategoriesCount = categories.length + 1; // +1 for "No Category"
+    if (selectedCategories.length === totalCategoriesCount) {
+      setSelectedCategories([]);
     } else {
-      const exists = selectedCategories.some(
-        (s) => s.categoryId === category.categoryId
-      );
-      const updatedCategories = exists
-        ? selectedCategories.filter((s) => s.categoryId !== category.categoryId)
-        : [...selectedCategories, category];
-      setSelectedCategories(updatedCategories);
+      // Select all categories including "No Category"
+      const allCategories = [
+        ...categories,
+        { categoryName: "NO CATEGORY", categoryId: "no-category" }
+      ];
+      setSelectedCategories(allCategories);
     }
-  };
+    return;
+  }
 
-  const applyFilters = (productsList) => {
-    return productsList
-      .filter(item => {
-        // Filter by store
-        if (selectedStores.length > 0 && selectedStores.length < stores.length) {
-          const storeIds = selectedStores.map(store => store.storeId);
-          if (!storeIds.includes(item.storeId)) return false;
+  // Handle "NO CATEGORY" selection
+  if (category.categoryName === "NO CATEGORY" || category.categoryName === "No Category") {
+    const exists = selectedCategories.some(s => 
+      s.categoryName.toUpperCase() === "NO CATEGORY"
+    );
+    const updatedCategories = exists
+      ? selectedCategories.filter(s => s.categoryName.toUpperCase() !== "NO CATEGORY")
+      : [...selectedCategories, { categoryName: "NO CATEGORY", categoryId: "no-category" }];
+    setSelectedCategories(updatedCategories);
+    return;
+  }
+
+  // Handle regular category selection
+  const exists = selectedCategories.some(
+    (s) => s.categoryId === category.categoryId
+  );
+  const updatedCategories = exists
+    ? selectedCategories.filter((s) => s.categoryId !== category.categoryId)
+    : [...selectedCategories, category];
+  setSelectedCategories(updatedCategories);
+};
+
+const applyFilters = (productsList) => {
+  return productsList
+    .filter(item => {
+      // Filter by store
+      if (selectedStores.length > 0 && selectedStores.length < stores.length) {
+        const storeIds = selectedStores.map(store => store.storeId);
+        if (!storeIds.includes(item.storeId)) return false;
+      }
+
+      // Filter by category
+      if (selectedCategories.length > 0 && selectedCategories.length < categories.length + 1) {
+        const hasNoCategorySelected = selectedCategories.some(cat => 
+          cat.categoryName.toUpperCase() === "NO CATEGORY"
+        );
+        const selectedCategoryNames = selectedCategories
+          .filter(cat => cat.categoryName.toUpperCase() !== "NO CATEGORY")
+          .map(cat => cat.categoryName);
+        
+        // Check if product has a category value that indicates it HAS a category
+        const hasRegularCategory = item.category && 
+                                   item.category.trim() !== "" && 
+                                   item.category.toUpperCase() !== "NO CATEGORY";
+        
+        // If "No Category" is selected
+        if (hasNoCategorySelected) {
+          // If regular categories are ALSO selected
+          if (selectedCategoryNames.length > 0) {
+            // Product must EITHER:
+            // 1. Match a regular category, OR
+            // 2. Be a "no category" product (empty, null, "NO CATEGORY", "No Category", etc.)
+            const matchesRegularCategory = selectedCategoryNames.some(catName => 
+              catName.toUpperCase() === item.category?.toUpperCase()
+            );
+            const isNoCategoryProduct = !item.category || 
+                                        item.category.trim() === "" || 
+                                        item.category.toUpperCase() === "NO CATEGORY";
+            
+            if (!matchesRegularCategory && !isNoCategoryProduct) return false;
+          } 
+          // If ONLY "No Category" is selected (no regular categories)
+          else {
+            // Only show products that are "no category" products
+            const isNoCategoryProduct = !item.category || 
+                                        item.category.trim() === "" || 
+                                        item.category.toUpperCase() === "NO CATEGORY";
+            if (!isNoCategoryProduct) return false;
+          }
+        } 
+        // If "No Category" is NOT selected
+        else {
+          // Only regular categories are selected
+          if (selectedCategoryNames.length > 0) {
+            // Product must match a regular category AND not be a "no category" product
+            const matchesRegularCategory = selectedCategoryNames.some(catName => 
+              catName.toUpperCase() === item.category?.toUpperCase()
+            );
+            const isNoCategoryProduct = !item.category || 
+                                        item.category.trim() === "" || 
+                                        item.category.toUpperCase() === "NO CATEGORY";
+            
+            if (!matchesRegularCategory || isNoCategoryProduct) return false;
+          }
         }
+      }
 
-        // Filter by category
-        if (selectedCategories.length > 0 && selectedCategories.length < categories.length) {
-          const categoryIds = selectedCategories.map(cat => cat.categoryId);
-          if (!categoryIds.includes(item.categoryId)) return false;
-        }
+      // Filter by stock level
+      if (selectStockOption === "Low Stock") {
+        const stock = Number(item.stock || 0);
+        const lowStockLevel = Number(item.lowStockNotification || 0);
+        if (stock > lowStockLevel || stock <= 0) return false;
+      } else if (selectStockOption === "Out of Stock") {
+        const stock = Number(item.stock || 0);
+        if (stock > 0) return false;
+      }
 
-        // Filter by stock level
-        if (selectStockOption === "Low Stock") {
-          const stock = Number(item.stock || 0);
-          const lowStockLevel = Number(item.lowStockNotification || 0);
-          if (stock > lowStockLevel || stock <= 0) return false;
-        } else if (selectStockOption === "Out of Stock") {
-          const stock = Number(item.stock || 0);
-          if (stock > 0) return false;
-        }
+      // Filter by search term
+      if (searchTerm.trim() !== "") {
+        const lowerSearch = searchTerm.toLowerCase();
+        return item.productName?.toLowerCase().includes(lowerSearch);
+      }
 
-        // Filter by search term
-        if (searchTerm.trim() !== "") {
-          const lowerSearch = searchTerm.toLowerCase();
-          return item.productName?.toLowerCase().includes(lowerSearch);
-        }
-
-        return true;
-      })
-      .sort((a, b) => a.productName.localeCompare(b.productName));
-  };
+      return true;
+    })
+    .sort((a, b) => a.productName.localeCompare(b.productName));
+};
 
   const handleClickOutside = (event) => {
     if (
@@ -575,51 +651,94 @@ const exportToCSV = () => {
                 }}
               >
                 <FaFileAlt />
-                <span>
-                  {selectedCategories.length === 0
-                    ? "Select Category"
-                    : selectedCategories.length === 1
-                    ? selectedCategories[0].categoryName
-                    : selectedCategories.length === categories.length
-                    ? "All Categories"
-                    : `${selectedCategories.length} categories`}
-                </span>
+<span>
+  {selectedCategories.length === 0
+    ? "Select Category"
+    : selectedCategories.length === 1
+    ? selectedCategories[0].categoryName
+    : selectedCategories.length === categories.length + 1 // +1 for "No Category"
+    ? "All Categories"
+    : `${selectedCategories.length} categories`}
+</span>
               </button>
-              
-              {isCategoryDropdownOpen && (
-                <div className="product-list-dropdown">
-                  <div className="product-list-dropdown-header">
-                    <span>Select Categories</span>
-                    <button 
-                      className="product-list-dropdown-select-all"
-                      onClick={() => handleCategorySelect("All Categories")}
-                    >
-                      {selectedCategories.length === categories.length ? "Deselect All" : "Select All"}
-                    </button>
-                  </div>
-                  <div className="product-list-dropdown-content">
-                    {categories.map((category) => (
-                      <div
-                        className="product-list-dropdown-item"
-                        key={category.categoryId}
-                        onClick={() => handleCategorySelect(category)}
-                      >
-                        <div className="product-list-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={selectedCategories.some(
-                              (s) => s.categoryId === category.categoryId
-                            )}
-                            readOnly
-                          />
-                          <div className="product-list-checkbox-custom"></div>
-                        </div>
-                        <span className="product-list-category-name">{category.categoryName}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+{isCategoryDropdownOpen && (
+  <div className="product-list-dropdown">
+    <div className="product-list-dropdown-header">
+      <span>Select Categories</span>
+      <button 
+        className="product-list-dropdown-select-all"
+        onClick={() => handleCategorySelect("All Categories")}
+      >
+        {selectedCategories.length === categories.length + 1 ? "Deselect All" : "Select All"}
+      </button>
+    </div>
+    <div className="product-list-dropdown-content">
+      {/* Add "All Items" option at the top */}
+      <div
+        className="product-list-dropdown-item product-list-all-categories-item"
+        onClick={() => {
+          const allCategories = [
+            ...categories,
+            { categoryName: "NO CATEGORY", categoryId: "no-category" }
+          ];
+          setSelectedCategories(allCategories);
+          setIsCategoryDropdownOpen(false);
+        }}
+      >
+        <div className="product-list-checkbox">
+          <input
+            type="checkbox"
+            checked={selectedCategories.length === categories.length + 1}
+            readOnly
+          />
+          <div className="product-list-checkbox-custom"></div>
+        </div>
+        <span className="product-list-category-name" style={{ fontWeight: '600', color: '#3b82f6' }}>
+          All Items
+        </span>
+      </div>
+
+      {/* Add "NO CATEGORY" option */}
+      <div
+        className="product-list-dropdown-item"
+        onClick={() => handleCategorySelect({ categoryName: "NO CATEGORY", categoryId: "no-category" })}
+      >
+        <div className="product-list-checkbox">
+          <input
+            type="checkbox"
+            checked={selectedCategories.some(
+              (s) => s.categoryName === "NO CATEGORY" || s.categoryName === "No Category"
+            )}
+            readOnly
+          />
+          <div className="product-list-checkbox-custom"></div>
+        </div>
+        <span className="product-list-category-name">NO CATEGORY</span>
+      </div>
+      
+      {/* Regular categories */}
+      {categories.map((category) => (
+        <div
+          className="product-list-dropdown-item"
+          key={category.categoryId}
+          onClick={() => handleCategorySelect(category)}
+        >
+          <div className="product-list-checkbox">
+            <input
+              type="checkbox"
+              checked={selectedCategories.some(
+                (s) => s.categoryId === category.categoryId
               )}
+              readOnly
+            />
+            <div className="product-list-checkbox-custom"></div>
+          </div>
+          <span className="product-list-category-name">{category.categoryName}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
             </div>
 
             <div className="product-list-stock-selector">
