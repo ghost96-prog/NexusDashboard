@@ -39,6 +39,41 @@
   transform: scale(1.05);
 }
 
+/* Toolbar Styling - Added to match GRV */
+.transfer-create-toolbar {
+  width: 100%;
+  height: 60px;
+  background: white;
+  position: relative;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  margin-top: 0;
+}
+
+.transfer-create-toolbar-content {
+  flex: 1;
+}
+
+.transfer-create-toolbar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.transfer-create-toolbar-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
 /* Main Content Area */
 .transfer-create-content {
   margin-right: 8px;
@@ -129,11 +164,13 @@
   display: flex;
   gap: 16px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .transfer-create-store-section,
 .transfer-create-reference-section {
   flex: 1;
+  min-width: 200px;
 }
 
 .transfer-create-section-label {
@@ -154,6 +191,7 @@
 .transfer-create-store-icon {
   color: #059669;
   font-size: 14px;
+  min-width: 16px;
 }
 
 .transfer-create-store-select {
@@ -192,12 +230,20 @@
   box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1);
 }
 
+.transfer-create-store-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
 .transfer-create-reference-input {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 13px;
+  box-sizing: border-box;
 }
 
 .transfer-create-reference-input:focus {
@@ -220,6 +266,7 @@
   resize: vertical;
   min-height: 60px;
   max-height: 120px;
+  box-sizing: border-box;
 }
 
 .transfer-create-notes-input:focus {
@@ -249,7 +296,7 @@
   font-weight: 600;
 }
 
-/* Search Container */
+/* Search Container - Updated for better dropdown positioning */
 .transfer-create-search-container {
   position: relative;
   flex-grow: 1;
@@ -299,7 +346,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
 }
 
 .transfer-create-clear-search-btn:hover {
@@ -307,44 +353,61 @@
   background-color: #ffebee;
 }
 
-/* Search Results Dropdown - UPDATED STRUCTURE */
+/* Search Results Dropdown - FIXED WIDTH like GRV */
 .transfer-create-search-results-dropdown {
   position: absolute;
   top: 100%;
-  left: 0;
-  right: 0;
+  right: 0px;
+  min-width: 200px;
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 0 0 8px 8px;
+  border-radius: 8px;
   z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  max-height: 450px;
+  max-height: 500px;
+  margin-top: 4px;
+}
+
+/* Adjust for different screen sizes */
+@media (max-width: 768px) {
+  .transfer-create-search-results-dropdown {
+    width: 90vw;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+@media (min-width: 1200px) {
+  .transfer-create-search-results-dropdown {
+    width: 600px;
+  }
 }
 
 .transfer-create-search-results-list {
   flex: 1;
   overflow-y: auto;
-  max-height: 300px;
+  max-height: 350px;
 }
 
 .transfer-create-search-actions-header {
   display: flex;
   gap: 8px;
-  padding: 10px;
+  padding: 12px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8fafc;
   position: sticky;
   top: 0;
   z-index: 1001;
+  border-radius: 8px 8px 0 0;
 }
 
 .transfer-create-select-all-btn,
 .transfer-create-clear-selection-btn,
 .transfer-create-close-popup-btn {
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -380,7 +443,7 @@
 
 .transfer-create-select-all-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
 }
 
 .transfer-create-clear-selection-btn:hover,
@@ -396,6 +459,7 @@
   border-top: 1px solid #e2e8f0;
   padding: 12px;
   z-index: 1001;
+  border-radius: 0 0 8px 8px;
 }
 
 .transfer-create-add-selected-btn {
@@ -446,45 +510,48 @@
 
 .transfer-create-result-product-info {
   flex-grow: 1;
+  margin-right: 16px;
 }
 
 .transfer-create-result-product-name {
   color: #1e293b;
   font-weight: 600;
   margin-bottom: 4px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .transfer-create-result-product-details {
   color: #64748b;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .transfer-create-result-product-price {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 11px;
+  font-size: 12px;
   color: #64748b;
   text-align: right;
+  min-width: 120px;
 }
 
 .transfer-create-no-results {
-  padding: 20px;
+  padding: 30px 20px;
   text-align: center;
   color: #64748b;
   font-style: italic;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .transfer-create-result-checkbox {
-  margin-right: 10px;
+  margin-right: 12px;
 }
 
 .transfer-create-result-checkbox input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
+  accent-color: #059669;
 }
 
 .transfer-create-search-result-selected {
@@ -501,10 +568,11 @@
   background-color: #f59e0b;
   color: white;
   font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
   margin-left: 8px;
   vertical-align: middle;
+  display: inline-block;
 }
 
 /* Items Table */
@@ -542,6 +610,7 @@
   justify-content: flex-start;
 }
 
+/* Item Row */
 .transfer-create-item-row {
   display: flex;
   align-items: center;
@@ -552,6 +621,7 @@
   min-height: 60px;
 }
 
+/* Item Info (First column) */
 .transfer-create-item-info {
   flex: 2;
   padding: 0 6px;
@@ -560,6 +630,7 @@
   justify-content: center;
 }
 
+/* All other cells */
 .transfer-create-item-available-stock,
 .transfer-create-item-quantity,
 .transfer-create-item-unit-cost,
@@ -573,6 +644,7 @@
   text-align: center;
 }
 
+/* Input fields within cells */
 .transfer-create-quantity-input {
   width: 100%;
   max-width: 120px;
@@ -587,6 +659,13 @@
   box-sizing: border-box;
 }
 
+.transfer-create-quantity-input:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1);
+}
+
+/* Display-only cells */
 .transfer-create-item-available-stock,
 .transfer-create-item-unit-cost,
 .transfer-create-item-total {
@@ -595,6 +674,7 @@
   font-size: 13px;
 }
 
+/* Remove button cell */
 .transfer-create-item-actions {
   justify-content: center;
 }
@@ -617,36 +697,38 @@
 
 .transfer-create-remove-btn:hover {
   background: #fecaca;
+  transform: scale(1.05);
 }
 
+/* Make sure the columns match exactly */
 .transfer-create-table-header-cell:nth-child(1),
 .transfer-create-item-info {
-  flex: 2;
+  flex: 2; /* Item */
 }
 
 .transfer-create-table-header-cell:nth-child(2),
 .transfer-create-item-available-stock {
-  flex: 1;
+  flex: 1; /* Available Stock */
 }
 
 .transfer-create-table-header-cell:nth-child(3),
 .transfer-create-item-quantity {
-  flex: 1;
+  flex: 1; /* Qty to Transfer */
 }
 
 .transfer-create-table-header-cell:nth-child(4),
 .transfer-create-item-unit-cost {
-  flex: 1;
+  flex: 1; /* Unit Cost */
 }
 
 .transfer-create-table-header-cell:nth-child(5),
 .transfer-create-item-total {
-  flex: 1;
+  flex: 1; /* Total Value */
 }
 
 .transfer-create-table-header-cell:nth-child(6),
 .transfer-create-item-actions {
-  flex: 1;
+  flex: 1; /* Actions */
 }
 
 /* Totals Row */
@@ -660,7 +742,7 @@
 }
 
 .transfer-create-total-label {
-  flex: 2;
+  flex: 2; /* Matches the first column (Item) */
   padding: 0 6px;
   font-size: 13px;
   color: #059669;
@@ -669,8 +751,26 @@
   justify-content: flex-start;
 }
 
+.transfer-create-item-name {
+  padding: 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #059669;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.transfer-create-item-details {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6c6969;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .transfer-create-total-value {
-  flex: 1;
+  flex: 1; /* Should align with Total column which is 5th column */
   padding: 0 6px;
   font-size: 14px;
   font-weight: 600;
@@ -681,6 +781,7 @@
   text-align: center;
 }
 
+/* Add empty cells to match the 6-column structure */
 .transfer-create-total-spacer-1,
 .transfer-create-total-spacer-2,
 .transfer-create-total-spacer-3,
@@ -741,7 +842,7 @@
   color: #64748b;
 }
 
-.transfer-create-cancel-btn:hover {
+.transfer-create-cancel-btn:hover:not(:disabled) {
   background: #f1f5f9;
   border-color: #cbd5e1;
 }
@@ -779,11 +880,11 @@
 
 .transfer-create-loading-modal-content {
   background: white;
-  border-radius: 16px;
-  padding: 32px;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
   max-width: 400px;
   width: 90%;
-  text-align: center;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   animation: transfer-create-modal-fadeIn 0.3s ease;
 }
@@ -804,7 +905,7 @@
 }
 
 .transfer-create-loading-icon {
-  font-size: 48px;
+  font-size: 40px;
   color: #059669;
   animation: transfer-create-spin 1s linear infinite;
 }
@@ -815,42 +916,34 @@
 }
 
 .transfer-create-loading-title {
+  margin-bottom: 10px;
   color: #1e293b;
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 12px;
+  font-size: 18px;
 }
 
 .transfer-create-loading-message {
   color: #64748b;
-  font-size: 14px;
-  line-height: 1.5;
   margin-bottom: 20px;
+  font-size: 14px;
 }
 
 .transfer-create-loading-progress {
+  background: #f1f5f9;
+  border-radius: 10px;
   height: 4px;
-  background: #e2e8f0;
-  border-radius: 2px;
   overflow: hidden;
 }
 
 .transfer-create-loading-progress-bar {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
   height: 100%;
-  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
-  animation: transfer-create-progress 2s ease-in-out infinite;
+  width: 30%;
+  animation: transfer-create-loading 2s ease-in-out infinite;
 }
 
-@keyframes transfer-create-progress {
-  0% {
-    transform: translateX(-100%);
-  }
-  50% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+@keyframes transfer-create-loading {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(300%); }
 }
 
 /* Store loading indicator */
@@ -907,15 +1000,100 @@
   cursor: not-allowed;
 }
 
-/* Loading message in empty state */
-.transfer-create-empty-message p {
-  color: #64748b;
-  font-size: 14px;
+/* Category Filter Button and Dropdown - NEW like GRV */
+.transfer-create-category-selector {
+  position: relative;
+}
+
+.transfer-create-category-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 160px;
+}
+
+.transfer-create-category-btn:hover {
+  border-color: #059669;
+  background: #f8fafc;
+}
+
+.transfer-create-category-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
   margin-top: 8px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+}
+
+.transfer-create-category-dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.transfer-create-category-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.transfer-create-category-dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.transfer-create-category-dropdown-item.selected {
+  background: #d1fae5;
+  border-left: 3px solid #059669;
+}
+
+.transfer-create-category-check {
+  float: right;
+  color: #059669;
+  font-size: 12px;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .transfer-create-toolbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 60px;
+    border-radius: 0;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    z-index: 1000;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .transfer-create-content.transfer-create-shifted,
+  .transfer-create-content.transfer-create-collapsed {
+    padding-top: 70px;
+  }
+  
+  .transfer-create-sidebar-toggle {
+    top: 70px;
+  }
+  
   .transfer-create-top-section {
     flex-direction: column;
     gap: 12px;
@@ -925,6 +1103,19 @@
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+  }
+  
+  .transfer-create-items-header > div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .transfer-create-category-selector {
+    width: 100%;
+  }
+  
+  .transfer-create-category-btn {
+    width: 100%;
   }
   
   .transfer-create-search-container {
@@ -961,6 +1152,10 @@
 }
 
 @media (max-width: 480px) {
+  .transfer-create-toolbar {
+    height: 56px;
+  }
+  
   .transfer-create-content.transfer-create-shifted,
   .transfer-create-content.transfer-create-collapsed {
     padding-top: 66px;
@@ -974,32 +1169,22 @@
 /* Custom Scrollbar */
 .transfer-create-items-table-body::-webkit-scrollbar,
 .transfer-create-search-results-list::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .transfer-create-items-table-body::-webkit-scrollbar-track,
 .transfer-create-search-results-list::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .transfer-create-items-table-body::-webkit-scrollbar-thumb,
 .transfer-create-search-results-list::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .transfer-create-items-table-body::-webkit-scrollbar-thumb:hover,
 .transfer-create-search-results-list::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
-}
-.transfer-create-item-name {
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 4px;
-  font-size: 13px;
-}
-.transfer-create-item-details {
-  font-size: 12px;
-  color: #64748b;
 }

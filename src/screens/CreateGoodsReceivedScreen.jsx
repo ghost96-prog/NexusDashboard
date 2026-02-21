@@ -14,7 +14,8 @@ import {
   FaDollarSign,
   FaCheck,
   FaWeight,
-  FaSpinner
+  FaSpinner,
+  FaFilter
 } from "react-icons/fa";
 import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
@@ -41,6 +42,12 @@ const CreateGoodsReceivedScreen = () => {
   const [grvSearchSelected, setGrvSearchSelected] = useState(new Set());
   const [showProductsLoading, setShowProductsLoading] = useState(false);
   const [productsLoadingMessage, setProductsLoadingMessage] = useState('Loading products...');
+  
+  // New state for category filtering
+  const [grvCategories, setGrvCategories] = useState([]);
+  const [grvSelectedCategory, setGrvSelectedCategory] = useState(null);
+  const [grvIsCategoryDropdownOpen, setGrvIsCategoryDropdownOpen] = useState(false);
+  const [grvIsLoadingCategories, setGrvIsLoadingCategories] = useState(false);
   
   const navigate = useNavigate();
 
@@ -113,6 +120,7 @@ const CreateGoodsReceivedScreen = () => {
   useEffect(() => {
     if (grvSelectedStore) {
       fetchGrvProducts();
+      fetchGrvCategories(); // Fetch categories when store changes
     }
   }, [grvSelectedStore]);
 
@@ -208,11 +216,107 @@ const CreateGoodsReceivedScreen = () => {
     }
   };
 
-  // Handle search when term changes
+  // Fetch categories function - UPDATED to include "No Category"
+  const fetchGrvCategories = async () => {
+    try {
+      setGrvIsLoadingCategories(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication token is missing.");
+        return;
+      }
+
+      const decoded = jwtDecode(token);
+      const userEmail = decoded.email;
+
+      const response = await fetch(
+        `https://nexuspos.onrender.com/api/categoryRouter/categories?email=${encodeURIComponent(
+          userEmail
+        )}`
+      );
+      
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error("Failed to fetch categories.");
+        return;
+      }
+      
+      if (data.success) {
+        // Add "All Categories" and "No Category" options at the beginning
+        const allCategories = [
+          { categoryId: "all", categoryName: "All Categories" },
+          { categoryId: "no-category", categoryName: "No Category" },
+          ...data.data
+        ];
+        setGrvCategories(allCategories);
+        setGrvSelectedCategory(allCategories[0]); // Default to "All Categories"
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      toast.error("An error occurred while fetching categories.");
+    } finally {
+      setGrvIsLoadingCategories(false);
+    }
+  };
+
+  // Filter products by category function - UPDATED to handle "No Category"
+  const filterProductsByCategory = (category) => {
+    setGrvSelectedCategory(category);
+    setGrvIsCategoryDropdownOpen(false);
+    
+    // Filter products based on selected category
+    let filteredResults;
+    
+    if (category.categoryId === "all") {
+      // Show all products not already added
+      filteredResults = grvProducts.filter(product =>
+        !grvSelectedItems.some(item => item.productId === product.productId)
+      );
+    } else if (category.categoryId === "no-category") {
+      // Filter products with no category (null, empty, or "No Category")
+      filteredResults = grvProducts.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory && !grvSelectedItems.some(item => item.productId === product.productId);
+      });
+    } else {
+      // Filter by selected category
+      filteredResults = grvProducts.filter(product =>
+        product.category === category.categoryName &&
+        !grvSelectedItems.some(item => item.productId === product.productId)
+      );
+    }
+    
+    setGrvSearchResults(filteredResults);
+    setGrvShowSearchResults(true);
+    setGrvSearchTerm(''); // Clear search term when filtering by category
+  };
+
+  // Handle search when term changes - UPDATED to handle "No Category"
   const handleSearch = (searchTerm) => {
     if (searchTerm.trim() === '') {
-      // Show ALL products that are not already added to GRV
-      const allResults = grvProducts.filter(product =>
+      // Show products based on selected category
+      let baseProducts;
+      if (grvSelectedCategory?.categoryId === "all") {
+        baseProducts = grvProducts;
+      } else if (grvSelectedCategory?.categoryId === "no-category") {
+        // Filter products with no category
+        baseProducts = grvProducts.filter(product => {
+          const hasNoCategory = !product.category || 
+                               product.category.trim() === '' || 
+                               product.category.toUpperCase() === 'NO CATEGORY' ||
+                               product.category.toUpperCase() === 'NO CATEGORY';
+          return hasNoCategory;
+        });
+      } else {
+        baseProducts = grvProducts.filter(product => 
+          product.category === grvSelectedCategory?.categoryName
+        );
+      }
+      
+      const allResults = baseProducts.filter(product =>
         !grvSelectedItems.some(item => item.productId === product.productId)
       );
       setGrvSearchResults(allResults);
@@ -220,26 +324,41 @@ const CreateGoodsReceivedScreen = () => {
       return;
     }
 
-    const filtered = grvProducts.filter(product =>
-      product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku?.toString().includes(searchTerm) ||
-      product.category?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Filter by search term AND current category
+    let categoryFiltered = grvProducts;
+    if (grvSelectedCategory?.categoryId === "no-category") {
+      // Filter products with no category
+      categoryFiltered = grvProducts.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory;
+      });
+    } else if (grvSelectedCategory?.categoryId !== "all") {
+      categoryFiltered = grvProducts.filter(product => 
+        product.category === grvSelectedCategory?.categoryName
+      );
+    }
 
-    // Filter out already selected items
-    const filteredResults = filtered.filter(product =>
+    const filtered = categoryFiltered.filter(product =>
+      (product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku?.toString().includes(searchTerm) ||
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase())) &&
       !grvSelectedItems.some(item => item.productId === product.productId)
     );
 
-    setGrvSearchResults(filteredResults);
-    setGrvShowSearchResults(filteredResults.length > 0);
+    setGrvSearchResults(filtered);
+    setGrvShowSearchResults(filtered.length > 0);
   };
 
-  // Handle click outside to close search results
+  // Handle click outside to close search results and category dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       const searchContainer = document.querySelector('.grv-create-search-container');
       const searchResults = document.querySelector('.grv-create-search-results-dropdown');
+      const categoryDropdown = document.querySelector('.grv-create-category-dropdown');
+      const categoryBtn = document.querySelector('.grv-create-category-btn');
       
       if (
         searchContainer && 
@@ -250,10 +369,21 @@ const CreateGoodsReceivedScreen = () => {
         // Just hide the results, don't clear selections
         setGrvShowSearchResults(false);
       }
+      
+      // Close category dropdown when clicking outside
+      if (
+        grvIsCategoryDropdownOpen &&
+        categoryDropdown &&
+        !categoryDropdown.contains(event.target) &&
+        categoryBtn &&
+        !categoryBtn.contains(event.target)
+      ) {
+        setGrvIsCategoryDropdownOpen(false);
+      }
     };
 
     // Add event listener only when search results are shown
-    if (grvShowSearchResults) {
+    if (grvShowSearchResults || grvIsCategoryDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
@@ -261,7 +391,7 @@ const CreateGoodsReceivedScreen = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [grvShowSearchResults]);
+  }, [grvShowSearchResults, grvIsCategoryDropdownOpen]);
 
   const toggleGrvSidebar = () => {
     setGrvSidebarOpen(!grvSidebarOpen);
@@ -546,21 +676,57 @@ const CreateGoodsReceivedScreen = () => {
     return productType === 'Weight' ? <FaWeight title="Weight Product" style={{ color: '#5694e6', marginLeft: '4px' }} /> : null;
   };
 
-  // Clear search input but keep popup open showing all items
+  // Clear search input but keep popup open showing all items - UPDATED to handle "No Category"
   const handleClearSearch = () => {
     setGrvSearchTerm('');
-    // Show ALL products that are not already added to GRV
-    const allResults = grvProducts.filter(product =>
+    // Show ALL products that are not already added to GRV based on selected category
+    let baseProducts;
+    if (grvSelectedCategory?.categoryId === "all") {
+      baseProducts = grvProducts;
+    } else if (grvSelectedCategory?.categoryId === "no-category") {
+      // Filter products with no category
+      baseProducts = grvProducts.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory;
+      });
+    } else {
+      baseProducts = grvProducts.filter(product => 
+        product.category === grvSelectedCategory?.categoryName
+      );
+    }
+    
+    const allResults = baseProducts.filter(product =>
       !grvSelectedItems.some(item => item.productId === product.productId)
     );
     setGrvSearchResults(allResults);
     setGrvShowSearchResults(true);
   };
 
-  // Handle search input focus
+  // Handle search input focus - UPDATED to handle "No Category"
   const handleSearchFocus = () => {
-    // Show all items not yet added when search input is focused
-    const filteredResults = grvProducts.filter(product =>
+    // Show all items not yet added based on selected category
+    let baseProducts;
+    if (grvSelectedCategory?.categoryId === "all") {
+      baseProducts = grvProducts;
+    } else if (grvSelectedCategory?.categoryId === "no-category") {
+      // Filter products with no category
+      baseProducts = grvProducts.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory;
+      });
+    } else {
+      baseProducts = grvProducts.filter(product => 
+        product.category === grvSelectedCategory?.categoryName
+      );
+    }
+    
+    const filteredResults = baseProducts.filter(product =>
       !grvSelectedItems.some(item => item.productId === product.productId)
     );
     
@@ -586,12 +752,12 @@ const CreateGoodsReceivedScreen = () => {
     handleSearch(value);
   };
 
-  // Effect to update search results when products or selected items change
+  // Effect to update search results when products, selected items, or selected category change
   useEffect(() => {
     if (grvShowSearchResults) {
       handleSearch(grvSearchTerm);
     }
-  }, [grvProducts, grvSelectedItems]);
+  }, [grvProducts, grvSelectedItems, grvSelectedCategory]);
 
   return (
     <div className="grv-create-main-container">
@@ -712,110 +878,177 @@ const CreateGoodsReceivedScreen = () => {
           <div className="grv-create-items-section">
             <div className="grv-create-items-header">
               <h3 className="grv-create-section-label">Items Received</h3>
-              <div className="grv-create-search-container">
-                <div className="grv-create-search-input-wrapper">
-                  <FaSearch className="grv-create-search-icon" />
-                  <input
-                    type="text"
-                    className="grv-create-search-input"
-                    placeholder="Search item by name, SKU, or category..."
-                    value={grvSearchTerm}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    onFocus={handleSearchFocus}
-                  />
-                  {grvSearchTerm && (
-                    <button 
-                      className="grv-create-clear-search-btn"
-                      onClick={handleClearSearch}
-                    >
-                      <FaTimesCircle />
-                    </button>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {/* Category Filter Button */}
+                <div className="grv-create-category-selector" style={{ position: 'relative' }}>
+                  <button 
+                    className="grv-create-category-btn"
+                    onClick={() => setGrvIsCategoryDropdownOpen(!grvIsCategoryDropdownOpen)}
+                  >
+                    <FaFilter style={{ color: '#5694e6' }} />
+                    <span style={{ flex: 1, textAlign: 'left' }}>
+                      {grvSelectedCategory?.categoryName || 'All Categories'}
+                    </span>
+                    <span style={{ color: '#94a3b8', fontSize: '10px' }}>▼</span>
+                  </button>
+                  
+                  {grvIsCategoryDropdownOpen && (
+                    <div className="grv-create-category-dropdown">
+                      {grvIsLoadingCategories ? (
+                        <div style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                          Loading categories...
+                        </div>
+                      ) : (
+                        <>
+                          {/* All Categories option */}
+                          <div
+                            className={`grv-create-category-dropdown-item ${grvSelectedCategory?.categoryId === 'all' ? 'selected' : ''}`}
+                            onClick={() => filterProductsByCategory({ categoryId: 'all', categoryName: 'All Categories' })}
+                          >
+                            All Categories
+                            {grvSelectedCategory?.categoryId === 'all' && (
+                              <FaCheck className="grv-create-category-check" />
+                            )}
+                          </div>
+                          
+                          {/* No Category option */}
+                          <div
+                            className={`grv-create-category-dropdown-item ${grvSelectedCategory?.categoryId === 'no-category' ? 'selected' : ''}`}
+                            onClick={() => filterProductsByCategory({ categoryId: 'no-category', categoryName: 'No Category' })}
+                          >
+                            No Category
+                            {grvSelectedCategory?.categoryId === 'no-category' && (
+                              <FaCheck className="grv-create-category-check" />
+                            )}
+                          </div>
+                          
+                          {/* Regular categories */}
+                          {grvCategories
+                            .filter(cat => cat.categoryId !== 'all' && cat.categoryId !== 'no-category')
+                            .map(category => (
+                              <div
+                                key={category.categoryId}
+                                className={`grv-create-category-dropdown-item ${grvSelectedCategory?.categoryId === category.categoryId ? 'selected' : ''}`}
+                                onClick={() => filterProductsByCategory(category)}
+                              >
+                                {category.categoryName}
+                                {grvSelectedCategory?.categoryId === category.categoryId && (
+                                  <FaCheck className="grv-create-category-check" />
+                                )}
+                              </div>
+                            ))
+                          }
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
                 
-                {grvShowSearchResults && (
-                  <div className="grv-create-search-results-dropdown">
-                    <div className="grv-create-search-actions-header">
+                <div className="grv-create-search-container">
+                  <div className="grv-create-search-input-wrapper">
+                    <FaSearch className="grv-create-search-icon" />
+                    <input
+                      type="text"
+                      className="grv-create-search-input"
+                      placeholder="Search item by name, SKU, or category..."
+                      value={grvSearchTerm}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onFocus={handleSearchFocus}
+                    />
+                    {grvSearchTerm && (
                       <button 
-                        className="grv-create-select-all-btn"
-                        onClick={handleSelectAllSearchResults}
+                        className="grv-create-clear-search-btn"
+                        onClick={handleClearSearch}
                       >
-                        <FaCheck /> Select All
+                        <FaTimesCircle />
                       </button>
-                      <button 
-                        className="grv-create-clear-selection-btn"
-                        onClick={handleClearSearchSelection}
-                      >
-                        <FaTimesCircle /> Clear
-                      </button>
-                      <button 
-                        className="grv-create-close-popup-btn"
-                        onClick={() => setGrvShowSearchResults(false)}
-                      >
-                        <FaTimes /> Close
-                      </button>
-                    </div>
-                    
-                    <div className="grv-create-search-results-list">
-                      {grvSearchResults.length > 0 ? (
-                        grvSearchResults.map(product => {
-                          const isSelected = grvSearchSelected.has(product.productId);
-                          const isAlreadyAdded = grvSelectedItems.some(item => item.productId === product.productId);
-                          
-                          return (
-                            <div 
-                              key={product.productId}
-                              className={`grv-create-search-result-item ${isSelected ? 'grv-create-search-result-selected' : ''} ${isAlreadyAdded ? 'grv-create-search-result-added' : ''}`}
-                              onClick={(e) => {
-                                if (e.target.type !== 'checkbox' && !isAlreadyAdded) {
-                                  handleSearchSelectToggle(product.productId);
-                                }
-                              }}
-                            >
-                              <div className="grv-create-result-checkbox">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => handleSearchSelectToggle(product.productId)}
-                                  disabled={isAlreadyAdded}
-                                />
-                              </div>
-                              <div className="grv-create-result-product-info">
-                                <div className="grv-create-result-product-name">
-                                  {product.productName}
-                                  {getProductTypeIcon(product.productType)}
-                                  {isAlreadyAdded && (
-                                    <span className="grv-create-already-added-badge">Already Added</span>
-                                  )}
-                                </div>
-                                <div className="grv-create-result-product-details">
-                                  SKU: {product.sku} | Category: {product.category} | Stock: {product.stock || 0}
-                                </div>
-                              </div>
-                              <div className="grv-create-result-product-price">
-                                <div>Cost: ${formatDecimal(product.cost)}</div>
-                                <div>Price: ${formatDecimal(product.price)}</div>
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="grv-create-no-results">No products found</div>
-                      )}
-                    </div>
-                    
-                    {grvSearchSelected.size > 0 && (
-                      <div className="grv-create-search-actions-footer">
-                        <button 
-                          className="grv-create-add-selected-btn"
-                          onClick={handleAddSelectedProducts}
-                        >
-                          <FaPlus /> Add Selected ({getTotalSelectedCount()})
-                        </button>
-                      </div>
                     )}
                   </div>
-                )}
+                  
+                  {grvShowSearchResults && (
+                    <div className="grv-create-search-results-dropdown">
+                      <div className="grv-create-search-actions-header">
+                        <button 
+                          className="grv-create-select-all-btn"
+                          onClick={handleSelectAllSearchResults}
+                        >
+                          <FaCheck /> Select All
+                        </button>
+                        <button 
+                          className="grv-create-clear-selection-btn"
+                          onClick={handleClearSearchSelection}
+                        >
+                          <FaTimesCircle /> Clear
+                        </button>
+                        <button 
+                          className="grv-create-close-popup-btn"
+                          onClick={() => setGrvShowSearchResults(false)}
+                        >
+                          <FaTimes /> Close
+                        </button>
+                      </div>
+                      
+                      <div className="grv-create-search-results-list">
+                        {grvSearchResults.length > 0 ? (
+                          grvSearchResults.map(product => {
+                            const isSelected = grvSearchSelected.has(product.productId);
+                            const isAlreadyAdded = grvSelectedItems.some(item => item.productId === product.productId);
+                            
+                            return (
+                              <div 
+                                key={product.productId}
+                                className={`grv-create-search-result-item ${isSelected ? 'grv-create-search-result-selected' : ''} ${isAlreadyAdded ? 'grv-create-search-result-added' : ''}`}
+                                onClick={(e) => {
+                                  if (e.target.type !== 'checkbox' && !isAlreadyAdded) {
+                                    handleSearchSelectToggle(product.productId);
+                                  }
+                                }}
+                              >
+                                <div className="grv-create-result-checkbox">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleSearchSelectToggle(product.productId)}
+                                    disabled={isAlreadyAdded}
+                                  />
+                                </div>
+                                <div className="grv-create-result-product-info">
+                                  <div className="grv-create-result-product-name">
+                                    {product.productName}
+                                    {getProductTypeIcon(product.productType)}
+                                    {isAlreadyAdded && (
+                                      <span className="grv-create-already-added-badge">Already Added</span>
+                                    )}
+                                  </div>
+                                  <div className="grv-create-result-product-details">
+                                    SKU: {product.sku} | Category: {product.category || 'No Category'} | Stock: {product.stock || 0}
+                                  </div>
+                                </div>
+                                <div className="grv-create-result-product-price">
+                                  <div>Price: ${formatDecimal(product.price)}</div>
+                                  <div>Cost: ${formatDecimal(product.cost)}</div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="grv-create-no-results">No products found</div>
+                        )}
+                      </div>
+                      
+                      {grvSearchSelected.size > 0 && (
+                        <div className="grv-create-search-actions-footer">
+                          <button 
+                            className="grv-create-add-selected-btn"
+                            onClick={handleAddSelectedProducts}
+                          >
+                            <FaPlus /> Add Selected ({getTotalSelectedCount()})
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

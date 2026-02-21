@@ -5,15 +5,15 @@ import {
   FaBars,
   FaTimes,
   FaStore,
-  FaPlus,
-  FaMinus,
   FaCheck,
   FaChevronLeft,
   FaTimesCircle,
   FaExclamationTriangle,
   FaSpinner,
   FaTrash,
-  FaSearch, // Added
+  FaSearch,
+  FaSave,
+  FaPlay
 } from "react-icons/fa";
 import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
@@ -30,6 +30,7 @@ const CountStockScreen = () => {
   const [countedShowSubscriptionModal, setCountedShowSubscriptionModal] = useState(false);
   const [countedNotes, setCountedNotes] = useState('');
   const [countedStoreName, setCountedStoreName] = useState('');
+  const [countedStoreId, setCountedStoreId] = useState('');
   const [countedShowConfirmModal, setCountedShowConfirmModal] = useState(false);
   const [countedShowCompletionModal, setCountedShowCompletionModal] = useState(false);
   const [countedEmail, setCountedEmail] = useState('');
@@ -40,6 +41,9 @@ const CountStockScreen = () => {
   const [allProducts, setAllProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [productsLoaded, setProductsLoaded] = useState(false);
+  const [countId, setCountId] = useState(null);
+  const [isDraftMode, setIsDraftMode] = useState(false);
+  const [countType, setCountType] = useState('Partial');
   
   // Add state for delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -94,18 +98,26 @@ const CountStockScreen = () => {
   // Load data from navigation state and initialize with products
   useEffect(() => {
     if (location.state) {
-      const { notes, items, storeName, storeId, type } = location.state;
+      const { notes, items, storeName, storeId, type, countId: existingCountId, isDraft } = location.state;
       setCountedNotes(notes || '');
       setCountedStoreName(storeName || '');
+      setCountedStoreId(storeId || '');
+      setCountType(type || 'Partial');
+      
+      // If we have an existing count ID (draft), set it
+      if (existingCountId) {
+        setCountId(existingCountId);
+        setIsDraftMode(true);
+      }
       
       // Initialize items with counted quantity as expected stock (starting point)
       const initializedItems = items.map(item => ({
         ...item,
-        counted: item.expectedStock || 0,
-        difference: 0,
-        priceDifference: 0,
-        countedQuantity: '', // For manual counting
-        isCounted: false,
+        counted: item.counted || item.expectedStock || 0,
+        difference: item.difference || 0,
+        priceDifference: item.priceDifference || 0,
+        countedQuantity: item.countedQuantity !== undefined ? item.countedQuantity : (item.expectedStock?.toString() || ''),
+        isCounted: item.isCounted || false,
         price: item.price || 0,
         cost: item.cost || 0
       }));
@@ -113,10 +125,15 @@ const CountStockScreen = () => {
       setCountedItems(initializedItems);
       setCountedTotalItems(initializedItems.length);
       
-      // Set first item as current if there are items
-      if (initializedItems.length > 0 && !countedCurrentItem) {
-        setCountedCurrentItem(initializedItems[0]);
-        setCountedCurrentQuantity(initializedItems[0].expectedStock?.toString() || '');
+      // Count completed items
+      const completed = initializedItems.filter(item => item.isCounted).length;
+      setCountedCompletedItems(completed);
+      
+      // Set first uncounted item as current if there are items
+      if (initializedItems.length > 0) {
+        const firstUncounted = initializedItems.find(item => !item.isCounted) || initializedItems[0];
+        setCountedCurrentItem(firstUncounted);
+        setCountedCurrentQuantity(firstUncounted.countedQuantity || firstUncounted.expectedStock?.toString() || '');
       }
     }
   }, [location.state]);
@@ -336,6 +353,94 @@ const CountStockScreen = () => {
     }
   };
 
+  // Save draft function
+  const handleSaveDraft = () => {
+    if (!countedIsSubscribedAdmin) {
+      setCountedShowSubscriptionModal(true);
+      return;
+    }
+
+    if (!productsLoaded) {
+      toast.error('Products are still loading. Please wait...');
+      return;
+    }
+
+    if (countedItems.length === 0) {
+      toast.error('No items to save. Add items to save a draft.');
+      return;
+    }
+
+    // Generate a draft ID if this is a new draft
+    const draftId = countId || `DRAFT-${Date.now()}`;
+    
+    // Prepare count data
+    const countData = {
+      countId: draftId,
+      notes: countedNotes,
+      storeName: countedStoreName,
+      storeId: countedStoreId,
+      type: countType,
+      items: countedItems.map(item => ({
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        category: item.category,
+        expectedStock: item.expectedStock || 0,
+        counted: item.counted || 0,
+        difference: item.difference || 0,
+        priceDifference: item.priceDifference || 0,
+        price: item.price || 0,
+        cost: item.cost || 0,
+        countedQuantity: item.countedQuantity || '',
+        isCounted: item.isCounted || false
+      })),
+      createdBy: countedEmail,
+      dateCreated: new Date().toISOString(),
+      status: 'Draft',
+      totalDifference: calculatedTotals.totalDifference,
+      totalPriceDifference: calculatedTotals.totalPriceDifference,
+      totalItems: countedTotalItems,
+      completedItems: countedCompletedItems
+    };
+
+    // Save to localStorage
+    try {
+      // Save the count data
+      localStorage.setItem(draftId, JSON.stringify(countData));
+      
+      // Update the list of drafts
+      const existingDrafts = JSON.parse(localStorage.getItem('inventoryCountDrafts') || '[]');
+      const draftIndex = existingDrafts.findIndex(d => d.id === draftId);
+      
+      const draftInfo = {
+        id: draftId,
+        countId: draftId,
+        notes: countedNotes,
+        storeName: countedStoreName,
+        dateCreated: new Date().toISOString(),
+        status: 'Draft',
+        totalItems: countedTotalItems,
+        completedItems: countedCompletedItems
+      };
+      
+      if (draftIndex >= 0) {
+        existingDrafts[draftIndex] = draftInfo;
+      } else {
+        existingDrafts.push(draftInfo);
+      }
+      
+      localStorage.setItem('inventoryCountDrafts', JSON.stringify(existingDrafts));
+      
+      setCountId(draftId);
+      setIsDraftMode(true);
+      toast.success('Draft saved successfully!');
+      
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      toast.error('Failed to save draft.');
+    }
+  };
+
   // Function to show delete confirmation modal
   const handleShowDeleteModal = (item) => {
     if (!countedIsSubscribedAdmin) {
@@ -367,7 +472,7 @@ const CountStockScreen = () => {
       if (updatedItems.length > 0) {
         const nextItem = updatedItems.find(item => !item.isCounted) || updatedItems[0];
         setCountedCurrentItem(nextItem);
-        setCountedCurrentQuantity(nextItem.expectedStock?.toString() || '');
+        setCountedCurrentQuantity(nextItem.countedQuantity || nextItem.expectedStock?.toString() || '');
       } else {
         setCountedCurrentItem(null);
         setCountedCurrentQuantity('');
@@ -400,7 +505,7 @@ const CountStockScreen = () => {
   };
 
   const handleCountedQuantityChange = (value) => {
-    if (value === '' || /^\d*$/.test(value)) {
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setCountedCurrentQuantity(value);
     }
   };
@@ -416,7 +521,7 @@ const CountStockScreen = () => {
       return;
     }
 
-    const quantity = parseInt(countedCurrentQuantity);
+    const quantity = parseFloat(countedCurrentQuantity);
     if (isNaN(quantity)) {
       toast.error('Please enter a valid number.');
       return;
@@ -452,7 +557,7 @@ const CountStockScreen = () => {
     
     if (nextUncountedItem) {
       setCountedCurrentItem(nextUncountedItem);
-      setCountedCurrentQuantity(nextUncountedItem.expectedStock?.toString() || '');
+      setCountedCurrentQuantity(nextUncountedItem.countedQuantity || nextUncountedItem.expectedStock?.toString() || '');
       toast.success(`Counted ${quantity} of ${countedCurrentItem.productName}`);
     } else {
       setCountedCurrentItem(null);
@@ -470,7 +575,7 @@ const CountStockScreen = () => {
       return;
     }
 
-    const quantity = value === '' ? 0 : parseInt(value);
+    const quantity = value === '' ? 0 : parseFloat(value);
     if (isNaN(quantity)) return;
 
     const updatedItems = countedItems.map(item => {
@@ -496,33 +601,6 @@ const CountStockScreen = () => {
     
     const completed = updatedItems.filter(item => item.isCounted).length;
     setCountedCompletedItems(completed);
-
-    if (countedCurrentItem?.countId) {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const decoded = jwtDecode(token);
-        const userEmail = decoded.email;
-
-        await fetch(
-          `https://nexuspos.onrender.com/api/inventoryCounts/${countedCurrentItem.countId}/items?email=${encodeURIComponent(userEmail)}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              productId,
-              counted: quantity
-            })
-          }
-        );
-      } catch (error) {
-        console.error('Error updating item count:', error);
-      }
-    }
   };
 
   const calculatedTotals = countedItems.reduce(
@@ -578,12 +656,18 @@ const CountStockScreen = () => {
       const decoded = jwtDecode(token);
       const userEmail = decoded.email;
 
+      // Generate a new count ID if this wasn't a draft
+      const finalCountId = countId && countId.startsWith('DRAFT-') 
+        ? `IC${Date.now().toString().slice(-6)}` 
+        : countId || `IC${Date.now().toString().slice(-6)}`;
+
       // 1. Build the count data object
-      const countId = `IC${Date.now().toString().slice(-6)}`;
       const countData = {
-        countId,
+        countId: finalCountId,
         notes: countedNotes,
         storeName: countedStoreName,
+        storeId: countedStoreId,
+        type: countType,
         items: countedItems.map(item => ({
           productId: item.productId,
           productName: item.productName,
@@ -594,16 +678,18 @@ const CountStockScreen = () => {
           difference: item.difference || 0,
           priceDifference: item.priceDifference || 0,
           price: item.price || 0,
+          cost: item.cost || 0,
           countedQuantity: item.countedQuantity || '',
           isCounted: item.isCounted || false
         })),
         createdBy: userEmail,
-        status: 'Draft',
+        dateCreated: new Date().toISOString(),
+        dateCompleted: new Date().toISOString(),
+        status: 'Completed',
         totalDifference: calculatedTotals.totalDifference,
         totalPriceDifference: calculatedTotals.totalPriceDifference,
         totalItems: countedTotalItems,
-        completedItems: countedCompletedItems,
-        type: 'Stock Count'
+        completedItems: countedCompletedItems
       };
 
       console.log('Starting count completion process...');
@@ -654,26 +740,20 @@ const CountStockScreen = () => {
         throw new Error(`Some operations failed: ${errorMessages}`);
       }
 
-      // 5. Complete the count
-      const saveResult = results[0].value;
-      const savedCountId = saveResult.data?.countId || saveResult.countId || countId;
-
-      // Optional: Mark as complete (non-blocking)
-      fetch(
-        `https://nexuspos.onrender.com/api/inventoryCounts/${savedCountId}/complete?email=${encodeURIComponent(userEmail)}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          }
-        }
-      ).catch(err => console.warn('Warning: Count complete endpoint failed', err));
+      // 5. Remove draft from localStorage if it was a draft
+      if (countId && countId.startsWith('DRAFT-')) {
+        localStorage.removeItem(countId);
+        
+        // Update drafts list
+        const existingDrafts = JSON.parse(localStorage.getItem('inventoryCountDrafts') || '[]');
+        const updatedDrafts = existingDrafts.filter(d => d.id !== countId);
+        localStorage.setItem('inventoryCountDrafts', JSON.stringify(updatedDrafts));
+      }
 
       // 6. Update UI state
       setCountedShowConfirmModal(false);
       setCountedShowCompletionModal(true);
-      setCompletedCountData(saveResult.data || countData);
+      setCompletedCountData(countData);
       toast.success('Inventory count completed successfully!');
 
     } catch (error) {
@@ -702,9 +782,10 @@ const CountStockScreen = () => {
 
   const handleCountedCancel = () => {
     if (countedCompletedItems > 0) {
-      if (window.confirm('You have unsaved counts. Are you sure you want to cancel?')) {
-        navigate('/counts');
+      if (window.confirm('You have unsaved counts. Do you want to save a draft before leaving?')) {
+        handleSaveDraft();
       }
+      navigate('/counts');
     } else {
       navigate('/counts');
     }
@@ -714,33 +795,11 @@ const CountStockScreen = () => {
     navigate('/create-counts', { state: location.state });
   };
 
-  const handleQuickButtonClick = (operation) => {
-    if (!countedCurrentQuantity) return;
-    
-    let newQuantity = parseInt(countedCurrentQuantity) || 0;
-    
-    switch(operation) {
-      case 'minus':
-        newQuantity = Math.max(0, newQuantity - 1);
-        break;
-      case 'plus':
-        newQuantity = newQuantity + 1;
-        break;
-      case 'match':
-        newQuantity = countedCurrentItem.expectedStock || 0;
-        break;
-      default:
-        return;
-    }
-    
-    setCountedCurrentQuantity(newQuantity.toString());
-  };
-
   return (
     <div className="counted-main-container">
       <ToastContainer position="bottom-right" autoClose={3000} />
       
-      {/* Sidebar Toggle Button - Added to match ProductListScreen */}
+      {/* Sidebar Toggle Button */}
       <div className="counted-sidebar-toggle-wrapper">
         <button 
           className="counted-sidebar-toggle"
@@ -751,10 +810,13 @@ const CountStockScreen = () => {
         </button>
       </div>
       
-      {/* Toolbar - Added to match ProductListScreen */}
+      {/* Toolbar */}
       <div className="counted-toolbar">
         <div className="counted-toolbar-content">
-          <h1 className="counted-toolbar-title">Count Stock</h1>
+          <h1 className="counted-toolbar-title">
+            {isDraftMode ? 'Draft: ' : ''}Count Stock
+            {isDraftMode && <span className="counted-draft-badge">DRAFT</span>}
+          </h1>
           <div className="counted-toolbar-subtitle">
             Real-time inventory count for {countedStoreName || 'selected store'}
           </div>
@@ -785,7 +847,7 @@ const CountStockScreen = () => {
           )}
           
           <div className="counted-header">
-            <h2>Count stock</h2>
+            <h2>{isDraftMode ? 'Continue Draft Count' : 'Count stock'}</h2>
             <div className="counted-progress">
               <span className="counted-progress-text">
                 {countedCompletedItems} / {countedTotalItems}
@@ -815,8 +877,9 @@ const CountStockScreen = () => {
                   className="counted-start-button"
                   onClick={() => {
                     if (countedItems.length > 0) {
-                      setCountedCurrentItem(countedItems[0]);
-                      setCountedCurrentQuantity(countedItems[0].expectedStock?.toString() || '');
+                      const firstUncounted = countedItems.find(item => !item.isCounted) || countedItems[0];
+                      setCountedCurrentItem(firstUncounted);
+                      setCountedCurrentQuantity(firstUncounted.countedQuantity || firstUncounted.expectedStock?.toString() || '');
                     }
                   }}
                 >
@@ -900,7 +963,7 @@ const CountStockScreen = () => {
                               className="counted-count-input"
                               value={item.countedQuantity || ''}
                               onChange={(e) => handleCountedManualUpdate(item.productId, e.target.value)}
-                              placeholder={item.expectedStock || '0'}
+                              placeholder={item.expectedStock?.toString() || '0'}
                             />
                           </div>
                           <div className={`counted-item-difference ${(item.difference || 0) < 0 ? 'counted-negative' : (item.difference || 0) > 0 ? 'counted-positive' : ''}`}>
@@ -964,22 +1027,33 @@ const CountStockScreen = () => {
             <button className="counted-cancel-btn" onClick={handleCountedCancel}>
               CANCEL
             </button>
-            <button 
-              className="counted-complete-btn" 
-              onClick={handleCountedComplete}
-              disabled={
-                countedItems.length === 0 || 
-                countedItems.some(item => 
-                  item.countedQuantity === undefined || 
-                  item.countedQuantity === '' || 
-                  item.countedQuantity === null
-                ) ||
-                isLoadingProducts || 
-                !productsLoaded
-              }
-            >
-              {isLoadingProducts ? 'LOADING...' : 'COMPLETE'}
-            </button>
+            <div className="counted-action-group">
+              <button 
+                className="counted-draft-btn"
+                onClick={handleSaveDraft}
+                disabled={countedItems.length === 0 || isLoadingProducts}
+              >
+                <FaSave />
+                {isDraftMode ? 'UPDATE DRAFT' : 'SAVE DRAFT'}
+              </button>
+              <button 
+                className="counted-complete-btn" 
+                onClick={handleCountedComplete}
+                disabled={
+                  countedItems.length === 0 || 
+                  countedItems.some(item => 
+                    item.countedQuantity === undefined || 
+                    item.countedQuantity === '' || 
+                    item.countedQuantity === null
+                  ) ||
+                  isLoadingProducts || 
+                  !productsLoaded
+                }
+              >
+                <FaPlay />
+                COMPLETE
+              </button>
+            </div>
           </div>
         </div>
       </div>

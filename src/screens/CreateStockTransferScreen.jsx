@@ -6,18 +6,15 @@ import {
   FaTimes,
   FaSearch,
   FaPlus,
-  FaMinus,
   FaTimesCircle,
   FaStore,
-  FaFileInvoice,
   FaBox,
-  FaDollarSign,
   FaCheck,
   FaWeight,
-  FaExchangeAlt,
   FaMapMarkerAlt,
   FaSpinner,
-  FaSyncAlt
+  FaSyncAlt,
+  FaFilter
 } from "react-icons/fa";
 import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
@@ -42,6 +39,12 @@ const CreateStockTransferScreen = () => {
   const [stores, setStores] = useState([]);
   const [reference, setReference] = useState('');
   const [searchSelected, setSearchSelected] = useState(new Set());
+  
+  // New state for category filtering
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   
   const navigate = useNavigate();
 
@@ -109,6 +112,7 @@ const CreateStockTransferScreen = () => {
   useEffect(() => {
     if (fromStore) {
       fetchProducts();
+      fetchCategories(); // Fetch categories when store changes
     }
   }, [fromStore]);
 
@@ -174,7 +178,7 @@ const CreateStockTransferScreen = () => {
 
       const responseData = await response.json();
       
-      // Filter products for current user and from store
+      // Filter products for current user
       const filteredProducts = responseData.data.filter(product => 
         product.userId === userId 
       );
@@ -186,6 +190,8 @@ const CreateStockTransferScreen = () => {
       setProducts(filteredProducts);
       NProgress.done();
       setProductsLoading(false);
+      
+      toast.success(`Loaded ${filteredProducts.length} products`);
     } catch (error) {
       console.error("Error fetching products:", error);
       toast.error("An error occurred while fetching products.");
@@ -194,11 +200,107 @@ const CreateStockTransferScreen = () => {
     }
   };
 
-  // Handle search when term changes
+  // Fetch categories function - UPDATED to include "No Category"
+  const fetchCategories = async () => {
+    try {
+      setIsLoadingCategories(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication token is missing.");
+        return;
+      }
+
+      const decoded = jwtDecode(token);
+      const userEmail = decoded.email;
+
+      const response = await fetch(
+        `https://nexuspos.onrender.com/api/categoryRouter/categories?email=${encodeURIComponent(
+          userEmail
+        )}`
+      );
+      
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error("Failed to fetch categories.");
+        return;
+      }
+      
+      if (data.success) {
+        // Add "All Categories" and "No Category" options at the beginning
+        const allCategories = [
+          { categoryId: "all", categoryName: "All Categories" },
+          { categoryId: "no-category", categoryName: "No Category" },
+          ...data.data
+        ];
+        setCategories(allCategories);
+        setSelectedCategory(allCategories[0]); // Default to "All Categories"
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      toast.error("An error occurred while fetching categories.");
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
+
+  // Filter products by category function - UPDATED to handle "No Category"
+  const filterProductsByCategory = (category) => {
+    setSelectedCategory(category);
+    setIsCategoryDropdownOpen(false);
+    
+    // Filter products based on selected category
+    let filteredResults;
+    
+    if (category.categoryId === "all") {
+      // Show all products not already added
+      filteredResults = products.filter(product =>
+        !selectedItems.some(item => item.productId === product.productId)
+      );
+    } else if (category.categoryId === "no-category") {
+      // Filter products with no category (null, empty, or "No Category")
+      filteredResults = products.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory && !selectedItems.some(item => item.productId === product.productId);
+      });
+    } else {
+      // Filter by selected category
+      filteredResults = products.filter(product =>
+        product.category === category.categoryName &&
+        !selectedItems.some(item => item.productId === product.productId)
+      );
+    }
+    
+    setSearchResults(filteredResults);
+    setShowSearchResults(true);
+    setSearchTerm(''); // Clear search term when filtering by category
+  };
+
+  // Handle search when term changes - UPDATED to handle "No Category"
   const handleSearch = (searchTerm) => {
     if (searchTerm.trim() === '') {
-      // Show ALL products that are not already added to transfer
-      const allResults = products.filter(product =>
+      // Show products based on selected category
+      let baseProducts;
+      if (selectedCategory?.categoryId === "all") {
+        baseProducts = products;
+      } else if (selectedCategory?.categoryId === "no-category") {
+        // Filter products with no category
+        baseProducts = products.filter(product => {
+          const hasNoCategory = !product.category || 
+                               product.category.trim() === '' || 
+                               product.category.toUpperCase() === 'NO CATEGORY' ||
+                               product.category.toUpperCase() === 'NO CATEGORY';
+          return hasNoCategory;
+        });
+      } else {
+        baseProducts = products.filter(product => 
+          product.category === selectedCategory?.categoryName
+        );
+      }
+      
+      const allResults = baseProducts.filter(product =>
         !selectedItems.some(item => item.productId === product.productId)
       );
       setSearchResults(allResults);
@@ -206,26 +308,41 @@ const CreateStockTransferScreen = () => {
       return;
     }
 
-    const filtered = products.filter(product =>
-      product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku?.toString().includes(searchTerm) ||
-      product.category?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Filter by search term AND current category
+    let categoryFiltered = products;
+    if (selectedCategory?.categoryId === "no-category") {
+      // Filter products with no category
+      categoryFiltered = products.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory;
+      });
+    } else if (selectedCategory?.categoryId !== "all") {
+      categoryFiltered = products.filter(product => 
+        product.category === selectedCategory?.categoryName
+      );
+    }
 
-    // Filter out already selected items
-    const filteredResults = filtered.filter(product =>
+    const filtered = categoryFiltered.filter(product =>
+      (product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku?.toString().includes(searchTerm) ||
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase())) &&
       !selectedItems.some(item => item.productId === product.productId)
     );
 
-    setSearchResults(filteredResults);
-    setShowSearchResults(filteredResults.length > 0);
+    setSearchResults(filtered);
+    setShowSearchResults(filtered.length > 0);
   };
 
-  // Handle click outside to close search results
+  // Handle click outside to close search results and category dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       const searchContainer = document.querySelector('.transfer-create-search-container');
       const searchResults = document.querySelector('.transfer-create-search-results-dropdown');
+      const categoryDropdown = document.querySelector('.transfer-create-category-dropdown');
+      const categoryBtn = document.querySelector('.transfer-create-category-btn');
       
       if (
         searchContainer && 
@@ -236,10 +353,21 @@ const CreateStockTransferScreen = () => {
         // Just hide the results, don't clear selections
         setShowSearchResults(false);
       }
+      
+      // Close category dropdown when clicking outside
+      if (
+        isCategoryDropdownOpen &&
+        categoryDropdown &&
+        !categoryDropdown.contains(event.target) &&
+        categoryBtn &&
+        !categoryBtn.contains(event.target)
+      ) {
+        setIsCategoryDropdownOpen(false);
+      }
     };
 
-    // Add event listener only when search results are shown
-    if (showSearchResults) {
+    // Add event listener only when search results are shown or category dropdown is open
+    if (showSearchResults || isCategoryDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
@@ -247,7 +375,7 @@ const CreateStockTransferScreen = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSearchResults]);
+  }, [showSearchResults, isCategoryDropdownOpen]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -484,26 +612,62 @@ const CreateStockTransferScreen = () => {
     return productType === 'Weight' ? <FaWeight title="Weight Product" style={{ color: '#059669', marginLeft: '4px' }} /> : null;
   };
 
-  // Clear search input but keep popup open showing all items
+  // Clear search input but keep popup open showing all items - UPDATED to handle "No Category"
   const handleClearSearch = () => {
     setSearchTerm('');
-    // Show ALL products that are not already added to transfer
-    const allResults = products.filter(product =>
+    // Show ALL products that are not already added to transfer based on selected category
+    let baseProducts;
+    if (selectedCategory?.categoryId === "all") {
+      baseProducts = products;
+    } else if (selectedCategory?.categoryId === "no-category") {
+      // Filter products with no category
+      baseProducts = products.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory;
+      });
+    } else {
+      baseProducts = products.filter(product => 
+        product.category === selectedCategory?.categoryName
+      );
+    }
+    
+    const allResults = baseProducts.filter(product =>
       !selectedItems.some(item => item.productId === product.productId)
     );
     setSearchResults(allResults);
     setShowSearchResults(true);
   };
 
-  // Handle search input focus
+  // Handle search input focus - UPDATED to handle "No Category"
   const handleSearchFocus = () => {
     if (productsLoading) {
       toast.info('Please wait for products to load.');
       return;
     }
     
-    // Show all items not yet added when search input is focused
-    const filteredResults = products.filter(product =>
+    // Show all items not yet added based on selected category
+    let baseProducts;
+    if (selectedCategory?.categoryId === "all") {
+      baseProducts = products;
+    } else if (selectedCategory?.categoryId === "no-category") {
+      // Filter products with no category
+      baseProducts = products.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory;
+      });
+    } else {
+      baseProducts = products.filter(product => 
+        product.category === selectedCategory?.categoryName
+      );
+    }
+    
+    const filteredResults = baseProducts.filter(product =>
       !selectedItems.some(item => item.productId === product.productId)
     );
     
@@ -529,12 +693,12 @@ const CreateStockTransferScreen = () => {
     handleSearch(value);
   };
 
-  // Effect to update search results when products or selected items change
+  // Effect to update search results when products, selected items, or selected category change
   useEffect(() => {
     if (showSearchResults) {
       handleSearch(searchTerm);
     }
-  }, [products, selectedItems]);
+  }, [products, selectedItems, selectedCategory]);
 
   return (
     <div className="transfer-create-main-container">
@@ -632,15 +796,17 @@ const CreateStockTransferScreen = () => {
               <label className="transfer-create-section-label">To Store *</label>
               <div className="transfer-create-store-selector">
                 <FaMapMarkerAlt className="transfer-create-store-icon" />
-                <input
-                  type="text"
-                  className="transfer-create-store-input"
-                  value={toStoreName}
-                  onChange={(e) => setToStoreName(e.target.value)}
-                  placeholder="Enter destination store name"
-                  required
-                  disabled={productsLoading}
-                />
+                <div className="transfer-create-store-input-wrapper">
+                  <input
+                    type="text"
+                    className="transfer-create-store-input"
+                    value={toStoreName}
+                    onChange={(e) => setToStoreName(e.target.value)}
+                    placeholder="Enter destination store name"
+                    required
+                    disabled={productsLoading}
+                  />
+                </div>
               </div>
             </div>
 
@@ -674,117 +840,184 @@ const CreateStockTransferScreen = () => {
           <div className="transfer-create-items-section">
             <div className="transfer-create-items-header">
               <h3 className="transfer-create-section-label">Items to Transfer</h3>
-              <div className="transfer-create-search-container">
-                <div className="transfer-create-search-input-wrapper">
-                  <FaSearch className="transfer-create-search-icon" />
-                  <input
-                    type="text"
-                    className="transfer-create-search-input"
-                    placeholder={productsLoading ? "Loading products..." : "Search item by name, SKU, or category..."}
-                    value={searchTerm}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    onFocus={handleSearchFocus}
-                    disabled={productsLoading}
-                  />
-                  {searchTerm && !productsLoading && (
-                    <button 
-                      className="transfer-create-clear-search-btn"
-                      onClick={handleClearSearch}
-                    >
-                      <FaTimesCircle />
-                    </button>
-                  )}
-                  {productsLoading && (
-                    <div className="transfer-create-search-loading">
-                      <FaSpinner className="transfer-create-search-loading-icon" />
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {/* Category Filter Button - UPDATED with proper structure */}
+                <div className="transfer-create-category-selector">
+                  <button 
+                    className="transfer-create-category-btn"
+                    onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                  >
+                    <FaFilter style={{ color: '#059669' }} />
+                    <span style={{ flex: 1, textAlign: 'left' }}>
+                      {selectedCategory?.categoryName || 'All Categories'}
+                    </span>
+                    <span style={{ color: '#94a3b8', fontSize: '10px' }}>▼</span>
+                  </button>
+                  
+                  {isCategoryDropdownOpen && (
+                    <div className="transfer-create-category-dropdown">
+                      {isLoadingCategories ? (
+                        <div style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                          Loading categories...
+                        </div>
+                      ) : (
+                        <>
+                          {/* All Categories option */}
+                          <div
+                            className={`transfer-create-category-dropdown-item ${selectedCategory?.categoryId === 'all' ? 'selected' : ''}`}
+                            onClick={() => filterProductsByCategory({ categoryId: 'all', categoryName: 'All Categories' })}
+                          >
+                            All Categories
+                            {selectedCategory?.categoryId === 'all' && (
+                              <FaCheck className="transfer-create-category-check" />
+                            )}
+                          </div>
+                          
+                          {/* No Category option */}
+                          <div
+                            className={`transfer-create-category-dropdown-item ${selectedCategory?.categoryId === 'no-category' ? 'selected' : ''}`}
+                            onClick={() => filterProductsByCategory({ categoryId: 'no-category', categoryName: 'No Category' })}
+                          >
+                            No Category
+                            {selectedCategory?.categoryId === 'no-category' && (
+                              <FaCheck className="transfer-create-category-check" />
+                            )}
+                          </div>
+                          
+                          {/* Regular categories */}
+                          {categories
+                            .filter(cat => cat.categoryId !== 'all' && cat.categoryId !== 'no-category')
+                            .map(category => (
+                              <div
+                                key={category.categoryId}
+                                className={`transfer-create-category-dropdown-item ${selectedCategory?.categoryId === category.categoryId ? 'selected' : ''}`}
+                                onClick={() => filterProductsByCategory(category)}
+                              >
+                                {category.categoryName}
+                                {selectedCategory?.categoryId === category.categoryId && (
+                                  <FaCheck className="transfer-create-category-check" />
+                                )}
+                              </div>
+                            ))
+                          }
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
                 
-                {showSearchResults && !productsLoading && (
-                  <div className="transfer-create-search-results-dropdown">
-                    <div className="transfer-create-search-actions-header">
+                <div className="transfer-create-search-container">
+                  <div className="transfer-create-search-input-wrapper">
+                    <FaSearch className="transfer-create-search-icon" />
+                    <input
+                      type="text"
+                      className="transfer-create-search-input"
+                      placeholder={productsLoading ? "Loading products..." : "Search item by name, SKU, or category..."}
+                      value={searchTerm}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onFocus={handleSearchFocus}
+                      disabled={productsLoading}
+                    />
+                    {searchTerm && !productsLoading && (
                       <button 
-                        className="transfer-create-select-all-btn"
-                        onClick={handleSelectAllSearchResults}
+                        className="transfer-create-clear-search-btn"
+                        onClick={handleClearSearch}
                       >
-                        <FaCheck /> Select All
+                        <FaTimesCircle />
                       </button>
-                      <button 
-                        className="transfer-create-clear-selection-btn"
-                        onClick={handleClearSearchSelection}
-                      >
-                        <FaTimesCircle /> Clear
-                      </button>
-                      <button 
-                        className="transfer-create-close-popup-btn"
-                        onClick={() => setShowSearchResults(false)}
-                      >
-                        <FaTimes /> Close
-                      </button>
-                    </div>
-                    
-                    <div className="transfer-create-search-results-list">
-                      {searchResults.length > 0 ? (
-                        searchResults.map(product => {
-                          const isSelected = searchSelected.has(product.productId);
-                          const isAlreadyAdded = selectedItems.some(item => item.productId === product.productId);
-                          
-                          return (
-                            <div 
-                              key={product.productId}
-                              className={`transfer-create-search-result-item ${isSelected ? 'transfer-create-search-result-selected' : ''} ${isAlreadyAdded ? 'transfer-create-search-result-added' : ''}`}
-                              onClick={(e) => {
-                                if (e.target.type !== 'checkbox' && !isAlreadyAdded && !productsLoading) {
-                                  handleSearchSelectToggle(product.productId);
-                                }
-                              }}
-                            >
-                              <div className="transfer-create-result-checkbox">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => !productsLoading && handleSearchSelectToggle(product.productId)}
-                                  disabled={isAlreadyAdded || productsLoading}
-                                />
-                              </div>
-                              <div className="transfer-create-result-product-info">
-                                <div className="transfer-create-result-product-name">
-                                  {product.productName}
-                                  {getProductTypeIcon(product.productType)}
-                                  {isAlreadyAdded && (
-                                    <span className="transfer-create-already-added-badge">Already Added</span>
-                                  )}
-                                </div>
-                                <div className="transfer-create-result-product-details">
-                                  SKU: {product.sku} | Category: {product.category} | Available: {product.stock || 0}
-                                </div>
-                              </div>
-                              <div className="transfer-create-result-product-price">
-                                <div>Cost: ${formatDecimal(product.cost)}</div>
-                                <div>Price: ${formatDecimal(product.price)}</div>
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="transfer-create-no-results">No products found</div>
-                      )}
-                    </div>
-                    
-                    {searchSelected.size > 0 && (
-                      <div className="transfer-create-search-actions-footer">
-                        <button 
-                          className="transfer-create-add-selected-btn"
-                          onClick={handleAddSelectedProducts}
-                          disabled={productsLoading}
-                        >
-                          <FaPlus /> Add Selected ({getTotalSelectedCount()})
-                        </button>
+                    )}
+                    {productsLoading && (
+                      <div className="transfer-create-search-loading">
+                        <FaSpinner className="transfer-create-search-loading-icon" />
                       </div>
                     )}
                   </div>
-                )}
+                  
+                  {showSearchResults && !productsLoading && (
+                    <div className="transfer-create-search-results-dropdown">
+                      <div className="transfer-create-search-actions-header">
+                        <button 
+                          className="transfer-create-select-all-btn"
+                          onClick={handleSelectAllSearchResults}
+                        >
+                          <FaCheck /> Select All
+                        </button>
+                        <button 
+                          className="transfer-create-clear-selection-btn"
+                          onClick={handleClearSearchSelection}
+                        >
+                          <FaTimesCircle /> Clear
+                        </button>
+                        <button 
+                          className="transfer-create-close-popup-btn"
+                          onClick={() => setShowSearchResults(false)}
+                        >
+                          <FaTimes /> Close
+                        </button>
+                      </div>
+                      
+                      <div className="transfer-create-search-results-list">
+                        {searchResults.length > 0 ? (
+                          searchResults.map(product => {
+                            const isSelected = searchSelected.has(product.productId);
+                            const isAlreadyAdded = selectedItems.some(item => item.productId === product.productId);
+                            
+                            return (
+                              <div 
+                                key={product.productId}
+                                className={`transfer-create-search-result-item ${isSelected ? 'transfer-create-search-result-selected' : ''} ${isAlreadyAdded ? 'transfer-create-search-result-added' : ''}`}
+                                onClick={(e) => {
+                                  if (e.target.type !== 'checkbox' && !isAlreadyAdded && !productsLoading) {
+                                    handleSearchSelectToggle(product.productId);
+                                  }
+                                }}
+                              >
+                                <div className="transfer-create-result-checkbox">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => !productsLoading && handleSearchSelectToggle(product.productId)}
+                                    disabled={isAlreadyAdded || productsLoading}
+                                  />
+                                </div>
+                                <div className="transfer-create-result-product-info">
+                                  <div className="transfer-create-result-product-name">
+                                    {product.productName}
+                                    {getProductTypeIcon(product.productType)}
+                                    {isAlreadyAdded && (
+                                      <span className="transfer-create-already-added-badge">Already Added</span>
+                                    )}
+                                  </div>
+                                  <div className="transfer-create-result-product-details">
+                                    SKU: {product.sku} | Category: {product.category || 'No Category'} | Available: {product.stock || 0}
+                                  </div>
+                                </div>
+                                <div className="transfer-create-result-product-price">
+                                  <div>Price: ${formatDecimal(product.price)}</div>
+                                  <div>Cost: ${formatDecimal(product.cost)}</div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="transfer-create-no-results">No products found</div>
+                        )}
+                      </div>
+                      
+                      {searchSelected.size > 0 && (
+                        <div className="transfer-create-search-actions-footer">
+                          <button 
+                            className="transfer-create-add-selected-btn"
+                            onClick={handleAddSelectedProducts}
+                            disabled={productsLoading}
+                          >
+                            <FaPlus /> Add Selected ({getTotalSelectedCount()})
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -800,7 +1033,7 @@ const CreateStockTransferScreen = () => {
               
               <div className="transfer-create-items-table-body">
                 {selectedItems.length > 0 ? (
-                  selectedItems.map((item, index) => (
+                  selectedItems.map((item) => (
                     <div key={item.productId} className="transfer-create-item-row">
                       <div className="transfer-create-item-info">
                         <div className="transfer-create-item-name">
@@ -846,6 +1079,11 @@ const CreateStockTransferScreen = () => {
                   <div className="transfer-create-empty-message">
                     <FaBox className="transfer-create-empty-icon" />
                     <p>{productsLoading ? 'Loading products...' : 'No items added. Use the search above to add items.'}</p>
+                    {products.length === 0 && !productsLoading && (
+                      <p style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
+                        No products available for this store.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

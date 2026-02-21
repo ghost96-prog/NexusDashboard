@@ -33,10 +33,24 @@ const InventoryCountsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+  const [draftCounts, setDraftCounts] = useState([]);
+
   const navigate = useNavigate();
   const statusDropdownRef = useRef(null);
   const sortDropdownRef = useRef(null);
+const loadDrafts = () => {
+  try {
+    const drafts = JSON.parse(localStorage.getItem('inventoryCountDrafts') || '[]');
+    setDraftCounts(drafts);
+  } catch (error) {
+    console.error('Error loading drafts:', error);
+  }
+};
+
+// Call loadDrafts in useEffect
+useEffect(() => {
+  loadDrafts();
+}, []);
 
   // Fetch email from token
   useEffect(() => {
@@ -129,39 +143,67 @@ const InventoryCountsScreen = () => {
     }
   };
 
-  const handleViewCountDetails = async (countId) => {
-    if (!isSubscribedAdmin) {
-      setShowSubscriptionModal(true);
-      return;
-    }
-    
+const handleViewCountDetails = async (count) => {
+  if (!isSubscribedAdmin) {
+    setShowSubscriptionModal(true);
+    return;
+  }
+  
+  // Check if it's a draft
+  if (count.status === 'Draft' && count.id && count.id.startsWith('DRAFT-')) {
+    // Load draft from localStorage
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const decoded = jwtDecode(token);
-      const userEmail = decoded.email;
-
-      const response = await fetch(
-        `https://nexuspos.onrender.com/api/inventoryCounts/${countId}?email=${encodeURIComponent(userEmail)}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-        navigate(`/inventory-count/${countId}`, { state: { countData: result.data } });
-      } else {
-        toast.error('Count not found');
+      const draftData = localStorage.getItem(count.id);
+      if (draftData) {
+        const parsedDraft = JSON.parse(draftData);
+        navigate('/count-stock', { 
+          state: { 
+            notes: parsedDraft.notes,
+            items: parsedDraft.items,
+            storeName: parsedDraft.storeName,
+            storeId: parsedDraft.storeId,
+            type: parsedDraft.type,
+            countId: count.id,
+            isDraft: true
+          } 
+        });
+        return;
       }
     } catch (error) {
-      console.error('Error fetching count details:', error);
-      toast.error('Failed to load count details');
+      console.error('Error loading draft:', error);
+      toast.error('Failed to load draft');
+      return;
     }
-  };
+  }
+  
+  // Regular server count
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const decoded = jwtDecode(token);
+    const userEmail = decoded.email;
+
+    const response = await fetch(
+      `https://nexuspos.onrender.com/api/inventoryCounts/${count.countId}?email=${encodeURIComponent(userEmail)}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+
+    if (response.ok) {
+      const result = await response.json();
+      navigate(`/inventory-count/${count.countId}`, { state: { countData: result.data } });
+    } else {
+      toast.error('Count not found');
+    }
+  } catch (error) {
+    console.error('Error fetching count details:', error);
+    toast.error('Failed to load count details');
+  }
+};
 
   const formatFirebaseDate = (timestamp) => {
     if (!timestamp) return '-';
@@ -179,31 +221,47 @@ const InventoryCountsScreen = () => {
     
     return 'Invalid Date';
   };
+const formatLocalDate = (dateString) => {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return '-';
+  }
+};
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-
-  const renderStatusBadge = (status) => {
-    const statusLower = status?.toLowerCase() || '';
-    let statusClass = '';
-    let displayText = status || 'Draft';
-    
-    if (statusLower.includes('completed')) {
-      statusClass = 'inventory-counts-status-completed';
-    } else if (statusLower.includes('progress') || statusLower.includes('in progress')) {
-      statusClass = 'inventory-counts-status-in-progress';
-    } else {
-      statusClass = 'inventory-counts-status-draft';
-    }
-    
-    return (
-      <span className={`inventory-counts-status-badge ${statusClass}`}>
-        {displayText}
-      </span>
-    );
-  };
-
+const renderStatusBadge = (status) => {
+  const statusLower = status?.toLowerCase() || '';
+  let statusClass = '';
+  let displayText = status || 'Draft';
+  
+  if (statusLower.includes('completed')) {
+    statusClass = 'inventory-counts-status-completed';
+  } else if (statusLower.includes('progress') || statusLower.includes('in progress')) {
+    statusClass = 'inventory-counts-status-in-progress';
+  } else if (statusLower.includes('draft')) {
+    statusClass = 'inventory-counts-status-draft';
+  } else {
+    statusClass = 'inventory-counts-status-draft';
+  }
+  
+  return (
+    <span className={`inventory-counts-status-badge ${statusClass}`}>
+      {displayText}
+    </span>
+  );
+};
   const handleCreateCount = () => {
     if (!isSubscribedAdmin) {
       setShowSubscriptionModal(true);
@@ -221,49 +279,48 @@ const InventoryCountsScreen = () => {
     setSortBy(sortOption);
     setIsSortDropdownOpen(false);
   };
+const allCounts = [...inventoryCounts, ...draftCounts];
+const applyFilters = () => {
+  let filtered = [...allCounts]; // Use allCounts instead of inventoryCounts
 
-  const applyFilters = () => {
-    let filtered = [...inventoryCounts];
-
-    // Apply status filter
-    if (statusFilter !== "All") {
-      const statusLower = statusFilter.toLowerCase();
-      filtered = filtered.filter(count => {
-        const countStatus = count.status?.toLowerCase() || '';
-        if (statusLower === "in progress") {
-          return countStatus.includes('progress') || countStatus.includes('in progress');
-        }
-        return countStatus.includes(statusLower);
-      });
-    }
-
-    // Apply search filter
-    if (searchTerm.trim() !== "") {
-      const lowerSearch = searchTerm.toLowerCase();
-      filtered = filtered.filter(count => 
-        count.countId?.toLowerCase().includes(lowerSearch) ||
-        count.notes?.toLowerCase().includes(lowerSearch) ||
-        count.status?.toLowerCase().includes(lowerSearch)
-      );
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      if (sortBy === "Date Created") {
-        const dateA = a.dateCreated?._seconds || 0;
-        const dateB = b.dateCreated?._seconds || 0;
-        return dateB - dateA; // Newest first
-      } else if (sortBy === "Status") {
-        const statusA = a.status || "Draft";
-        const statusB = b.status || "Draft";
-        return statusA.localeCompare(statusB);
+  // Apply status filter (including drafts)
+  if (statusFilter !== "All") {
+    const statusLower = statusFilter.toLowerCase();
+    filtered = filtered.filter(count => {
+      const countStatus = count.status?.toLowerCase() || '';
+      if (statusLower === "in progress") {
+        return countStatus.includes('progress') || countStatus.includes('in progress');
       }
-      return 0;
+      return countStatus.includes(statusLower);
     });
+  }
 
-    setFilteredCounts(filtered);
-  };
+  // Apply search filter
+  if (searchTerm.trim() !== "") {
+    const lowerSearch = searchTerm.toLowerCase();
+    filtered = filtered.filter(count => 
+      count.countId?.toLowerCase().includes(lowerSearch) ||
+      count.notes?.toLowerCase().includes(lowerSearch) ||
+      count.status?.toLowerCase().includes(lowerSearch)
+    );
+  }
 
+  // Apply sorting
+  filtered.sort((a, b) => {
+    if (sortBy === "Date Created") {
+      const dateA = a.dateCreated?._seconds || new Date(a.dateCreated).getTime() / 1000 || 0;
+      const dateB = b.dateCreated?._seconds || new Date(b.dateCreated).getTime() / 1000 || 0;
+      return dateB - dateA; // Newest first
+    } else if (sortBy === "Status") {
+      const statusA = a.status || "Draft";
+      const statusB = b.status || "Draft";
+      return statusA.localeCompare(statusB);
+    }
+    return 0;
+  });
+
+  setFilteredCounts(filtered);
+};
   const handleRefresh = async () => {
     await fetchInventoryCounts();
     toast.success("Inventory counts refreshed");
@@ -391,11 +448,11 @@ const InventoryCountsScreen = () => {
                   </tr>
                 ) : filteredCounts.length > 0 ? (
                   filteredCounts.map((count, index) => (
-                    <tr 
-                      key={`${count.countId}-${index}`} 
-                      className="inventory-counts-table-row"
-                      onClick={() => handleViewCountDetails(count.countId)}
-                    >
+               <tr 
+  key={`${count.countId || count.id}-${index}`} 
+  className="inventory-counts-table-row"
+  onClick={() => handleViewCountDetails(count)}
+>
                       <td className="inventory-counts-table-cell">
                         <span style={{ fontWeight: '500' }}>
                           {count.countId || `COUNT-${index + 1}`}
@@ -404,8 +461,10 @@ const InventoryCountsScreen = () => {
                       <td className="inventory-counts-table-cell">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <FaCalendarAlt style={{ color: '#94a3b8', fontSize: '12px' }} />
-                          {formatFirebaseDate(count.dateCreated)}
-                        </div>
+{count.id?.startsWith('DRAFT-') 
+      ? formatLocalDate(count.dateCreated)
+      : formatFirebaseDate(count.dateCreated)
+    }                        </div>
                       </td>
                       {/* <td className="inventory-counts-table-cell">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

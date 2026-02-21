@@ -304,7 +304,7 @@
   font-weight: 600;
 }
 
-/* Search Container */
+/* Search Container - Updated for better dropdown positioning */
 .grv-create-search-container {
   position: relative;
   flex-grow: 1;
@@ -360,44 +360,61 @@
   background-color: #ffebee;
 }
 
-/* Search Results Dropdown - UPDATED STRUCTURE */
+/* Search Results Dropdown - FIXED WIDTH */
 .grv-create-search-results-dropdown {
   position: absolute;
   top: 100%;
-  left: 0;
-  right: 0;
+  right: 0px;
+  min-width: 200px; /* Fixed wider width */
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 0 0 8px 8px;
+  border-radius: 8px;
   z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  max-height: 450px;
+  max-height: 500px;
+  margin-top: 4px;
+}
+
+/* Adjust for different screen sizes */
+@media (max-width: 768px) {
+  .grv-create-search-results-dropdown {
+    width: 90vw;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+@media (min-width: 1200px) {
+  .grv-create-search-results-dropdown {
+    width: 600px; /* Even wider on large screens */
+  }
 }
 
 .grv-create-search-results-list {
   flex: 1;
   overflow-y: auto;
-  max-height: 300px;
+  max-height: 350px;
 }
 
 .grv-create-search-actions-header {
   display: flex;
   gap: 8px;
-  padding: 10px;
+  padding: 12px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8fafc;
   position: sticky;
   top: 0;
   z-index: 1001;
+  border-radius: 8px 8px 0 0;
 }
 
 .grv-create-select-all-btn,
 .grv-create-clear-selection-btn,
 .grv-create-close-popup-btn {
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -433,7 +450,7 @@
 
 .grv-create-select-all-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(14, 98, 126, 0.3);
 }
 
 .grv-create-clear-selection-btn:hover,
@@ -449,6 +466,7 @@
   border-top: 1px solid #e2e8f0;
   padding: 12px;
   z-index: 1001;
+  border-radius: 0 0 8px 8px;
 }
 
 .grv-create-add-selected-btn {
@@ -499,45 +517,48 @@
 
 .grv-create-result-product-info {
   flex-grow: 1;
+  margin-right: 16px;
 }
 
 .grv-create-result-product-name {
   color: #1e293b;
   font-weight: 600;
   margin-bottom: 4px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .grv-create-result-product-details {
   color: #64748b;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .grv-create-result-product-price {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 11px;
+  font-size: 12px;
   color: #64748b;
   text-align: right;
+  min-width: 120px;
 }
 
 .grv-create-no-results {
-  padding: 20px;
+  padding: 30px 20px;
   text-align: center;
   color: #64748b;
   font-style: italic;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .grv-create-result-checkbox {
-  margin-right: 10px;
+  margin-right: 12px;
 }
 
 .grv-create-result-checkbox input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
+  accent-color: #5694e6;
 }
 
 .grv-create-search-result-selected {
@@ -554,10 +575,11 @@
   background-color: #10b981;
   color: white;
   font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
   margin-left: 8px;
   vertical-align: middle;
+  display: inline-block;
 }
 
 /* Items Table */
@@ -681,6 +703,11 @@
   font-size: 14px;
   transition: background-color 0.2s;
   margin: 0 auto;
+}
+
+.grv-create-remove-btn:hover {
+  background: #fecaca;
+  transform: scale(1.05);
 }
 
 /* Make sure the columns match exactly */
@@ -1016,22 +1043,112 @@
 /* Custom Scrollbar */
 .grv-create-items-table-body::-webkit-scrollbar,
 .grv-create-search-results-list::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .grv-create-items-table-body::-webkit-scrollbar-track,
 .grv-create-search-results-list::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .grv-create-items-table-body::-webkit-scrollbar-thumb,
 .grv-create-search-results-list::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .grv-create-items-table-body::-webkit-scrollbar-thumb:hover,
 .grv-create-search-results-list::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Category Filter Button and Dropdown */
+.grv-create-category-selector {
+  position: relative;
+}
+
+.grv-create-category-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 160px;
+}
+
+.grv-create-category-btn:hover {
+  border-color: #5694e6;
+  background: #f8fafc;
+}
+
+.grv-create-category-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+}
+
+.grv-create-category-dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.grv-create-category-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.grv-create-category-dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.grv-create-category-dropdown-item.selected {
+  background: #f0f9ff;
+  border-left: 3px solid #5694e6;
+}
+
+.grv-create-category-check {
+  float: right;
+  color: #5694e6;
+  font-size: 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grv-create-items-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .grv-create-items-header > div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .grv-create-category-selector {
+    width: 100%;
+  }
+  
+  .grv-create-category-btn {
+    width: 100%;
+  }
 }

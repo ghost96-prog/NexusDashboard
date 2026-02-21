@@ -8,6 +8,9 @@ import {
   FaCheck,
   FaTimesCircle,
   FaStore,
+  FaBox,
+  FaFilter,
+  FaSpinner
 } from "react-icons/fa";
 import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';
@@ -35,6 +38,12 @@ const CreateCountScreen = () => {
   const navigate = useNavigate();
   const [createCountTotalProducts, setCreateCountTotalProducts] = useState(0);
   const [createCountTempSelectedProducts, setCreateCountTempSelectedProducts] = useState([]);
+  
+  // New state for category filtering
+  const [createCountCategories, setCreateCountCategories] = useState([]);
+  const [createCountSelectedCategory, setCreateCountSelectedCategory] = useState(null);
+  const [createCountIsCategoryDropdownOpen, setCreateCountIsCategoryDropdownOpen] = useState(false);
+  const [createCountIsLoadingCategories, setCreateCountIsLoadingCategories] = useState(false);
 
   // Fetch email from token on component mount
   useEffect(() => {
@@ -65,6 +74,7 @@ const CreateCountScreen = () => {
   useEffect(() => {
     if (createCountSelectedStore) {
       fetchCreateCountProducts();
+      fetchCreateCountCategories(); // Fetch categories when store changes
     }
   }, [createCountSelectedStore]);
 
@@ -129,7 +139,7 @@ const CreateCountScreen = () => {
 
   const fetchCreateCountProducts = async () => {
     try {
-      NProgress.start(); // Start the loading bar
+      NProgress.start();
       setCreateCountLoading(true);
       
       const token = localStorage.getItem("token");
@@ -158,14 +168,10 @@ const CreateCountScreen = () => {
 
       const responseData = await response.json();
       
-      // Filter products for the selected store and current user
+      // Filter products for the current user
       const filteredProducts = responseData.data.filter(product => 
         product.userId === userId
       );
-    //   const filteredProducts = responseData.data.filter(product => 
-    //     product.userId === userId && 
-    //     (product.storeId === createCountSelectedStore.storeId)
-    //   );
 
       // Set total products count
       setCreateCountTotalProducts(filteredProducts.length);
@@ -177,43 +183,210 @@ const CreateCountScreen = () => {
 
       setCreateCountProducts(filteredProducts);
       setCreateCountLoading(false);
-      NProgress.done(); // Complete the loading bar
+      NProgress.done();
+      
+      toast.success(`Loaded ${filteredProducts.length} products`);
     } catch (error) {
       console.error("Error fetching products:", error);
       toast.error("An error occurred while fetching products.");
       setCreateCountLoading(false);
-      NProgress.done(); // Ensure loading bar stops on error
+      NProgress.done();
     }
   };
 
+  // Fetch categories function
+// Fetch categories function - UPDATED to include "No Category"
+const fetchCreateCountCategories = async () => {
+  try {
+    setCreateCountIsLoadingCategories(true);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication token is missing.");
+      return;
+    }
+
+    const decoded = jwtDecode(token);
+    const userEmail = decoded.email;
+
+    const response = await fetch(
+      `https://nexuspos.onrender.com/api/categoryRouter/categories?email=${encodeURIComponent(
+        userEmail
+      )}`
+    );
+    
+    const data = await response.json();
+    if (!response.ok) {
+      toast.error("Failed to fetch categories.");
+      return;
+    }
+    
+    if (data.success) {
+      // Add "All Categories" option at the beginning
+      const allCategories = [
+        { categoryId: "all", categoryName: "All Categories" },
+        // Add "No Category" option
+        { categoryId: "no-category", categoryName: "No Category" },
+        ...data.data
+      ];
+      setCreateCountCategories(allCategories);
+      setCreateCountSelectedCategory(allCategories[0]); // Default to "All Categories"
+    }
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    toast.error("An error occurred while fetching categories.");
+  } finally {
+    setCreateCountIsLoadingCategories(false);
+  }
+};
+  // Filter products by category function
+// Filter products by category function - UPDATED to handle "No Category"
+const filterProductsByCategory = (category) => {
+  setCreateCountSelectedCategory(category);
+  setCreateCountIsCategoryDropdownOpen(false);
+  
+  if (createCountType === 'Full') return;
+  
+  // Filter products based on selected category
+  let filteredResults;
+  
+  if (category.categoryId === "all") {
+    // Show all products not already added
+    filteredResults = createCountProducts.filter(product =>
+      !createCountSelectedItems.some(item => item.productId === product.productId)
+    );
+  } else if (category.categoryId === "no-category") {
+    // Filter products with no category (null, empty, or "No Category")
+    filteredResults = createCountProducts.filter(product => {
+      const hasNoCategory = !product.category || 
+                           product.category.trim() === '' || 
+                           product.category.toUpperCase() === 'NO CATEGORY' ||
+                           product.category.toUpperCase() === 'NO CATEGORY';
+      return hasNoCategory && !createCountSelectedItems.some(item => item.productId === product.productId);
+    });
+  } else {
+    // Filter by selected category
+    filteredResults = createCountProducts.filter(product =>
+      product.category === category.categoryName &&
+      !createCountSelectedItems.some(item => item.productId === product.productId)
+    );
+  }
+  
+  setCreateCountSearchResults(filteredResults);
+  setCreateCountShowSearchResults(true);
+  setCreateCountSearchTerm(''); // Clear search term when filtering by category
+};
   const toggleCreateCountSidebar = () => {
     setCreateCountSidebarOpen(!createCountSidebarOpen);
   };
 
   // Handle search input
-  useEffect(() => {
-    if (createCountSearchTerm.trim() === '' || createCountType === 'Full') {
+// Handle search input - UPDATED to handle "No Category"
+useEffect(() => {
+  if (createCountType === 'Full' || createCountSearchTerm.trim() === '') {
+    if (createCountType === 'Partial' && createCountSearchTerm.trim() === '') {
+      // Show products based on selected category
+      let baseProducts;
+      if (createCountSelectedCategory?.categoryId === "all") {
+        baseProducts = createCountProducts;
+      } else if (createCountSelectedCategory?.categoryId === "no-category") {
+        // Filter products with no category
+        baseProducts = createCountProducts.filter(product => {
+          const hasNoCategory = !product.category || 
+                               product.category.trim() === '' || 
+                               product.category.toUpperCase() === 'NO CATEGORY' ||
+                               product.category.toUpperCase() === 'NO CATEGORY';
+          return hasNoCategory;
+        });
+      } else {
+        baseProducts = createCountProducts.filter(product => 
+          product.category === createCountSelectedCategory?.categoryName
+        );
+      }
+      
+      const allResults = baseProducts.filter(product =>
+        !createCountSelectedItems.some(item => item.productId === product.productId)
+      );
+      setCreateCountSearchResults(allResults);
+      setCreateCountShowSearchResults(allResults.length > 0);
+    } else {
       setCreateCountSearchResults([]);
       setCreateCountShowSearchResults(false);
-      return;
+    }
+    return;
+  }
+
+  // Filter by search term AND current category
+  let categoryFiltered = createCountProducts;
+  if (createCountSelectedCategory?.categoryId === "no-category") {
+    // Filter products with no category
+    categoryFiltered = createCountProducts.filter(product => {
+      const hasNoCategory = !product.category || 
+                           product.category.trim() === '' || 
+                           product.category.toUpperCase() === 'NO CATEGORY' ||
+                           product.category.toUpperCase() === 'NO CATEGORY';
+      return hasNoCategory;
+    });
+  } else if (createCountSelectedCategory?.categoryId !== "all") {
+    categoryFiltered = createCountProducts.filter(product => 
+      product.category === createCountSelectedCategory?.categoryName
+    );
+  }
+
+  const filtered = categoryFiltered.filter(product =>
+    product.productName?.toLowerCase().includes(createCountSearchTerm.toLowerCase()) ||
+    product.sku?.includes(createCountSearchTerm) ||
+    product.category?.toLowerCase().includes(createCountSearchTerm.toLowerCase())
+  );
+
+  // Filter out already selected items
+  const filteredResults = filtered.filter(product =>
+    !createCountSelectedItems.some(item => item.productId === product.productId)
+  );
+
+  setCreateCountSearchResults(filteredResults);
+  setCreateCountShowSearchResults(filteredResults.length > 0);
+}, [createCountSearchTerm, createCountProducts, createCountSelectedItems, createCountType, createCountSelectedCategory]);
+  // Handle click outside to close search results and category dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const searchContainer = document.querySelector('.create-count-search-container');
+      const searchResults = document.querySelector('.create-count-search-results-dropdown');
+      const categoryDropdown = document.querySelector('.create-count-category-dropdown');
+      const categoryBtn = document.querySelector('.create-count-category-btn');
+      
+      if (
+        searchContainer && 
+        searchResults && 
+        !searchContainer.contains(event.target) && 
+        !searchResults.contains(event.target)
+      ) {
+        setCreateCountShowSearchResults(false);
+      }
+      
+      // Close category dropdown when clicking outside
+      if (
+        createCountIsCategoryDropdownOpen &&
+        categoryDropdown &&
+        !categoryDropdown.contains(event.target) &&
+        categoryBtn &&
+        !categoryBtn.contains(event.target)
+      ) {
+        setCreateCountIsCategoryDropdownOpen(false);
+      }
+    };
+
+    // Add event listener only when search results are shown or category dropdown is open
+    if (createCountShowSearchResults || createCountIsCategoryDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
 
-    const filtered = createCountProducts.filter(product =>
-      product.productName?.toLowerCase().includes(createCountSearchTerm.toLowerCase()) ||
-      product.sku?.includes(createCountSearchTerm) ||
-      product.category?.toLowerCase().includes(createCountSearchTerm.toLowerCase())
-    );
+    // Clean up the event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [createCountShowSearchResults, createCountIsCategoryDropdownOpen]);
 
-    // Filter out already selected items
-    const filteredResults = filtered.filter(product =>
-      !createCountSelectedItems.some(item => item.productId === product.productId)
-    );
-
-    setCreateCountSearchResults(filteredResults);
-    setCreateCountShowSearchResults(filteredResults.length > 0);
-  }, [createCountSearchTerm, createCountProducts, createCountSelectedItems, createCountType]);
-
-  const handleCreateCountSelectProduct = (product) => {
+  const handleCreateCountToggleTempProduct = (product) => {
     if (!createCountIsSubscribedAdmin) {
       setCreateCountShowSubscriptionModal(true);
       return;
@@ -228,13 +401,51 @@ const CreateCountScreen = () => {
       return;
     }
 
-    const newSelectedItems = [...createCountSelectedItems, product];
+    const isCurrentlySelected = createCountTempSelectedProducts.some(
+      p => p.productId === product.productId
+    );
+    
+    if (isCurrentlySelected) {
+      // Remove from temp selection
+      setCreateCountTempSelectedProducts(prev => 
+        prev.filter(p => p.productId !== product.productId)
+      );
+    } else {
+      // Add to temp selection
+      setCreateCountTempSelectedProducts(prev => [...prev, product]);
+    }
+  };
+
+  const handleCreateCountAddSelectedProducts = () => {
+    if (!createCountIsSubscribedAdmin) {
+      setCreateCountShowSubscriptionModal(true);
+      return;
+    }
+
+    if (createCountTempSelectedProducts.length === 0) {
+      toast.error('No products selected.');
+      return;
+    }
+
+    // Add all temp selected products to the main selected items
+    const newSelectedItems = [...createCountSelectedItems, ...createCountTempSelectedProducts];
     setCreateCountSelectedItems(newSelectedItems);
     
+    // Clear temp selection and search
+    setCreateCountTempSelectedProducts([]);
     setCreateCountShowSearchResults(false);
     setCreateCountSearchTerm('');
     
-    toast.success(`Added "${product.productName}" to count.`);
+    toast.success(`Added ${createCountTempSelectedProducts.length} product(s) to count.`);
+  };
+
+  const handleCreateCountClearSearchSelection = () => {
+    setCreateCountTempSelectedProducts([]);
+  };
+
+  const handleCreateCountSelectAllSearchResults = () => {
+    if (createCountType === 'Full') return;
+    setCreateCountTempSelectedProducts(createCountSearchResults);
   };
 
   const handleCreateCountRemoveProduct = (productId) => {
@@ -294,68 +505,97 @@ const CreateCountScreen = () => {
   const handleCreateCountCancel = () => {
     navigate('/counts');
   };
-
-  const handleCreateCountToggleTempProduct = (product) => {
-    if (!createCountIsSubscribedAdmin) {
-      setCreateCountShowSubscriptionModal(true);
-      return;
-    }
-
-    const isAlreadySelected = createCountSelectedItems.some(
-      item => item.productId === product.productId
-    );
-    
-    if (isAlreadySelected) {
-      toast.info('This product is already added to the count.');
-      return;
-    }
-
-    const isCurrentlySelected = createCountTempSelectedProducts.some(
-      p => p.productId === product.productId
-    );
-    
-    if (isCurrentlySelected) {
-      // Remove from temp selection
-      setCreateCountTempSelectedProducts(prev => 
-        prev.filter(p => p.productId !== product.productId)
-      );
+const handleClearSearch = () => {
+  setCreateCountSearchTerm('');
+  // Show all products based on selected category
+  if (createCountType === 'Partial') {
+    let baseProducts;
+    if (createCountSelectedCategory?.categoryId === "all") {
+      baseProducts = createCountProducts;
+    } else if (createCountSelectedCategory?.categoryId === "no-category") {
+      // Filter products with no category
+      baseProducts = createCountProducts.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory;
+      });
     } else {
-      // Add to temp selection
-      setCreateCountTempSelectedProducts(prev => [...prev, product]);
+      baseProducts = createCountProducts.filter(product => 
+        product.category === createCountSelectedCategory?.categoryName
+      );
     }
-  };
-
-  const handleCreateCountAddSelectedProducts = () => {
-    if (!createCountIsSubscribedAdmin) {
-      setCreateCountShowSubscriptionModal(true);
-      return;
-    }
-
-    if (createCountTempSelectedProducts.length === 0) {
-      toast.error('No products selected.');
-      return;
-    }
-
-    // Add all temp selected products to the main selected items
-    const newSelectedItems = [...createCountSelectedItems, ...createCountTempSelectedProducts];
-    setCreateCountSelectedItems(newSelectedItems);
     
-    // Clear temp selection and search
-    setCreateCountTempSelectedProducts([]);
-    setCreateCountShowSearchResults(false);
-    setCreateCountSearchTerm('');
+    const allResults = baseProducts.filter(product =>
+      !createCountSelectedItems.some(item => item.productId === product.productId)
+    );
+    setCreateCountSearchResults(allResults);
+    setCreateCountShowSearchResults(true);
+  }
+};
+
+const handleSearchFocus = () => {
+  if (createCountType === 'Partial' && !createCountLoading) {
+    // Show all products based on selected category
+    let baseProducts;
+    if (createCountSelectedCategory?.categoryId === "all") {
+      baseProducts = createCountProducts;
+    } else if (createCountSelectedCategory?.categoryId === "no-category") {
+      // Filter products with no category
+      baseProducts = createCountProducts.filter(product => {
+        const hasNoCategory = !product.category || 
+                             product.category.trim() === '' || 
+                             product.category.toUpperCase() === 'NO CATEGORY' ||
+                             product.category.toUpperCase() === 'NO CATEGORY';
+        return hasNoCategory;
+      });
+    } else {
+      baseProducts = createCountProducts.filter(product => 
+        product.category === createCountSelectedCategory?.categoryName
+      );
+    }
     
-    toast.success(`Added ${createCountTempSelectedProducts.length} product(s) to count.`);
+    const filteredResults = baseProducts.filter(product =>
+      !createCountSelectedItems.some(item => item.productId === product.productId)
+    );
+    
+    if (filteredResults.length > 0) {
+      setCreateCountSearchResults(filteredResults);
+      setCreateCountShowSearchResults(true);
+    }
+  }
+};
+
+  const getTotalSelectedCount = () => {
+    return createCountTempSelectedProducts.length;
   };
 
   return (
     <div className="create-count-main-container">
       <ToastContainer position="top-right" autoClose={3000} />
       
-      {/* ONLY ADDED THIS: Sidebar Toggle Button */}
-      <div className="sales-summery-sidebar-toggle-wrapper">
+      {/* Products Loading Modal */}
+      {createCountLoading && (
+        <div className="create-count-loading-modal">
+          <div className="create-count-loading-modal-content">
+            <div className="create-count-loading-spinner">
+              <FaSpinner className="create-count-loading-icon" />
+            </div>
+            <h3 className="create-count-loading-title">Loading Products</h3>
+            <p className="create-count-loading-message">
+              Please wait while we load products from the selected store...
+            </p>
+            <div className="create-count-loading-progress">
+              <div className="create-count-loading-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="create-count-sidebar-toggle-wrapper">
         <button 
-          className="sales-summery-sidebar-toggle"
+          className="create-count-sidebar-toggle"
           onClick={toggleCreateCountSidebar}
           style={{ left: createCountSidebarOpen ? '280px' : '80px' }}
         >
@@ -392,6 +632,7 @@ const CreateCountScreen = () => {
                     const store = createCountStores.find(s => s.storeId === e.target.value);
                     setCreateCountSelectedStore(store);
                   }}
+                  disabled={createCountLoading}
                 >
                   {createCountStores.map(store => (
                     <option key={store.storeId} value={store.storeId}>
@@ -411,6 +652,7 @@ const CreateCountScreen = () => {
                 onChange={(e) => setCreateCountNotes(e.target.value)}
                 placeholder="Enter notes for this count..."
                 rows="1"
+                disabled={createCountLoading}
               />
             </div>
           </div>
@@ -426,6 +668,7 @@ const CreateCountScreen = () => {
                   value="Partial"
                   checked={createCountType === 'Partial'}
                   onChange={(e) => setCreateCountType(e.target.value)}
+                  disabled={createCountLoading}
                 />
                 <span className="create-count-type-label">Partial</span>
               </label>
@@ -436,6 +679,7 @@ const CreateCountScreen = () => {
                   value="Full"
                   checked={createCountType === 'Full'}
                   onChange={(e) => setCreateCountType(e.target.value)}
+                  disabled={createCountLoading}
                 />
                 <span className="create-count-type-label">Full</span>
               </label>
@@ -452,101 +696,181 @@ const CreateCountScreen = () => {
             <div className="create-count-items-header">
               <h3 className="create-count-section-label">Items</h3>
               {createCountType === 'Partial' && (
-                <div className="create-count-search-container">
-                  <div className="create-count-search-input-wrapper">
-                    <FaSearch className="create-count-search-icon" />
-                    <input
-                      type="text"
-                      className="create-count-search-input"
-                      placeholder="Search item by name, SKU, or category..."
-                      value={createCountSearchTerm}
-                      onChange={(e) => setCreateCountSearchTerm(e.target.value)}
-                      onFocus={() => createCountSearchTerm && setCreateCountShowSearchResults(true)}
-                    />
-                    {createCountSearchTerm && (
-                      <button 
-                        className="create-count-clear-search-btn"
-                        onClick={() => {
-                          setCreateCountSearchTerm('');
-                          setCreateCountShowSearchResults(false);
-                        }}
-                      >
-                        <FaTimesCircle />
-                      </button>
-                    )}
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  {/* Category Filter Button */}
+                  <div className="create-count-category-selector">
+                    <button 
+                      className="create-count-category-btn"
+                      onClick={() => setCreateCountIsCategoryDropdownOpen(!createCountIsCategoryDropdownOpen)}
+                      disabled={createCountLoading}
+                    >
+                      <FaFilter style={{ color: '#5694e6' }} />
+                      <span style={{ flex: 1, textAlign: 'left' }}>
+                        {createCountSelectedCategory?.categoryName || 'All Categories'}
+                      </span>
+                      <span style={{ color: '#94a3b8', fontSize: '10px' }}>▼</span>
+                    </button>
+               {createCountIsCategoryDropdownOpen && (
+  <div className="create-count-category-dropdown">
+    {createCountIsLoadingCategories ? (
+      <div style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+        Loading categories...
+      </div>
+    ) : (
+      <>
+        {/* All Categories option */}
+        <div
+          className={`create-count-category-dropdown-item ${createCountSelectedCategory?.categoryId === 'all' ? 'selected' : ''}`}
+          onClick={() => filterProductsByCategory({ categoryId: 'all', categoryName: 'All Categories' })}
+        >
+          All Categories
+          {createCountSelectedCategory?.categoryId === 'all' && (
+            <FaCheck className="create-count-category-check" />
+          )}
+        </div>
+        
+        {/* No Category option */}
+        <div
+          className={`create-count-category-dropdown-item ${createCountSelectedCategory?.categoryId === 'no-category' ? 'selected' : ''}`}
+          onClick={() => filterProductsByCategory({ categoryId: 'no-category', categoryName: 'No Category' })}
+        >
+          No Category
+          {createCountSelectedCategory?.categoryId === 'no-category' && (
+            <FaCheck className="create-count-category-check" />
+          )}
+        </div>
+        
+        {/* Regular categories */}
+        {createCountCategories
+          .filter(cat => cat.categoryId !== 'all' && cat.categoryId !== 'no-category')
+          .map(category => (
+            <div
+              key={category.categoryId}
+              className={`create-count-category-dropdown-item ${createCountSelectedCategory?.categoryId === category.categoryId ? 'selected' : ''}`}
+              onClick={() => filterProductsByCategory(category)}
+            >
+              {category.categoryName}
+              {createCountSelectedCategory?.categoryId === category.categoryId && (
+                <FaCheck className="create-count-category-check" />
+              )}
+            </div>
+          ))
+        }
+      </>
+    )}
+  </div>
+)}
                   </div>
                   
-                  {createCountShowSearchResults && (
-                    <div className="create-count-search-results-dropdown">
-                      {createCountSearchResults.length > 0 ? (
-                        <>
-                          {createCountSearchResults.map(product => {
-                            const isTempSelected = createCountTempSelectedProducts.some(
-                              p => p.productId === product.productId
-                            );
-                            const isAlreadySelected = createCountSelectedItems.some(
-                              item => item.productId === product.productId
-                            );
-                            
-                            return (
-                              <div 
-                                key={product.productId}
-                                className={`create-count-search-result-item ${isTempSelected ? 'create-count-search-result-item-selected' : ''}`}
-                                onClick={(e) => {
-                                  // Don't toggle if clicking on checkbox
-                                  if (e.target.type === 'checkbox') return;
-                                  handleCreateCountToggleTempProduct(product);
-                                }}
-                              >
-                                <div className="create-count-result-checkbox">
-                                  <input
-                                    type="checkbox"
-                                    checked={isTempSelected || isAlreadySelected}
-                                    onChange={() => handleCreateCountToggleTempProduct(product)}
-                                    disabled={isAlreadySelected}
-                                  />
-                                </div>
-                                <div className="create-count-result-product-info">
-                                  <div className="create-count-result-product-name">
-                                    {product.productName}
-                                    {isAlreadySelected && (
-                                      <span className="create-count-already-selected-badge">Already Added</span>
-                                    )}
-                                  </div>
-                                  <div className="create-count-result-product-details">
-                                    SKU: {product.sku} | Category: {product.category}
-                                  </div>
-                                </div>
-                                <div className="create-count-result-product-stock">
-                                  Stock: {product.stock || 0}
-                                </div>
-                              </div>
-                            );
-                          })}
-                          
-                          {/* Add Selected Button */}
-                          {createCountTempSelectedProducts.length > 0 && (
-                            <div className="create-count-search-actions">
-                              <button 
-                                className="create-count-add-selected-btn"
-                                onClick={handleCreateCountAddSelectedProducts}
-                              >
-                                <FaCheck /> Add Selected ({createCountTempSelectedProducts.length})
-                              </button>
-                              <button 
-                                className="create-count-clear-selected-btn"
-                                onClick={() => setCreateCountTempSelectedProducts([])}
-                              >
-                                <FaTimesCircle /> Clear
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="create-count-no-results">No products found</div>
+                  <div className="create-count-search-container">
+                    <div className="create-count-search-input-wrapper">
+                      <FaSearch className="create-count-search-icon" />
+                      <input
+                        type="text"
+                        className="create-count-search-input"
+                        placeholder={createCountLoading ? "Loading products..." : "Search item by name, SKU, or category..."}
+                        value={createCountSearchTerm}
+                        onChange={(e) => setCreateCountSearchTerm(e.target.value)}
+                        onFocus={handleSearchFocus}
+                        disabled={createCountLoading}
+                      />
+                      {createCountSearchTerm && !createCountLoading && (
+                        <button 
+                          className="create-count-clear-search-btn"
+                          onClick={handleClearSearch}
+                        >
+                          <FaTimesCircle />
+                        </button>
                       )}
                     </div>
-                  )}
+                    
+                    {createCountShowSearchResults && !createCountLoading && (
+                      <div className="create-count-search-results-dropdown">
+                        <div className="create-count-search-actions-header">
+                          <button 
+                            className="create-count-select-all-btn"
+                            onClick={handleCreateCountSelectAllSearchResults}
+                          >
+                            <FaCheck /> Select All
+                          </button>
+                          <button 
+                            className="create-count-clear-selection-btn"
+                            onClick={handleCreateCountClearSearchSelection}
+                          >
+                            <FaTimesCircle /> Clear
+                          </button>
+                          <button 
+                            className="create-count-close-popup-btn"
+                            onClick={() => setCreateCountShowSearchResults(false)}
+                          >
+                            <FaTimes /> Close
+                          </button>
+                        </div>
+                        
+                        <div className="create-count-search-results-list">
+                          {createCountSearchResults.length > 0 ? (
+                            createCountSearchResults.map(product => {
+                              const isTempSelected = createCountTempSelectedProducts.some(
+                                p => p.productId === product.productId
+                              );
+                              const isAlreadySelected = createCountSelectedItems.some(
+                                item => item.productId === product.productId
+                              );
+                              
+                              return (
+                                <div 
+                                  key={product.productId}
+                                  className={`create-count-search-result-item ${isTempSelected ? 'create-count-search-result-item-selected' : ''} ${isAlreadySelected ? 'create-count-search-result-item-added' : ''}`}
+                                  onClick={(e) => {
+                                    if (e.target.type !== 'checkbox' && !isAlreadySelected) {
+                                      handleCreateCountToggleTempProduct(product);
+                                    }
+                                  }}
+                                >
+                                  <div className="create-count-result-checkbox">
+                                    <input
+                                      type="checkbox"
+                                      checked={isTempSelected || isAlreadySelected}
+                                      onChange={() => handleCreateCountToggleTempProduct(product)}
+                                      disabled={isAlreadySelected}
+                                    />
+                                  </div>
+                                  <div className="create-count-result-product-info">
+                                    <div className="create-count-result-product-name">
+                                      {product.productName}
+                                      {isAlreadySelected && (
+                                        <span className="create-count-already-selected-badge">Already Added</span>
+                                      )}
+                                    </div>
+                                    <div className="create-count-result-product-details">
+                                      SKU: {product.sku} | Category: {product.category || 'No Category'} | Stock: {product.stock || 0}
+                                    </div>
+                                  </div>
+                                  <div className="create-count-result-product-stock">
+                                    <div>Price: ${product.price?.toFixed(2) || 0}</div>
+                                    <div>Cost: ${product.cost?.toFixed(2) || 0}</div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="create-count-no-results">No products found</div>
+                          )}
+                        </div>
+                        
+                        {createCountTempSelectedProducts.length > 0 && (
+                          <div className="create-count-search-actions-footer">
+                            <button 
+                              className="create-count-add-selected-btn"
+                              onClick={handleCreateCountAddSelectedProducts}
+                            >
+                              <FaCheck /> Add Selected ({getTotalSelectedCount()})
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -570,7 +894,7 @@ const CreateCountScreen = () => {
                         <div className="create-count-item-info">
                           <div className="create-count-item-name">{product.productName}</div>
                           <div className="create-count-item-details">
-                            SKU: {product.sku} | Category: {product.category}
+                            SKU: {product.sku} | Category: {product.category || 'No Category'}
                           </div>
                         </div>
                         <div className="create-count-item-expected">{product.stock || 0}</div>
@@ -582,7 +906,10 @@ const CreateCountScreen = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="create-count-empty-message">No products found in this store</div>
+                    <div className="create-count-empty-message">
+                      <FaBox className="create-count-empty-icon" />
+                      <p>No products found in this store</p>
+                    </div>
                   )
                 ) : (
                   // Show only selected items for Partial count
@@ -592,7 +919,7 @@ const CreateCountScreen = () => {
                         <div className="create-count-item-info">
                           <div className="create-count-item-name">{item.productName}</div>
                           <div className="create-count-item-details">
-                            SKU: {item.sku} | Category: {item.category}
+                            SKU: {item.sku} | Category: {item.category || 'No Category'}
                           </div>
                         </div>
                         <div className="create-count-item-expected">{item.stock || 0}</div>
@@ -608,9 +935,13 @@ const CreateCountScreen = () => {
                     ))
                   ) : (
                     <div className="create-count-empty-message">
-                      {createCountType === 'Partial' 
-                        ? 'No items selected. Use the search above to add items.' 
-                        : 'No products available for counting.'}
+                      <FaBox className="create-count-empty-icon" />
+                      <p>No items selected. Use the search above to add items.</p>
+                      {createCountProducts.length === 0 && !createCountLoading && (
+                        <p style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
+                          No products available for this store.
+                        </p>
+                      )}
                     </div>
                   )
                 )}
@@ -627,15 +958,19 @@ const CreateCountScreen = () => {
 
           {/* Action Buttons */}
           <div className="create-count-action-buttons">
-            <button className="create-count-cancel-btn" onClick={handleCreateCountCancel}>
+            <button 
+              className="create-count-cancel-btn" 
+              onClick={handleCreateCountCancel}
+              disabled={createCountLoading}
+            >
               CANCEL
             </button>
             <button 
               className="create-count-save-count-btn" 
               onClick={handleCreateCountSaveAndCount}
-              disabled={createCountSelectedItems.length === 0 && createCountType === 'Partial'}
+              disabled={createCountLoading || (createCountSelectedItems.length === 0 && createCountType === 'Partial')}
             >
-              SAVE & COUNT
+              {createCountLoading ? 'LOADING...' : 'SAVE & COUNT'}
             </button>
           </div>
         </div>
