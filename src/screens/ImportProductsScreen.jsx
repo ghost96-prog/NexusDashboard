@@ -27,6 +27,13 @@ const ImportProductsScreen = () => {
   const navigate = useNavigate();
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [existingProducts, setExistingProducts] = useState([]);
+  const [importProgress, setImportProgress] = useState({
+    current: 0,
+    total: 0,
+    created: 0,
+    updated: 0,
+    failed: 0
+  });
 
   useEffect(() => {
     fetchExistingProducts();
@@ -185,9 +192,6 @@ const ImportProductsScreen = () => {
       if (!["TRUE", "FALSE", "true", "false"].includes(trackStock)) {
         errors.push(`Row ${rowNum}: Track Stock must be "TRUE" or "FALSE"`);
       }
-      
-      // REMOVED: The validation that SKU must be a number
-      // SKU can now be any alphanumeric value
     });
     
     return errors;
@@ -196,6 +200,13 @@ const ImportProductsScreen = () => {
   const onDrop = useCallback((acceptedFiles) => {
     setErrors([]);
     setCsvData([]);
+    setImportProgress({
+      current: 0,
+      total: 0,
+      created: 0,
+      updated: 0,
+      failed: 0
+    });
     
     if (acceptedFiles.length === 0) return;
     
@@ -261,9 +272,8 @@ const ImportProductsScreen = () => {
     return result;
   };
 
-  // REMOVED: getNextSKU function - no longer needed since we don't auto-generate numeric SKUs
-
   const createProductsFromCSV = async () => {
+    setIsUploading(true);
     if (!file || csvData.length === 0) return;
     
     // Check if products are still loading
@@ -272,7 +282,13 @@ const ImportProductsScreen = () => {
       return;
     }
     
-    setIsUploading(true);
+    setImportProgress({
+      current: 0,
+      total: csvData.length,
+      created: 0,
+      updated: 0,
+      failed: 0
+    });
     
     try {
       const token = localStorage.getItem("token");
@@ -296,47 +312,78 @@ const ImportProductsScreen = () => {
         return;
       }
       
-      // Check for empty SKUs and duplicates
+      // Create lookup maps for existing products
+      const existingProductsBySKU = new Map();
+      const existingProductsById = new Map();
+      
+      existingProducts.forEach(product => {
+        if (product.sku) {
+          existingProductsBySKU.set(product.sku, product);
+        }
+        if (product.productId) {
+          existingProductsById.set(product.productId, product);
+        }
+      });
+      
+      // Check for empty SKUs and validate duplicates/updates
       let hasEmptySKU = false;
-      const skuSet = new Set();
+      const csvSKUSet = new Set(); // For checking duplicates WITHIN the CSV file
       
       for (const item of csvData) {
-        if (item["Product SKU"]?.trim() === "") {
+        const importedSKU = item["Product SKU"]?.trim();
+        const importedProductId = item["Product Id"]?.trim();
+        
+        // Check for empty SKU
+        if (importedSKU === "") {
           hasEmptySKU = true;
           break;
         }
         
-        const trimmedSKU = item["Product SKU"]?.trim();
-        if (skuSet.has(trimmedSKU)) {
-          toast.error(`Duplicate SKU found: "${trimmedSKU}". Please ensure all SKUs are unique.`);
+        // Check for duplicates within the CSV file
+        if (csvSKUSet.has(importedSKU)) {
+          toast.error(`Duplicate SKU found in CSV: "${importedSKU}". Please ensure all SKUs in the file are unique.`);
           setIsUploading(false);
           return;
         }
-        skuSet.add(trimmedSKU);
+        csvSKUSet.add(importedSKU);
+        
+        // Check against existing products in database
+        if (existingProductsBySKU.has(importedSKU)) {
+          const existingProduct = existingProductsBySKU.get(importedSKU);
+          
+          // If Product ID is provided, verify it matches the existing product
+          if (importedProductId) {
+            if (existingProduct.productId !== importedProductId) {
+              // SKU exists but belongs to a DIFFERENT product
+              toast.error(`SKU "${importedSKU}" already belongs to product "${existingProduct.productName}" (ID: ${existingProduct.productId}). Cannot use same SKU for different products.`);
+              setIsUploading(false);
+              return;
+            }
+            // SKU and Product ID match - this is valid for update
+            console.log(`Update detected for product: ${existingProduct.productName} (SKU: ${importedSKU})`);
+          } else {
+            // SKU exists but no Product ID provided
+            toast.error(`SKU "${importedSKU}" already exists. Please provide the Product ID if you want to update this product.`);
+            setIsUploading(false);
+            return;
+          }
+        }
+        
+        // Also check if Product ID exists but belongs to a different SKU
+        if (importedProductId && existingProductsById.has(importedProductId)) {
+          const existingProduct = existingProductsById.get(importedProductId);
+          if (existingProduct.sku !== importedSKU) {
+            toast.error(`Product ID "${importedProductId}" already exists with a different SKU "${existingProduct.sku}". Cannot change SKU of existing product.`);
+            setIsUploading(false);
+            return;
+          }
+        }
       }
       
       if (hasEmptySKU) {
         toast.error("Some products have empty SKUs. Please provide SKUs for all products.");
         setIsUploading(false);
         return;
-      }
-      
-      // Check for duplicate SKUs in existing products
-      const existingSKUSet = new Set();
-      existingProducts.forEach(product => {
-        if (product.sku) {
-          existingSKUSet.add(product.sku);
-        }
-      });
-      
-      // Check if any imported SKU already exists in the database
-      for (const item of csvData) {
-        const importedSKU = item["Product SKU"]?.trim();
-        if (importedSKU && existingSKUSet.has(importedSKU)) {
-          toast.error(`SKU "${importedSKU}" already exists in your products. Please use unique SKUs.`);
-          setIsUploading(false);
-          return;
-        }
       }
       
       // Process in chunks
@@ -349,12 +396,9 @@ const ImportProductsScreen = () => {
       const categoryMap = new Map();
       let processedCount = 0;
       let failedCount = 0;
-      
-      // Create a Map for faster lookups by productId
-      const existingProductsMap = new Map();
-      existingProducts.forEach(product => {
-        existingProductsMap.set(product.productId, product);
-      });
+      let createdCount = 0;
+      let updatedCount = 0;
+      const totalProducts = csvData.length;
       
       for (const chunk of chunks) {
         // Handle categories first
@@ -399,17 +443,41 @@ const ImportProductsScreen = () => {
         for (const item of chunk) {
           const categoryName = item["Category"].toUpperCase();
           const categoryId = categoryMap.get(categoryName);
+          const sku = item["Product SKU"]?.trim() || "";
+          const providedProductId = item["Product Id"]?.trim();
           
-          const productId = item["Product Id"]?.trim() !== "" 
-            ? item["Product Id"] 
-            : generateProductId();
+          // Determine if this is an update and find existing product
+          let existingProduct = null;
+          let productId = providedProductId;
+          let isUpdate = false;
+          
+          // Strategy 1: Find by Product ID if provided
+          if (providedProductId && existingProductsById.has(providedProductId)) {
+            existingProduct = existingProductsById.get(providedProductId);
+            productId = providedProductId; // Use the provided ID
+            isUpdate = true;
+            console.log(`Found by Product ID: ${existingProduct.productName}`);
+          }
+          // Strategy 2: Find by SKU if no Product ID or ID not found
+          else if (sku && existingProductsBySKU.has(sku)) {
+            existingProduct = existingProductsBySKU.get(sku);
+            productId = existingProduct.productId; // Use the existing product's ID
+            isUpdate = true;
+            console.log(`Found by SKU: ${existingProduct.productName}`);
+          }
+          // Strategy 3: New product
+          else {
+            productId = providedProductId || generateProductId();
+            isUpdate = false;
+            console.log(`New product: ${item["Product Name"]}`);
+          }
           
           const product = {
             productName: item["Product Name"].toUpperCase(),
             category: categoryName,
             categoryId: categoryId,
             productType: item["Product Type"],
-            sku: item["Product SKU"]?.trim() || "", // Use the provided SKU as-is
+            sku: sku,
             lowStockNotification: Number(item["Low Stock"]),
             trackStock: item["Track Stock"].toUpperCase() === "TRUE",
             price: Number(item["Price"]),
@@ -424,22 +492,10 @@ const ImportProductsScreen = () => {
             currentDate: new Date().toISOString(),
           };
           
-          // Check if product exists - by productId
+          // Calculate stock before for inventory tracking
           let stockBefore = 0;
-          let existingProduct = null;
-          let isUpdate = false;
-          
-          // Only check for existing product if we're looking it up by productId
-          existingProduct = existingProductsMap.get(productId);
-          
           if (existingProduct) {
             stockBefore = Number(existingProduct.stock) || 0;
-            isUpdate = true;
-            console.log(`Found existing product by ID: ${product.productName}, stockBefore: ${stockBefore}`);
-          } else {
-            console.log(`No existing product found with ID ${productId}, treating as NEW product: ${product.productName}`);
-            isUpdate = false;
-            stockBefore = 0;
           }
           
           // Save product to server
@@ -478,14 +534,6 @@ const ImportProductsScreen = () => {
               synchronized: false,
             };
             
-            console.log(`Import: ${product.productName}`, {
-              sku: product.sku,
-              stockBefore,
-              stockAfter: product.stock,
-              type: isUpdate ? 'Override' : 'Create',
-              productId: product.productId
-            });
-            
             // Save inventory update
             await fetch(
               `https://nexuspos.onrender.com/api/inventoryRouter/inventory-updates?email=${encodeURIComponent(userEmail)}`,
@@ -499,12 +547,39 @@ const ImportProductsScreen = () => {
               }
             );
             
+            // Update counters
             processedCount++;
+            if (isUpdate) {
+              updatedCount++;
+            } else {
+              createdCount++;
+            }
+            
+            // Update progress
+            setImportProgress({
+              current: processedCount,
+              total: totalProducts,
+              created: createdCount,
+              updated: updatedCount,
+              failed: failedCount
+            });
+            
+            console.log(`Progress: ${processedCount}/${totalProducts} (Created: ${createdCount}, Updated: ${updatedCount}, Failed: ${failedCount})`);
             
           } catch (error) {
             console.error(`Error saving product ${product.productName}:`, error);
-            toast.error(`Failed to save product: ${product.productName}`);
             failedCount++;
+            
+            // Update progress even on failure
+            setImportProgress({
+              current: processedCount,
+              total: totalProducts,
+              created: createdCount,
+              updated: updatedCount,
+              failed: failedCount
+            });
+            
+            toast.error(`Failed to save product: ${product.productName}`);
           }
         }
       }
@@ -512,10 +587,20 @@ const ImportProductsScreen = () => {
       setIsUploading(false);
       
       if (failedCount > 0) {
-        toast.warning(`Imported ${processedCount} products with ${failedCount} failures`);
+        toast.warning(
+          <div>
+            <strong>Import completed with issues:</strong><br />
+            Total: {totalProducts} | ✅ Created: {createdCount} | ✏️ Updated: {updatedCount} | ❌ Failed: {failedCount}
+          </div>
+        );
       } else {
         setIsSuccess(true);
-        toast.success(`Successfully imported ${processedCount} products!`);
+        toast.success(
+          <div>
+            <strong>Successfully imported all products!</strong><br />
+            Total: {totalProducts} | ✅ Created: {createdCount} | ✏️ Updated: {updatedCount}
+          </div>
+        );
       }
       
       // Refresh the existing products list after import
@@ -526,6 +611,13 @@ const ImportProductsScreen = () => {
         setFileName(null);
         setCsvData([]);
         setIsSuccess(false);
+        setImportProgress({
+          current: 0,
+          total: 0,
+          created: 0,
+          updated: 0,
+          failed: 0
+        });
         navigate("/products");
       }, 3000);
       
@@ -541,6 +633,13 @@ const ImportProductsScreen = () => {
     setFileName(null);
     setCsvData([]);
     setErrors([]);
+    setImportProgress({
+      current: 0,
+      total: 0,
+      created: 0,
+      updated: 0,
+      failed: 0
+    });
   };
 
   return (
@@ -618,10 +717,27 @@ const ImportProductsScreen = () => {
               <div className="progress-bar">
                 <div 
                   className="progress-fill" 
-                  style={{ width: '100%' }}
+                  style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
                 ></div>
               </div>
-              <p>Uploading products to server...</p>
+              
+              <div className="progress-stats">
+                <p className="progress-main">
+                  Processing {importProgress.current} of {importProgress.total} products
+                </p>
+                <div className="progress-breakdown">
+                  <span className="stat-created">✅ Created: {importProgress.created}</span>
+                  <span className="stat-updated">✏️ Updated: {importProgress.updated}</span>
+                  {importProgress.failed > 0 && (
+                    <span className="stat-failed">❌ Failed: {importProgress.failed}</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="progress-percentage">
+                {Math.round((importProgress.current / importProgress.total) * 100)}%
+              </div>
+              
               <FaSpinner className="spinner" />
             </div>
           )}
