@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import "../Css/CreateProductScreen.css";
+import "../Css/EditProductScreen.css";
 
 const EditProductScreen = () => {
   const navigate = useNavigate();
@@ -35,6 +35,11 @@ const EditProductScreen = () => {
   const [userEmail, setUserEmail] = useState("");
   const [userId, setUserId] = useState("");
   const [userRole, setUserRole] = useState("");
+  
+  // New states for category creation
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -43,7 +48,7 @@ const EditProductScreen = () => {
         const decoded = jwtDecode(token);
         setUserEmail(decoded.email);
         setUserId(decoded.userId.toString());
-        setUserRole(decoded.role || "Owner"); // Default to Owner if not specified
+        setUserRole(decoded.role || "Owner");
       } catch (error) {
         toast.error("Invalid authentication token.");
       }
@@ -102,6 +107,109 @@ const EditProductScreen = () => {
         toast.error("An error occurred while fetching categories.");
       }
       console.error("Error fetching categories:", error);
+    }
+  };
+
+  const generateCategoryId = () => {
+    const currentDate = new Date();
+
+    const day = String(currentDate.getDate()).padStart(2, "0");
+    const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+    const year = currentDate.getFullYear();
+    const hours = String(currentDate.getHours() % 12 || 12).padStart(2, "0");
+    const minutes = String(currentDate.getMinutes()).padStart(2, "0");
+    const seconds = String(currentDate.getSeconds()).padStart(2, "0");
+    const ampm = currentDate.getHours() >= 12 ? "PM" : "AM";
+
+    const timestamp = new Date().getTime().toString(16);
+    const randomString = generateRandomString(16);
+
+    return `${day}-${month}-${year} ${hours}:${minutes}:${seconds} ${ampm}-${timestamp}${randomString}`;
+  };
+
+  const generateRandomString = (length) => {
+    const characters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(
+        Math.floor(Math.random() * characters.length)
+      );
+    }
+    return result;
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("Category name cannot be empty");
+      return;
+    }
+
+    if (newCategoryName.length > 16) {
+      toast.error("Category name must be 16 characters or less");
+      return;
+    }
+
+    try {
+      setCreatingCategory(true);
+      
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication token is missing.");
+        setCreatingCategory(false);
+        return;
+      }
+
+      const decoded = jwtDecode(token);
+      const userEmail = decoded.email;
+
+      const newCategory = {
+        categoryId: generateCategoryId(),
+        categoryName: newCategoryName.toUpperCase(),
+        currentDate: new Date().toISOString(),
+        items: 0,
+      };
+
+      if (!navigator.onLine) {
+        toast.error("No internet connection. Please check your network.");
+        setCreatingCategory(false);
+        return;
+      }
+
+      const response = await fetch(
+        `https://nexuspos.onrender.com/api/categoryRouter/category-updates?email=${encodeURIComponent(
+          userEmail
+        )}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newCategory),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Category created successfully!");
+        
+        setShowCategoryModal(false);
+        setNewCategoryName("");
+        
+        await fetchCategories();
+        
+        setCategoryName(newCategoryName.toUpperCase());
+        setCategory(newCategory);
+      } else {
+        toast.error("Failed to create category");
+        console.error("Error adding category to server:", data.error);
+      }
+    } catch (error) {
+      toast.error("Error creating category");
+      console.error("Error adding category:", error);
+    } finally {
+      setCreatingCategory(false);
     }
   };
 
@@ -295,7 +403,6 @@ const EditProductScreen = () => {
         currentDate: currentDate.toISOString(),
       };
 
-      // Fetch existing product data
       const response = await fetch(
         `https://nexuspos.onrender.com/api/productRouter/products?email=${encodeURIComponent(
           userEmail
@@ -311,7 +418,6 @@ const EditProductScreen = () => {
       const responseData = await response.json();
       const existingProductData = responseData.data || [];
 
-      // Find the selected product
       const selectedIndex = existingProductData.findIndex(
         (item) => item.productId === selectedProduct.productId
       );
@@ -338,7 +444,6 @@ const EditProductScreen = () => {
       const stockAfterUpdate = stockBeforeUpdate + stockChange;
       updatedProductData.stock = stockAfterUpdate;
 
-      // Update inventory
       const inventoryId = generateInventoryId();
       const inventoryUpdateData = {
         productName: updatedProductData.productName,
@@ -377,7 +482,6 @@ const EditProductScreen = () => {
         console.error("Error sending inventory updates:", error);
       }
 
-      // Update product
       try {
         const responseProduct = await fetch(
           `https://nexuspos.onrender.com/api/productRouter/product-updates?email=${encodeURIComponent(
@@ -481,7 +585,19 @@ const EditProductScreen = () => {
                   </div>
 
                   <div className="dropdownModalScroll">
-                    {/* Add "No Category" option at the top */}
+                    {/* Add New Category Button */}
+                    <div 
+                      className="addNewCategoryItem"
+                      onClick={() => {
+                        setShowDropdown(false);
+                        setShowCategoryModal(true);
+                      }}
+                    >
+                      <span className="addCategoryIcon">+</span>
+                      <span className="addNewCategoryText">Add New Category</span>
+                    </div>
+
+                    {/* "No Category" option */}
                     <div
                       className={`dropdownModalItemp ${
                         !categoryName &&
@@ -734,12 +850,70 @@ const EditProductScreen = () => {
         </div>
       </div>
 
-      {/* Loading Modal */}
+      {/* Create Category Modal */}
+      {showCategoryModal && (
+        <div className="create-product-category-modal-backdrop">
+          <div className="create-product-category-modal-container">
+            <div className="create-product-category-modal-header">
+              <h3 className="create-product-category-modal-title">
+                Create New Category
+              </h3>
+            </div>
+            <div className="create-product-category-modal-body">
+              <input
+                type="text"
+                className="create-product-category-modal-input"
+                placeholder="Enter Category Name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                maxLength={16}
+                autoFocus
+              />
+              <p className="create-product-category-modal-helper-text">
+                Maximum 16 characters
+              </p>
+              <div className="create-product-category-modal-buttons">
+                <button
+                  className="create-product-category-modal-button-cancel"
+                  onClick={() => {
+                    setShowCategoryModal(false);
+                    setNewCategoryName("");
+                  }}
+                  disabled={creatingCategory}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="create-product-category-modal-button-save"
+                  onClick={handleAddCategory}
+                  disabled={creatingCategory || !newCategoryName.trim()}
+                >
+                  {creatingCategory ? "Creating..." : "Save Category"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Modal for Product Update */}
       {loading && (
         <div className="modalBackground">
           <div className="modalContent">
             <div className="loader"></div>
             <p className="modalText">Updating Product...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Category Creation Loading Modal */}
+      {creatingCategory && (
+        <div className="create-product-category-creating-modal">
+          <div className="create-product-category-creating-content">
+            <div className="create-product-category-creating-loader"></div>
+            <p className="create-product-category-creating-text">
+              Creating Category...
+            </p>
           </div>
         </div>
       )}

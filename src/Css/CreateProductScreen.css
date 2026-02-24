@@ -608,7 +608,212 @@ input:checked + .slider:before {
     transform: rotate(360deg);
   }
 }
+/* Add these styles to your CreateProductScreen.css file */
 
+.addCategoryContainer {
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background-color: #f8f8f8;
+}
+
+.addCategoryButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  font-weight: 500;
+}
+
+.addCategoryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+}
+
+.addCategoryIcon {
+  font-size: 20px;
+  font-weight: bold;
+  margin-right: 8px;
+  color: white;
+}
+
+.addCategoryText {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Modal styles for category creation */
+.modalBackground {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.modalContent {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: modal-slide-in 0.3s ease;
+}
+
+@keyframes modal-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  padding: 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalTitle {
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  flex: 1;
+}
+
+.modalBody {
+  padding: 25px;
+}
+
+.modalButtons {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.modalButton {
+  flex: 1;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modalButton.cancelButton {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.modalButton.cancelButton:hover:not(:disabled) {
+  background: #e0e0e0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.modalButton.saveButton {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  color: white;
+}
+
+.modalButton.saveButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.modalButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.helperText {
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+  margin-left: 5px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 30px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive adjustments for modal */
+@media (max-width: 767px) {
+  .modalContent {
+    width: 95%;
+    max-width: 350px;
+  }
+  
+  .modalBody {
+    padding: 20px;
+  }
+  
+  .modalTitle {
+    font-size: 18px;
+  }
+  
+  .modalButtons {
+    gap: 10px;
+  }
+  
+  .modalButton {
+    padding: 12px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 320px) {
+  .modalContent {
+    width: 98%;
+  }
+  
+  .modalButtons {
+    flex-direction: column;
+  }
+}
 .create-product-loading-modal-text {
   font-size: 16px;
   color: #555;
