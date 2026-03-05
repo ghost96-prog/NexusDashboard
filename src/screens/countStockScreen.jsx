@@ -110,13 +110,13 @@ const CountStockScreen = () => {
         setIsDraftMode(true);
       }
       
-      // Initialize items with counted quantity as expected stock (starting point)
+      // Initialize items with counted quantity as empty (starting point)
       const initializedItems = items.map(item => ({
         ...item,
-        counted: item.counted || item.expectedStock || 0,
+        counted: item.counted || 0,
         difference: item.difference || 0,
         priceDifference: item.priceDifference || 0,
-        countedQuantity: item.countedQuantity !== undefined ? item.countedQuantity : (item.expectedStock?.toString() || ''),
+        countedQuantity: '', // Start empty - no pre-filled value
         isCounted: item.isCounted || false,
         price: item.price || 0,
         cost: item.cost || 0
@@ -133,7 +133,7 @@ const CountStockScreen = () => {
       if (initializedItems.length > 0) {
         const firstUncounted = initializedItems.find(item => !item.isCounted) || initializedItems[0];
         setCountedCurrentItem(firstUncounted);
-        setCountedCurrentQuantity(firstUncounted.countedQuantity || firstUncounted.expectedStock?.toString() || '');
+        setCountedCurrentQuantity(''); // Start empty
       }
     }
   }, [location.state]);
@@ -472,7 +472,7 @@ const CountStockScreen = () => {
       if (updatedItems.length > 0) {
         const nextItem = updatedItems.find(item => !item.isCounted) || updatedItems[0];
         setCountedCurrentItem(nextItem);
-        setCountedCurrentQuantity(nextItem.countedQuantity || nextItem.expectedStock?.toString() || '');
+        setCountedCurrentQuantity(''); // Start empty
       } else {
         setCountedCurrentItem(null);
         setCountedCurrentQuantity('');
@@ -551,13 +551,13 @@ const CountStockScreen = () => {
     const completed = updatedItems.filter(item => item.isCounted).length;
     setCountedCompletedItems(completed);
     
-    setCountedCurrentQuantity('');
+    setCountedCurrentQuantity(''); // Clear after counting
     
     const nextUncountedItem = updatedItems.find(item => !item.isCounted);
     
     if (nextUncountedItem) {
       setCountedCurrentItem(nextUncountedItem);
-      setCountedCurrentQuantity(nextUncountedItem.countedQuantity || nextUncountedItem.expectedStock?.toString() || '');
+      setCountedCurrentQuantity(''); // Start empty for next item
       toast.success(`Counted ${quantity} of ${countedCurrentItem.productName}`);
     } else {
       setCountedCurrentItem(null);
@@ -590,7 +590,7 @@ const CountStockScreen = () => {
           counted,
           difference,
           priceDifference,
-          countedQuantity: value,
+          countedQuantity: value, // Keep as string for input
           isCounted: value !== '' // Counted if any value is entered (even 0)
         };
       }
@@ -867,6 +867,50 @@ const CountStockScreen = () => {
             )}
           </div>
 
+          {/* Current Item Counting Section */}
+          {countedCurrentItem && (
+            <div className="counted-current-item-section">
+              <div className="counted-current-item-header">
+                <h3>Current Item</h3>
+                <div className="counted-current-item-progress">
+                  Next: {countedItems.findIndex(item => item.productId === countedCurrentItem.productId) + 1} of {countedTotalItems}
+                </div>
+              </div>
+              <div className="counted-current-item-details">
+                <div className="counted-current-item-name">{countedCurrentItem.productName}</div>
+                <div className="counted-current-item-sku">SKU: {countedCurrentItem.sku}</div>
+                {countedCurrentItem.category && (
+                  <div className="counted-current-item-category">Category: {countedCurrentItem.category}</div>
+                )}
+                <div className="counted-current-item-expected">
+                  Expected Stock: <strong>{countedCurrentItem.expectedStock || 0}</strong>
+                </div>
+              </div>
+              <div className="counted-current-input-group">
+                <input
+                  ref={countInputRef}
+                  type="text"
+                  className="counted-current-input"
+                  value={countedCurrentQuantity}
+                  onChange={(e) => handleCountedQuantityChange(e.target.value)}
+                  placeholder={countedCurrentItem.expectedStock?.toString() || '0'} // Show expected stock as placeholder
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCountedAddToCounted();
+                    }
+                  }}
+                />
+                <button 
+                  className="counted-current-add-btn"
+                  onClick={handleCountedAddToCounted}
+                  disabled={!countedCurrentQuantity}
+                >
+                  <FaCheck /> Count
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Start Section - Only show when no current item */}
           {!countedCurrentItem && countedItems.length > 0 && (
             <div className="counted-start-section">
@@ -879,7 +923,7 @@ const CountStockScreen = () => {
                     if (countedItems.length > 0) {
                       const firstUncounted = countedItems.find(item => !item.isCounted) || countedItems[0];
                       setCountedCurrentItem(firstUncounted);
-                      setCountedCurrentQuantity(firstUncounted.countedQuantity || firstUncounted.expectedStock?.toString() || '');
+                      setCountedCurrentQuantity(''); // Start empty
                     }
                   }}
                 >
@@ -963,7 +1007,7 @@ const CountStockScreen = () => {
                               className="counted-count-input"
                               value={item.countedQuantity || ''}
                               onChange={(e) => handleCountedManualUpdate(item.productId, e.target.value)}
-                              placeholder={item.expectedStock?.toString() || '0'}
+                              placeholder={item.expectedStock?.toString() || '0'} // Show expected stock as placeholder
                             />
                           </div>
                           <div className={`counted-item-difference ${(item.difference || 0) < 0 ? 'counted-negative' : (item.difference || 0) > 0 ? 'counted-positive' : ''}`}>
