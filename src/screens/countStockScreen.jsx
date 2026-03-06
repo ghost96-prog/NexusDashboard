@@ -867,49 +867,7 @@ const CountStockScreen = () => {
             )}
           </div>
 
-          {/* Current Item Counting Section */}
-          {countedCurrentItem && (
-            <div className="counted-current-item-section">
-              <div className="counted-current-item-header">
-                <h3>Current Item</h3>
-                <div className="counted-current-item-progress">
-                  Next: {countedItems.findIndex(item => item.productId === countedCurrentItem.productId) + 1} of {countedTotalItems}
-                </div>
-              </div>
-              <div className="counted-current-item-details">
-                <div className="counted-current-item-name">{countedCurrentItem.productName}</div>
-                <div className="counted-current-item-sku">SKU: {countedCurrentItem.sku}</div>
-                {countedCurrentItem.category && (
-                  <div className="counted-current-item-category">Category: {countedCurrentItem.category}</div>
-                )}
-                <div className="counted-current-item-expected">
-                  Expected Stock: <strong>{countedCurrentItem.expectedStock || 0}</strong>
-                </div>
-              </div>
-              <div className="counted-current-input-group">
-                <input
-                  ref={countInputRef}
-                  type="text"
-                  className="counted-current-input"
-                  value={countedCurrentQuantity}
-                  onChange={(e) => handleCountedQuantityChange(e.target.value)}
-                  placeholder={countedCurrentItem.expectedStock?.toString() || '0'} // Show expected stock as placeholder
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleCountedAddToCounted();
-                    }
-                  }}
-                />
-                <button 
-                  className="counted-current-add-btn"
-                  onClick={handleCountedAddToCounted}
-                  disabled={!countedCurrentQuantity}
-                >
-                  <FaCheck /> Count
-                </button>
-              </div>
-            </div>
-          )}
+    
 
           {/* Start Section - Only show when no current item */}
           {!countedCurrentItem && countedItems.length > 0 && (
