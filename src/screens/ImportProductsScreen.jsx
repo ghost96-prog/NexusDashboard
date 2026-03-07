@@ -272,197 +272,188 @@ const ImportProductsScreen = () => {
     return result;
   };
 
-  const createProductsFromCSV = async () => {
-    setIsUploading(true);
-    if (!file || csvData.length === 0) return;
+const createProductsFromCSV = async () => {
+  setIsUploading(true);
+  if (!file || csvData.length === 0) return;
+  
+  // Check if products are still loading
+  if (existingProducts.length === 0) {
+    toast.error("Products data is still loading. Please wait a moment and try again.");
+    return;
+  }
+  
+  setImportProgress({
+    current: 0,
+    total: csvData.length,
+    created: 0,
+    updated: 0,
+    failed: 0
+  });
+  
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication token is missing.");
+      setIsUploading(false);
+      return;
+    }
+
+    const decoded = jwtDecode(token);
+    const userId = decoded.userId;
+    const userEmail = decoded.email;
     
-    // Check if products are still loading
+    // FRESH FETCH - Get latest products before starting import
+    console.log("Fetching latest products before import...");
+    await fetchExistingProducts();
+    
     if (existingProducts.length === 0) {
-      toast.error("Products data is still loading. Please wait a moment and try again.");
+      toast.error("Failed to load products data. Please try again.");
+      setIsUploading(false);
       return;
     }
     
-    setImportProgress({
-      current: 0,
-      total: csvData.length,
-      created: 0,
-      updated: 0,
-      failed: 0
+    // Create lookup maps for existing products
+    const existingProductsBySKU = new Map();
+    const existingProductsById = new Map();
+    
+    existingProducts.forEach(product => {
+      if (product.sku) {
+        existingProductsBySKU.set(product.sku, product);
+      }
+      if (product.productId) {
+        existingProductsById.set(product.productId, product);
+      }
     });
     
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Authentication token is missing.");
+    // Check for empty SKUs and validate duplicates
+    let hasEmptySKU = false;
+    const csvSKUSet = new Set(); // For checking duplicates WITHIN the CSV file
+    
+    for (const item of csvData) {
+      const importedSKU = item["Product SKU"]?.trim();
+      const importedProductId = item["Product Id"]?.trim();
+      
+      // Check for empty SKU
+      if (importedSKU === "") {
+        hasEmptySKU = true;
+        break;
+      }
+      
+      // Check for duplicates within the CSV file
+      if (csvSKUSet.has(importedSKU)) {
+        toast.error(`Duplicate SKU found in CSV: "${importedSKU}". Please ensure all SKUs in the file are unique.`);
         setIsUploading(false);
         return;
       }
-
-      const decoded = jwtDecode(token);
-      const userId = decoded.userId;
-      const userEmail = decoded.email;
+      csvSKUSet.add(importedSKU);
       
-      // FRESH FETCH - Get latest products before starting import
-      console.log("Fetching latest products before import...");
-      await fetchExistingProducts();
-      
-      if (existingProducts.length === 0) {
-        toast.error("Failed to load products data. Please try again.");
+      // If Product ID is provided, verify it exists
+      if (importedProductId && !existingProductsById.has(importedProductId)) {
+        toast.error(`Product ID "${importedProductId}" not found in database. Please use an existing Product ID or leave it empty for new products.`);
         setIsUploading(false);
         return;
       }
       
-      // Create lookup maps for existing products
-      const existingProductsBySKU = new Map();
-      const existingProductsById = new Map();
-      
-      existingProducts.forEach(product => {
-        if (product.sku) {
-          existingProductsBySKU.set(product.sku, product);
-        }
-        if (product.productId) {
-          existingProductsById.set(product.productId, product);
-        }
-      });
-      
-      // Check for empty SKUs and validate duplicates/updates
-      let hasEmptySKU = false;
-      const csvSKUSet = new Set(); // For checking duplicates WITHIN the CSV file
-      
-      for (const item of csvData) {
-        const importedSKU = item["Product SKU"]?.trim();
-        const importedProductId = item["Product Id"]?.trim();
+      // Check for SKU conflicts - different product using same SKU
+      if (existingProductsBySKU.has(importedSKU)) {
+        const existingProduct = existingProductsBySKU.get(importedSKU);
         
-        // Check for empty SKU
-        if (importedSKU === "") {
-          hasEmptySKU = true;
-          break;
-        }
-        
-        // Check for duplicates within the CSV file
-        if (csvSKUSet.has(importedSKU)) {
-          toast.error(`Duplicate SKU found in CSV: "${importedSKU}". Please ensure all SKUs in the file are unique.`);
+        // If Product ID is provided, it should match the existing product's ID
+        if (importedProductId && existingProduct.productId !== importedProductId) {
+          toast.error(`SKU "${importedSKU}" is already used by product "${existingProduct.productName}" (ID: ${existingProduct.productId}). Cannot use same SKU for different products.`);
           setIsUploading(false);
           return;
         }
-        csvSKUSet.add(importedSKU);
+      }
+    }
+    
+    if (hasEmptySKU) {
+      toast.error("Some products have empty SKUs. Please provide SKUs for all products.");
+      setIsUploading(false);
+      return;
+    }
+    
+    // Process in chunks
+    const chunkSize = 100;
+    const chunks = [];
+    for (let i = 0; i < csvData.length; i += chunkSize) {
+      chunks.push(csvData.slice(i, i + chunkSize));
+    }
+    
+    const categoryMap = new Map();
+    let processedCount = 0;
+    let failedCount = 0;
+    let createdCount = 0;
+    let updatedCount = 0;
+    const totalProducts = csvData.length;
+    
+    for (const chunk of chunks) {
+      // Handle categories first
+      for (const item of chunk) {
+        const categoryName = item["Category"].toUpperCase();
         
-        // Check against existing products in database
-        if (existingProductsBySKU.has(importedSKU)) {
-          const existingProduct = existingProductsBySKU.get(importedSKU);
+        if (!categoryMap.has(categoryName)) {
+          const categoryId = generateCategoryId();
+          categoryMap.set(categoryName, categoryId);
           
-          // If Product ID is provided, verify it matches the existing product
-          if (importedProductId) {
-            if (existingProduct.productId !== importedProductId) {
-              // SKU exists but belongs to a DIFFERENT product
-              toast.error(`SKU "${importedSKU}" already belongs to product "${existingProduct.productName}" (ID: ${existingProduct.productId}). Cannot use same SKU for different products.`);
-              setIsUploading(false);
-              return;
-            }
-            // SKU and Product ID match - this is valid for update
-            console.log(`Update detected for product: ${existingProduct.productName} (SKU: ${importedSKU})`);
-          } else {
-            // SKU exists but no Product ID provided
-            toast.error(`SKU "${importedSKU}" already exists. Please provide the Product ID if you want to update this product.`);
-            setIsUploading(false);
-            return;
-          }
-        }
-        
-        // Also check if Product ID exists but belongs to a different SKU
-        if (importedProductId && existingProductsById.has(importedProductId)) {
-          const existingProduct = existingProductsById.get(importedProductId);
-          if (existingProduct.sku !== importedSKU) {
-            toast.error(`Product ID "${importedProductId}" already exists with a different SKU "${existingProduct.sku}". Cannot change SKU of existing product.`);
-            setIsUploading(false);
-            return;
-          }
-        }
-      }
-      
-      if (hasEmptySKU) {
-        toast.error("Some products have empty SKUs. Please provide SKUs for all products.");
-        setIsUploading(false);
-        return;
-      }
-      
-      // Process in chunks
-      const chunkSize = 100;
-      const chunks = [];
-      for (let i = 0; i < csvData.length; i += chunkSize) {
-        chunks.push(csvData.slice(i, i + chunkSize));
-      }
-      
-      const categoryMap = new Map();
-      let processedCount = 0;
-      let failedCount = 0;
-      let createdCount = 0;
-      let updatedCount = 0;
-      const totalProducts = csvData.length;
-      
-      for (const chunk of chunks) {
-        // Handle categories first
-        for (const item of chunk) {
-          const categoryName = item["Category"].toUpperCase();
+          const newCategory = {
+            categoryId,
+            categoryName,
+            currentDate: new Date(),
+            items: 0,
+          };
           
-          if (!categoryMap.has(categoryName)) {
-            const categoryId = generateCategoryId();
-            categoryMap.set(categoryName, categoryId);
-            
-            const newCategory = {
-              categoryId,
-              categoryName,
-              currentDate: new Date(),
-              items: 0,
-            };
-            
-            // Save category to server
-            try {
-              const response = await fetch(
-                `https://nexuspos.onrender.com/api/categoryRouter/category-updates?email=${encodeURIComponent(userEmail)}`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                  },
-                  body: JSON.stringify(newCategory),
-                }
-              );
-              
-              if (!response.ok) {
-                console.error("Error adding category to server");
+          // Save category to server
+          try {
+            const response = await fetch(
+              `https://nexuspos.onrender.com/api/categoryRouter/category-updates?email=${encodeURIComponent(userEmail)}`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(newCategory),
               }
-            } catch (error) {
-              console.error("Error pushing category to server:", error);
+            );
+            
+            if (!response.ok) {
+              console.error("Error adding category to server");
             }
+          } catch (error) {
+            console.error("Error pushing category to server:", error);
           }
         }
-        
-        // Create products
-        for (const item of chunk) {
+      }
+      
+      // Process products
+      for (const item of chunk) {
+        try {
           const categoryName = item["Category"].toUpperCase();
           const categoryId = categoryMap.get(categoryName);
-          const sku = item["Product SKU"]?.trim() || "";
+          const newSKU = item["Product SKU"]?.trim() || "";
           const providedProductId = item["Product Id"]?.trim();
           
           // Determine if this is an update and find existing product
           let existingProduct = null;
           let productId = providedProductId;
           let isUpdate = false;
+          let oldSKU = null;
           
           // Strategy 1: Find by Product ID if provided
           if (providedProductId && existingProductsById.has(providedProductId)) {
             existingProduct = existingProductsById.get(providedProductId);
-            productId = providedProductId; // Use the provided ID
+            productId = providedProductId;
             isUpdate = true;
+            oldSKU = existingProduct.sku;
             console.log(`Found by Product ID: ${existingProduct.productName}`);
           }
           // Strategy 2: Find by SKU if no Product ID or ID not found
-          else if (sku && existingProductsBySKU.has(sku)) {
-            existingProduct = existingProductsBySKU.get(sku);
-            productId = existingProduct.productId; // Use the existing product's ID
+          else if (newSKU && existingProductsBySKU.has(newSKU)) {
+            existingProduct = existingProductsBySKU.get(newSKU);
+            productId = existingProduct.productId;
             isUpdate = true;
+            oldSKU = existingProduct.sku;
             console.log(`Found by SKU: ${existingProduct.productName}`);
           }
           // Strategy 3: New product
@@ -472,12 +463,34 @@ const ImportProductsScreen = () => {
             console.log(`New product: ${item["Product Name"]}`);
           }
           
+          // If this is an update and SKU is changing, handle the SKU change
+          if (isUpdate && oldSKU && oldSKU !== newSKU) {
+            console.log(`Updating SKU for product ${existingProduct.productName} from "${oldSKU}" to "${newSKU}"`);
+            
+            // Remove old SKU from lookup map to avoid conflicts
+            existingProductsBySKU.delete(oldSKU);
+            
+            // Check if new SKU is already used by another product
+            if (existingProductsBySKU.has(newSKU)) {
+              const conflictingProduct = existingProductsBySKU.get(newSKU);
+              if (conflictingProduct.productId !== productId) {
+                throw new Error(`Cannot change SKU to "${newSKU}" - it is already used by product "${conflictingProduct.productName}"`);
+              }
+            }
+          }
+          
+          // Calculate stock before for inventory tracking
+          let stockBefore = 0;
+          if (existingProduct) {
+            stockBefore = Number(existingProduct.stock) || 0;
+          }
+          
           const product = {
             productName: item["Product Name"].toUpperCase(),
             category: categoryName,
             categoryId: categoryId,
             productType: item["Product Type"],
-            sku: sku,
+            sku: newSKU, // Use the new SKU from CSV
             lowStockNotification: Number(item["Low Stock"]),
             trackStock: item["Track Stock"].toUpperCase() === "TRUE",
             price: Number(item["Price"]),
@@ -492,142 +505,150 @@ const ImportProductsScreen = () => {
             currentDate: new Date().toISOString(),
           };
           
-          // Calculate stock before for inventory tracking
-          let stockBefore = 0;
-          if (existingProduct) {
-            stockBefore = Number(existingProduct.stock) || 0;
+          // Save product to server
+          const response = await fetch(
+            `https://nexuspos.onrender.com/api/productRouter/product-updates?email=${encodeURIComponent(userEmail)}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify(product),
+            }
+          );
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to save product");
           }
           
-          // Save product to server
-          try {
-            const response = await fetch(
-              `https://nexuspos.onrender.com/api/productRouter/product-updates?email=${encodeURIComponent(userEmail)}`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(product),
-              }
-            );
-            
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.message || "Failed to save product");
+          // Create inventory update
+          const inventoryUpdateData = {
+            productName: product.productName,
+            inventoryId: generateInventoryId(16),
+            productId: product.productId,
+            roleOfEditor: "Owner",
+            createdBy: "Web User",
+            EditorId: userId,
+            userId: userId,
+            editedBy: isUpdate ? "adminApp" : "",
+            currentDate: product.currentDate,
+            stockBefore: stockBefore,
+            stockAfter: product.stock,
+            typeOfEdit: isUpdate ? "Override" : "Create",
+            synchronized: false,
+          };
+          
+          // Save inventory update
+          await fetch(
+            `https://nexuspos.onrender.com/api/inventoryRouter/inventory-updates?email=${encodeURIComponent(userEmail)}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify(inventoryUpdateData),
             }
+          );
+          
+          // Update the lookup maps with the new SKU
+          if (isUpdate) {
+            // Add the product with its new SKU to the map
+            existingProductsBySKU.set(newSKU, {
+              ...existingProduct,
+              sku: newSKU,
+              ...product
+            });
             
-            // Create inventory update
-            const inventoryUpdateData = {
-              productName: product.productName,
-              inventoryId: generateInventoryId(16),
-              productId: product.productId,
-              roleOfEditor: "Owner",
-              createdBy: "Web User",
-              EditorId: userId,
-              userId: userId,
-              editedBy: isUpdate ? "adminApp" : "",
-              currentDate: product.currentDate,
-              stockBefore: stockBefore,
-              stockAfter: product.stock,
-              typeOfEdit: isUpdate ? "Override" : "Create",
-              synchronized: false,
+            // If the product was previously in the map with old SKU, it's already deleted
+            updatedCount++;
+          } else {
+            // Add new product to lookup maps
+            const newProduct = {
+              ...product,
+              // Add any other fields that might be needed
             };
-            
-            // Save inventory update
-            await fetch(
-              `https://nexuspos.onrender.com/api/inventoryRouter/inventory-updates?email=${encodeURIComponent(userEmail)}`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(inventoryUpdateData),
-              }
-            );
-            
-            // Update counters
-            processedCount++;
-            if (isUpdate) {
-              updatedCount++;
-            } else {
-              createdCount++;
-            }
-            
-            // Update progress
-            setImportProgress({
-              current: processedCount,
-              total: totalProducts,
-              created: createdCount,
-              updated: updatedCount,
-              failed: failedCount
-            });
-            
-            console.log(`Progress: ${processedCount}/${totalProducts} (Created: ${createdCount}, Updated: ${updatedCount}, Failed: ${failedCount})`);
-            
-          } catch (error) {
-            console.error(`Error saving product ${product.productName}:`, error);
-            failedCount++;
-            
-            // Update progress even on failure
-            setImportProgress({
-              current: processedCount,
-              total: totalProducts,
-              created: createdCount,
-              updated: updatedCount,
-              failed: failedCount
-            });
-            
-            toast.error(`Failed to save product: ${product.productName}`);
+            existingProductsBySKU.set(newSKU, newProduct);
+            existingProductsById.set(productId, newProduct);
+            createdCount++;
           }
+          
+          processedCount++;
+          
+          // Update progress
+          setImportProgress({
+            current: processedCount,
+            total: totalProducts,
+            created: createdCount,
+            updated: updatedCount,
+            failed: failedCount
+          });
+          
+          console.log(`Progress: ${processedCount}/${totalProducts} (Created: ${createdCount}, Updated: ${updatedCount}, Failed: ${failedCount})`);
+          
+        } catch (error) {
+          console.error(`Error saving product:`, error);
+          failedCount++;
+          
+          // Update progress even on failure
+          setImportProgress({
+            current: processedCount,
+            total: totalProducts,
+            created: createdCount,
+            updated: updatedCount,
+            failed: failedCount
+          });
+          
+          toast.error(`Failed to save product: ${error.message}`);
         }
       }
-      
-      setIsUploading(false);
-      
-      if (failedCount > 0) {
-        toast.warning(
-          <div>
-            <strong>Import completed with issues:</strong><br />
-            Total: {totalProducts} | ✅ Created: {createdCount} | ✏️ Updated: {updatedCount} | ❌ Failed: {failedCount}
-          </div>
-        );
-      } else {
-        setIsSuccess(true);
-        toast.success(
-          <div>
-            <strong>Successfully imported all products!</strong><br />
-            Total: {totalProducts} | ✅ Created: {createdCount} | ✏️ Updated: {updatedCount}
-          </div>
-        );
-      }
-      
-      // Refresh the existing products list after import
-      await fetchExistingProducts();
-      
-      setTimeout(() => {
-        setFile(null);
-        setFileName(null);
-        setCsvData([]);
-        setIsSuccess(false);
-        setImportProgress({
-          current: 0,
-          total: 0,
-          created: 0,
-          updated: 0,
-          failed: 0
-        });
-        navigate("/products");
-      }, 3000);
-      
-    } catch (error) {
-      setIsUploading(false);
-      toast.error(`Upload failed: ${error.message}`);
-      console.error("Error in createProductsFromCSV:", error);
     }
-  };
-
+    
+    setIsUploading(false);
+    
+    if (failedCount > 0) {
+      toast.warning(
+        <div>
+          <strong>Import completed with issues:</strong><br />
+          Total: {totalProducts} | ✅ Created: {createdCount} | ✏️ Updated: {updatedCount} | ❌ Failed: {failedCount}
+        </div>
+      );
+    } else {
+      setIsSuccess(true);
+      toast.success(
+        <div>
+          <strong>Successfully imported all products!</strong><br />
+          Total: {totalProducts} | ✅ Created: {createdCount} | ✏️ Updated: {updatedCount}
+        </div>
+      );
+    }
+    
+    // Refresh the existing products list after import
+    await fetchExistingProducts();
+    
+    setTimeout(() => {
+      setFile(null);
+      setFileName(null);
+      setCsvData([]);
+      setIsSuccess(false);
+      setImportProgress({
+        current: 0,
+        total: 0,
+        created: 0,
+        updated: 0,
+        failed: 0
+      });
+      navigate("/products");
+    }, 3000);
+    
+  } catch (error) {
+    setIsUploading(false);
+    toast.error(`Upload failed: ${error.message}`);
+    console.error("Error in createProductsFromCSV:", error);
+  }
+};
   const clearFile = () => {
     setFile(null);
     setFileName(null);
