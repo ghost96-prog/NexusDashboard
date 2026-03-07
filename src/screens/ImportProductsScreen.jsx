@@ -325,7 +325,7 @@ const createProductsFromCSV = async () => {
       }
     });
     
-    // Check for empty SKUs and validate duplicates
+    // Validate CSV data before processing
     let hasEmptySKU = false;
     const csvSKUSet = new Set(); // For checking duplicates WITHIN the CSV file
     
@@ -347,23 +347,46 @@ const createProductsFromCSV = async () => {
       }
       csvSKUSet.add(importedSKU);
       
-      // If Product ID is provided, verify it exists
-      if (importedProductId && !existingProductsById.has(importedProductId)) {
-        toast.error(`Product ID "${importedProductId}" not found in database. Please use an existing Product ID or leave it empty for new products.`);
-        setIsUploading(false);
-        return;
-      }
-      
-      // Check for SKU conflicts - different product using same SKU
-      if (existingProductsBySKU.has(importedSKU)) {
-        const existingProduct = existingProductsBySKU.get(importedSKU);
-        
-        // If Product ID is provided, it should match the existing product's ID
-        if (importedProductId && existingProduct.productId !== importedProductId) {
-          toast.error(`SKU "${importedSKU}" is already used by product "${existingProduct.productName}" (ID: ${existingProduct.productId}). Cannot use same SKU for different products.`);
+      // Case 1: Product ID provided
+      if (importedProductId) {
+        // If Product ID exists, it must match the SKU (either same SKU or SKU not used elsewhere)
+        if (existingProductsById.has(importedProductId)) {
+          const existingProduct = existingProductsById.get(importedProductId);
+          
+          // If SKU is different from existing, check if new SKU is available
+          if (existingProduct.sku !== importedSKU) {
+            // Check if the new SKU is already used by a DIFFERENT product
+            if (existingProductsBySKU.has(importedSKU)) {
+              const skuProduct = existingProductsBySKU.get(importedSKU);
+              if (skuProduct.productId !== importedProductId) {
+                toast.error(`Cannot change SKU to "${importedSKU}" for product ID "${importedProductId}" because this SKU is already used by product "${skuProduct.productName}" (ID: ${skuProduct.productId})`);
+                setIsUploading(false);
+                return;
+              }
+            }
+            // SKU is available or belongs to the same product - this is fine (SKU update)
+            console.log(`SKU will be updated for product ${existingProduct.productName} from "${existingProduct.sku}" to "${importedSKU}"`);
+          }
+        }
+        // If Product ID doesn't exist, that's fine - we'll create new product with this ID
+        // But need to check if SKU is already used by another product
+        else if (existingProductsBySKU.has(importedSKU)) {
+          const existingProduct = existingProductsBySKU.get(importedSKU);
+          toast.error(`Cannot create new product with SKU "${importedSKU}" because it's already used by product "${existingProduct.productName}" (ID: ${existingProduct.productId}). Please use a unique SKU for this new product.`);
           setIsUploading(false);
           return;
         }
+      }
+      // Case 2: No Product ID provided - this is a new product creation
+      else {
+        // If SKU exists, throw error - SKU must be unique for new products
+        if (existingProductsBySKU.has(importedSKU)) {
+          const existingProduct = existingProductsBySKU.get(importedSKU);
+          toast.error(`Cannot create new product with SKU "${importedSKU}" because it already exists for product "${existingProduct.productName}" (ID: ${existingProduct.productId}). Please use a different unique SKU for this new product.`);
+          setIsUploading(false);
+          return;
+        }
+        // SKU doesn't exist - this is a valid new product
       }
     }
     
@@ -434,33 +457,34 @@ const createProductsFromCSV = async () => {
           const newSKU = item["Product SKU"]?.trim() || "";
           const providedProductId = item["Product Id"]?.trim();
           
-          // Determine if this is an update and find existing product
+          // Determine if this is an update or new product
           let existingProduct = null;
           let productId = providedProductId;
           let isUpdate = false;
           let oldSKU = null;
           
-          // Strategy 1: Find by Product ID if provided
-          if (providedProductId && existingProductsById.has(providedProductId)) {
-            existingProduct = existingProductsById.get(providedProductId);
-            productId = providedProductId;
-            isUpdate = true;
-            oldSKU = existingProduct.sku;
-            console.log(`Found by Product ID: ${existingProduct.productName}`);
+          // Case 1: Product ID provided
+          if (providedProductId) {
+            // Check if product exists with this ID
+            if (existingProductsById.has(providedProductId)) {
+              // UPDATE: Product exists with this ID
+              existingProduct = existingProductsById.get(providedProductId);
+              productId = providedProductId;
+              isUpdate = true;
+              oldSKU = existingProduct.sku;
+              console.log(`UPDATE by ID: ${existingProduct.productName} (${providedProductId})`);
+            } else {
+              // CREATE NEW: Product ID provided but doesn't exist - create new with this ID
+              isUpdate = false;
+              console.log(`CREATE NEW with provided ID: ${providedProductId} for product ${item["Product Name"]}`);
+            }
           }
-          // Strategy 2: Find by SKU if no Product ID or ID not found
-          else if (newSKU && existingProductsBySKU.has(newSKU)) {
-            existingProduct = existingProductsBySKU.get(newSKU);
-            productId = existingProduct.productId;
-            isUpdate = true;
-            oldSKU = existingProduct.sku;
-            console.log(`Found by SKU: ${existingProduct.productName}`);
-          }
-          // Strategy 3: New product
+          // Case 2: No Product ID provided - this MUST be a new product creation
           else {
-            productId = providedProductId || generateProductId();
+            // CREATE NEW: Generate new ID
+            productId = generateProductId();
             isUpdate = false;
-            console.log(`New product: ${item["Product Name"]}`);
+            console.log(`CREATE NEW (generated ID): ${item["Product Name"]} with SKU: ${newSKU}`);
           }
           
           // If this is an update and SKU is changing, handle the SKU change
@@ -470,7 +494,7 @@ const createProductsFromCSV = async () => {
             // Remove old SKU from lookup map to avoid conflicts
             existingProductsBySKU.delete(oldSKU);
             
-            // Check if new SKU is already used by another product
+            // Double-check new SKU is not used by another product
             if (existingProductsBySKU.has(newSKU)) {
               const conflictingProduct = existingProductsBySKU.get(newSKU);
               if (conflictingProduct.productId !== productId) {
@@ -490,7 +514,7 @@ const createProductsFromCSV = async () => {
             category: categoryName,
             categoryId: categoryId,
             productType: item["Product Type"],
-            sku: newSKU, // Use the new SKU from CSV
+            sku: newSKU,
             lowStockNotification: Number(item["Low Stock"]),
             trackStock: item["Track Stock"].toUpperCase() === "TRUE",
             price: Number(item["Price"]),
@@ -553,22 +577,25 @@ const createProductsFromCSV = async () => {
             }
           );
           
-          // Update the lookup maps with the new SKU
+          // Update the lookup maps
           if (isUpdate) {
-            // Add the product with its new SKU to the map
+            // Update existing product in maps
             existingProductsBySKU.set(newSKU, {
               ...existingProduct,
               sku: newSKU,
               ...product
             });
-            
-            // If the product was previously in the map with old SKU, it's already deleted
+            // Keep the ID map updated
+            existingProductsById.set(productId, {
+              ...existingProduct,
+              sku: newSKU,
+              ...product
+            });
             updatedCount++;
           } else {
             // Add new product to lookup maps
             const newProduct = {
               ...product,
-              // Add any other fields that might be needed
             };
             existingProductsBySKU.set(newSKU, newProduct);
             existingProductsById.set(productId, newProduct);
