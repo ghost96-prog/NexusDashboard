@@ -96,47 +96,55 @@ const CountStockScreen = () => {
   };
 
   // Load data from navigation state and initialize with products
-  useEffect(() => {
-    if (location.state) {
-      const { notes, items, storeName, storeId, type, countId: existingCountId, isDraft } = location.state;
-      setCountedNotes(notes || '');
-      setCountedStoreName(storeName || '');
-      setCountedStoreId(storeId || '');
-      setCountType(type || 'Partial');
-      
-      // If we have an existing count ID (draft), set it
-      if (existingCountId) {
-        setCountId(existingCountId);
-        setIsDraftMode(true);
-      }
-      
-      // Initialize items with counted quantity as empty (starting point)
-      const initializedItems = items.map(item => ({
-        ...item,
-        counted: item.counted || 0,
-        difference: item.difference || 0,
-        priceDifference: item.priceDifference || 0,
-        countedQuantity: '', // Start empty - no pre-filled value
-        isCounted: item.isCounted || false,
-        price: item.price || 0,
-        cost: item.cost || 0
-      }));
-      
-      setCountedItems(initializedItems);
-      setCountedTotalItems(initializedItems.length);
-      
-      // Count completed items
-      const completed = initializedItems.filter(item => item.isCounted).length;
-      setCountedCompletedItems(completed);
-      
-      // Set first uncounted item as current if there are items
-      if (initializedItems.length > 0) {
-        const firstUncounted = initializedItems.find(item => !item.isCounted) || initializedItems[0];
-        setCountedCurrentItem(firstUncounted);
-        setCountedCurrentQuantity(''); // Start empty
-      }
+// Load data from navigation state and initialize with products
+useEffect(() => {
+  if (location.state) {
+    const { notes, items, storeName, storeId, type, countId: existingCountId, isDraft } = location.state;
+    setCountedNotes(notes || '');
+    setCountedStoreName(storeName || '');
+    setCountedStoreId(storeId || '');
+    setCountType(type || 'Partial');
+    
+    // If we have an existing count ID (draft), set it
+    if (existingCountId) {
+      setCountId(existingCountId);
+      setIsDraftMode(true);
     }
-  }, [location.state]);
+    
+    // Initialize items - PRESERVE the counted values from the draft
+    const initializedItems = items.map(item => ({
+      ...item,
+      counted: item.counted || 0,
+      difference: item.difference || 0,
+      priceDifference: item.priceDifference || 0,
+      // Use the saved countedQuantity if it exists, otherwise empty string
+      countedQuantity: item.countedQuantity !== undefined && item.countedQuantity !== null 
+        ? item.countedQuantity 
+        : '',
+      // isCounted should be true if countedQuantity has a value (even if it's "0")
+      isCounted: item.countedQuantity !== undefined && 
+                 item.countedQuantity !== null && 
+                 item.countedQuantity !== '',
+      price: item.price || 0,
+      cost: item.cost || 0
+    }));
+    
+    setCountedItems(initializedItems);
+    setCountedTotalItems(initializedItems.length);
+    
+    // Count completed items
+    const completed = initializedItems.filter(item => item.isCounted).length;
+    setCountedCompletedItems(completed);
+    
+    // Set first uncounted item as current if there are items
+    if (initializedItems.length > 0) {
+      const firstUncounted = initializedItems.find(item => !item.isCounted) || initializedItems[0];
+      setCountedCurrentItem(firstUncounted);
+      // Set current quantity to empty for the current item (don't pre-fill)
+      setCountedCurrentQuantity('');
+    }
+  }
+}, [location.state]);
 
   // Fetch email from token and products
   useEffect(() => {
