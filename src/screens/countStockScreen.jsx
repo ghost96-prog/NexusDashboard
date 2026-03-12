@@ -202,95 +202,103 @@ const CountStockScreen = () => {
       )
     : countedItems;
 
-  // Optimized update function - NO PRODUCT FETCHING
-  const updateProductsAndCreateInventory = async (countData) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
+// Optimized update function - NO PRODUCT FETCHING, proper timeout handling
+const updateProductsAndCreateInventory = async (countData) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
 
-      const decoded = jwtDecode(token);
-      const userEmail = decoded.email;
-      const userId = decoded.userId || "";
+    const decoded = jwtDecode(token);
+    const userEmail = decoded.email;
+    const userId = decoded.userId || "";
 
-      console.log('Starting product updates from cache for', countData.items.length, 'items');
+    console.log('Starting product updates from cache for', countData.items.length, 'items');
 
-      // Process items with differences
-      const itemsWithDifferences = countData.items.filter(item => item.difference !== 0);
-      console.log(`Processing ${itemsWithDifferences.length} items with differences`);
+    // Process items with differences
+    const itemsWithDifferences = countData.items.filter(item => item.difference !== 0);
+    console.log(`Processing ${itemsWithDifferences.length} items with differences`);
 
-      if (itemsWithDifferences.length === 0) {
-        console.log('No items with differences to update');
-        return true;
-      }
+    if (itemsWithDifferences.length === 0) {
+      console.log('No items with differences to update');
+      return { success: true, completed: 0, failed: 0 };
+    }
 
-      // Prepare batch updates
-      const productUpdates = [];
-      const inventoryUpdates = [];
+    // Prepare batch updates
+    const productUpdates = [];
+    const inventoryUpdates = [];
 
-      for (const item of itemsWithDifferences) {
-        const existingProduct = getProductById(item.productId);
-        
-        if (!existingProduct) {
-          console.error(`Product ${item.productId} not found in cache`);
-          continue;
-        }
-
-        console.log(`Processing item: ${item.productId}, diff: ${item.difference}`);
-
-        // Prepare product update
-        const updatedProductData = {
-          productName: existingProduct.productName,
-          category: existingProduct.category || "",
-          categoryId: existingProduct.categoryId || "",
-          productType: existingProduct.productType || "Each",
-          sku: existingProduct.sku || "",
-          userId: userId,
-          lowStockNotification: existingProduct.lowStockNotification || 0,
-          trackStock: existingProduct.trackStock !== false,
-          editType: "Stock Count",
-          stock: parseFloat(item.counted || 0),
-          productId: item.productId,
-          price: existingProduct.price || 0,
-          cost: existingProduct.cost || 0,
-          currentDate: new Date().toISOString(),
-        };
-
-        productUpdates.push(updatedProductData);
-
-        // Prepare inventory update
-        const inventoryId = generateInventoryId();
-        const inventoryUpdateData = {
-          productName: existingProduct.productName,
-          inventoryId: inventoryId,
-          productId: item.productId,
-          roleOfEditor: "OWNER",
-          createdBy: "Web App",
-          userId: userId,
-          EditorId: userId,
-          currentDate: new Date().toISOString(),
-          stockBefore: parseFloat(existingProduct.stock || 0),
-          stockAfter: parseFloat(item.counted || 0),
-          typeOfEdit: "Stock Count",
-          synchronized: false,
-          editedBy: "adminApp",
-          countId: countData.countId,
-          storeName: countData.storeName,
-          notes: countData.notes,
-          difference: item.difference,
-          priceImpact: item.priceDifference
-        };
-
-        inventoryUpdates.push(inventoryUpdateData);
-      }
-
-      // Send updates in parallel
-      const updatePromises = [];
+    for (const item of itemsWithDifferences) {
+      const existingProduct = getProductById(item.productId);
       
-      // Update products
-      for (const productUpdate of productUpdates) {
-        const promise = fetch(
+      if (!existingProduct) {
+        console.error(`Product ${item.productId} not found in cache`);
+        continue;
+      }
+
+      console.log(`Processing item: ${item.productId}, diff: ${item.difference}`);
+
+      // Prepare product update
+      const updatedProductData = {
+        productName: existingProduct.productName,
+        category: existingProduct.category || "",
+        categoryId: existingProduct.categoryId || "",
+        productType: existingProduct.productType || "Each",
+        sku: existingProduct.sku || "",
+        userId: userId,
+        lowStockNotification: existingProduct.lowStockNotification || 0,
+        trackStock: existingProduct.trackStock !== false,
+        editType: "Stock Count",
+        stock: parseFloat(item.counted || 0),
+        productId: item.productId,
+        price: existingProduct.price || 0,
+        cost: existingProduct.cost || 0,
+        currentDate: new Date().toISOString(),
+      };
+
+      productUpdates.push(updatedProductData);
+
+      // Prepare inventory update
+      const inventoryId = generateInventoryId();
+      const inventoryUpdateData = {
+        productName: existingProduct.productName,
+        inventoryId: inventoryId,
+        productId: item.productId,
+        roleOfEditor: "OWNER",
+        createdBy: "Web App",
+        userId: userId,
+        EditorId: userId,
+        currentDate: new Date().toISOString(),
+        stockBefore: parseFloat(existingProduct.stock || 0),
+        stockAfter: parseFloat(item.counted || 0),
+        typeOfEdit: "Stock Count",
+        synchronized: false,
+        editedBy: "adminApp",
+        countId: countData.countId,
+        storeName: countData.storeName,
+        notes: countData.notes,
+        difference: item.difference,
+        priceImpact: item.priceDifference
+      };
+
+      inventoryUpdates.push(inventoryUpdateData);
+    }
+
+    // Track progress
+    let completed = 0;
+    let failed = 0;
+    const errors = [];
+
+    // Process product updates with individual timeouts
+    console.log(`Sending ${productUpdates.length} product updates...`);
+    
+    const productUpdatePromises = productUpdates.map(async (productUpdate) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout per request
+      
+      try {
+        const response = await fetch(
           `https://nexuspos.onrender.com/api/productRouter/product-updates?email=${encodeURIComponent(userEmail)}`,
           {
             method: "POST",
@@ -299,21 +307,48 @@ const CountStockScreen = () => {
               'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(productUpdate),
+            signal: controller.signal
           }
-        ).then(async (response) => {
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Failed to update product ${productUpdate.productId}:`, errorText);
-          }
-          return response;
-        });
+        );
         
-        updatePromises.push(promise);
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          failed++;
+          errors.push(`Product ${productUpdate.productId}: ${errorText}`);
+          console.error(`Failed to update product ${productUpdate.productId}:`, errorText);
+          return { success: false, productId: productUpdate.productId, error: errorText };
+        }
+        
+        completed++;
+        console.log(`Successfully updated product ${productUpdate.productId}`);
+        return { success: true, productId: productUpdate.productId };
+        
+      } catch (error) {
+        clearTimeout(timeoutId);
+        failed++;
+        
+        let errorMessage = error.message;
+        if (error.name === 'AbortError') {
+          errorMessage = 'Request timed out after 20 seconds';
+        }
+        
+        errors.push(`Product ${productUpdate.productId}: ${errorMessage}`);
+        console.error(`Product update failed for ${productUpdate.productId}:`, errorMessage);
+        return { success: false, productId: productUpdate.productId, error: errorMessage };
       }
+    });
 
-      // Create inventory updates
-      for (const inventoryUpdate of inventoryUpdates) {
-        const promise = fetch(
+    // Process inventory updates with individual timeouts
+    console.log(`Sending ${inventoryUpdates.length} inventory updates...`);
+    
+    const inventoryUpdatePromises = inventoryUpdates.map(async (inventoryUpdate) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout per request
+      
+      try {
+        const response = await fetch(
           `https://nexuspos.onrender.com/api/inventoryRouter/inventory-updates?email=${encodeURIComponent(userEmail)}`,
           {
             method: "POST",
@@ -322,36 +357,78 @@ const CountStockScreen = () => {
               'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(inventoryUpdate),
+            signal: controller.signal
           }
-        ).then(async (response) => {
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Failed to create inventory update for ${inventoryUpdate.productId}:`, errorText);
-          }
-          return response;
-        });
+        );
         
-        updatePromises.push(promise);
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          failed++;
+          errors.push(`Inventory ${inventoryUpdate.productId}: ${errorText}`);
+          console.error(`Failed to create inventory update for ${inventoryUpdate.productId}:`, errorText);
+          return { success: false, productId: inventoryUpdate.productId, error: errorText };
+        }
+        
+        completed++;
+        console.log(`Successfully created inventory update for ${inventoryUpdate.productId}`);
+        return { success: true, productId: inventoryUpdate.productId };
+        
+      } catch (error) {
+        clearTimeout(timeoutId);
+        failed++;
+        
+        let errorMessage = error.message;
+        if (error.name === 'AbortError') {
+          errorMessage = 'Request timed out after 20 seconds';
+        }
+        
+        errors.push(`Inventory ${inventoryUpdate.productId}: ${errorMessage}`);
+        console.error(`Inventory update failed for ${inventoryUpdate.productId}:`, errorMessage);
+        return { success: false, productId: inventoryUpdate.productId, error: errorMessage };
       }
+    });
 
-      // Wait for updates with timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Update timeout after 15 seconds')), 15000);
-      });
-
-      await Promise.race([
-        Promise.allSettled(updatePromises),
-        timeoutPromise
-      ]);
-      
-      console.log('All product updates completed');
-      return true;
-      
-    } catch (error) {
-      console.error("Error in product updates:", error);
-      throw error;
+    // Combine all promises
+    const allPromises = [...productUpdatePromises, ...inventoryUpdatePromises];
+    
+    if (allPromises.length === 0) {
+      console.log('No updates to process');
+      return { success: true, completed: 0, failed: 0, errors: [] };
     }
-  };
+
+    // Wait for ALL promises to settle (no race condition)
+    const results = await Promise.allSettled(allPromises);
+    
+    // Count results
+    const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+    const unsuccessful = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)).length;
+    
+    console.log(`All updates processed: ${successful} successful, ${unsuccessful} failed`);
+    
+    if (errors.length > 0) {
+      console.error('Update errors:', errors);
+    }
+    
+    // Return summary
+    return { 
+      success: unsuccessful === 0, 
+      completed: successful, 
+      failed: unsuccessful,
+      errors: errors
+    };
+    
+  } catch (error) {
+    console.error("Error in product updates:", error);
+    return { 
+      success: false, 
+      completed: 0, 
+      failed: 0, 
+      errors: [error.message] 
+    };
+  }
+};
 
   // Save draft function
   const handleSaveDraft = () => {
@@ -644,134 +721,158 @@ const CountStockScreen = () => {
     setCountedShowConfirmModal(true);
   };
 
-  const handleCountedConfirmComplete = async () => {
-    setCountedLoading(true);
+ const handleCountedConfirmComplete = async () => {
+  setCountedLoading(true);
 
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      const decoded = jwtDecode(token);
-      const userEmail = decoded.email;
-
-      // Generate a new count ID if this wasn't a draft
-      const finalCountId = countId && countId.startsWith('DRAFT-') 
-        ? `IC${Date.now().toString().slice(-6)}` 
-        : countId || `IC${Date.now().toString().slice(-6)}`;
-
-      // 1. Build the count data object
-      const countData = {
-        countId: finalCountId,
-        notes: countedNotes,
-        storeName: countedStoreName,
-        storeId: countedStoreId,
-        type: countType,
-        items: countedItems.map(item => ({
-          productId: item.productId,
-          productName: item.productName,
-          sku: item.sku,
-          category: item.category,
-          expectedStock: item.expectedStock || 0,
-          counted: item.counted || 0,
-          difference: item.difference || 0,
-          priceDifference: item.priceDifference || 0,
-          price: item.price || 0,
-          cost: item.cost || 0,
-          countedQuantity: item.countedQuantity || '',
-          isCounted: item.isCounted || false
-        })),
-        createdBy: userEmail,
-        dateCreated: new Date().toISOString(),
-        dateCompleted: new Date().toISOString(),
-        status: 'Completed',
-        totalDifference: calculatedTotals.totalDifference,
-        totalPriceDifference: calculatedTotals.totalPriceDifference,
-        totalItems: countedTotalItems,
-        completedItems: countedCompletedItems
-      };
-
-      console.log('Starting count completion process...');
-
-      // 2. Start operations in parallel
-      const operations = [];
-
-      // Save the inventory count
-      const saveCountOperation = (async () => {
-        console.log('Saving inventory count to server...');
-        const saveResponse = await fetch(
-          `https://nexuspos.onrender.com/api/inventoryCounts?email=${encodeURIComponent(userEmail)}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify(countData)
-          }
-        );
-
-        if (!saveResponse.ok) {
-          const errorText = await saveResponse.text();
-          throw new Error(`Failed to save inventory count: ${errorText}`);
-        }
-
-        return await saveResponse.json();
-      })();
-      operations.push(saveCountOperation);
-
-      // Update products and inventory (only if there are differences)
-      const itemsWithDifferences = countData.items.filter(item => item.difference !== 0);
-      if (itemsWithDifferences.length > 0) {
-        console.log(`Updating ${itemsWithDifferences.length} products with differences`);
-        const updateProductsOperation = updateProductsAndCreateInventory(countData);
-        operations.push(updateProductsOperation);
-      }
-
-      // 3. Wait for all operations to complete
-      const results = await Promise.allSettled(operations);
-
-      // 4. Check for errors
-      const errors = results.filter(result => result.status === 'rejected');
-      if (errors.length > 0) {
-        console.error('Errors during count completion:', errors);
-        const errorMessages = errors.map(e => e.reason?.message || 'Unknown error').join(', ');
-        throw new Error(`Some operations failed: ${errorMessages}`);
-      }
-
-      // 5. Remove draft from localStorage if it was a draft
-      if (countId && countId.startsWith('DRAFT-')) {
-        localStorage.removeItem(countId);
-        
-        // Update drafts list
-        const existingDrafts = JSON.parse(localStorage.getItem('inventoryCountDrafts') || '[]');
-        const updatedDrafts = existingDrafts.filter(d => d.id !== countId);
-        localStorage.setItem('inventoryCountDrafts', JSON.stringify(updatedDrafts));
-      }
-
-      // 6. Update UI state
-      setCountedShowConfirmModal(false);
-      setCountedShowCompletionModal(true);
-      setCompletedCountData(countData);
-      toast.success('Inventory count completed successfully!');
-
-    } catch (error) {
-      console.error('Error in handleCountedConfirmComplete:', error);
-      
-      let errorMessage = 'Failed to complete inventory count';
-      if (error.message.includes('timeout')) {
-        errorMessage = 'Operation timed out. Count may have been partially saved.';
-      } else {
-        errorMessage = error.message || errorMessage;
-      }
-      
-      toast.error(errorMessage);
-      setCountedShowConfirmModal(true);
-    } finally {
-      setCountedLoading(false);
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
     }
-  };
+
+    const decoded = jwtDecode(token);
+    const userEmail = decoded.email;
+
+    // Generate a new count ID if this wasn't a draft
+    const finalCountId = countId && countId.startsWith('DRAFT-') 
+      ? `IC${Date.now().toString().slice(-6)}` 
+      : countId || `IC${Date.now().toString().slice(-6)}`;
+
+    // 1. Build the count data object
+    const countData = {
+      countId: finalCountId,
+      notes: countedNotes,
+      storeName: countedStoreName,
+      storeId: countedStoreId,
+      type: countType,
+      items: countedItems.map(item => ({
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        category: item.category,
+        expectedStock: item.expectedStock || 0,
+        counted: item.counted || 0,
+        difference: item.difference || 0,
+        priceDifference: item.priceDifference || 0,
+        price: item.price || 0,
+        cost: item.cost || 0,
+        countedQuantity: item.countedQuantity || '',
+        isCounted: item.isCounted || false
+      })),
+      createdBy: userEmail,
+      dateCreated: new Date().toISOString(),
+      dateCompleted: new Date().toISOString(),
+      status: 'Completed',
+      totalDifference: calculatedTotals.totalDifference,
+      totalPriceDifference: calculatedTotals.totalPriceDifference,
+      totalItems: countedTotalItems,
+      completedItems: countedCompletedItems
+    };
+
+    console.log('Starting count completion process...');
+
+    // STEP 1: Save the inventory count FIRST (this is the source of truth)
+    console.log('Saving inventory count to server...');
+    
+    const saveController = new AbortController();
+    const saveTimeoutId = setTimeout(() => saveController.abort(), 30000); // 30 second timeout
+    
+    let saveResponse;
+    try {
+      saveResponse = await fetch(
+        `https://nexuspos.onrender.com/api/inventoryCounts?email=${encodeURIComponent(userEmail)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(countData),
+          signal: saveController.signal
+        }
+      );
+      
+      clearTimeout(saveTimeoutId);
+    } catch (error) {
+      clearTimeout(saveTimeoutId);
+      
+      if (error.name === 'AbortError') {
+        throw new Error('Saving inventory count timed out after 30 seconds');
+      }
+      throw new Error(`Failed to save inventory count: ${error.message}`);
+    }
+
+    if (!saveResponse.ok) {
+      const errorText = await saveResponse.text();
+      throw new Error(`Failed to save inventory count: ${errorText}`);
+    }
+
+    const savedCount = await saveResponse.json();
+    console.log('Inventory count saved successfully:', savedCount);
+
+    // STEP 2: Update products and inventory (only if there are differences)
+    const itemsWithDifferences = countData.items.filter(item => item.difference !== 0);
+    let updateResult = { success: true, completed: 0, failed: 0, errors: [] };
+    
+    if (itemsWithDifferences.length > 0) {
+      console.log(`Updating ${itemsWithDifferences.length} products with differences`);
+      updateResult = await updateProductsAndCreateInventory(countData);
+      
+      if (!updateResult.success) {
+        // Product updates failed but count was saved
+        console.warn('Product updates had failures, but count was saved:', updateResult.errors);
+        
+        // You might want to show a warning but not fail the whole operation
+        toast.warning(`Inventory count saved, but ${updateResult.failed} product updates failed. Please check the inventory.`);
+      } else {
+        console.log('All product updates completed successfully');
+      }
+    }
+
+    // STEP 3: Remove draft from localStorage if it was a draft
+    if (countId && countId.startsWith('DRAFT-')) {
+      localStorage.removeItem(countId);
+      
+      // Update drafts list
+      const existingDrafts = JSON.parse(localStorage.getItem('inventoryCountDrafts') || '[]');
+      const updatedDrafts = existingDrafts.filter(d => d.id !== countId);
+      localStorage.setItem('inventoryCountDrafts', JSON.stringify(updatedDrafts));
+    }
+
+    // STEP 4: Update UI state
+    setCountedShowConfirmModal(false);
+    setCountedShowCompletionModal(true);
+    setCompletedCountData(countData);
+    
+    // Show appropriate success message
+    if (updateResult.failed > 0) {
+      toast.info('Inventory count saved. Some product updates need attention.');
+    } else {
+      toast.success('Inventory count completed successfully!');
+    }
+
+  } catch (error) {
+    console.error('Error in handleCountedConfirmComplete:', error);
+    
+    let errorMessage = 'Failed to complete inventory count';
+    
+    if (error.message.includes('timed out')) {
+      errorMessage = 'Operation timed out. Please check if the count was saved and try again.';
+    } else if (error.message.includes('Failed to save inventory count')) {
+      errorMessage = error.message; // Use the specific error message
+    } else {
+      errorMessage = error.message || errorMessage;
+    }
+    
+    toast.error(errorMessage);
+    
+    // Keep the confirm modal open so user can try again
+    setCountedShowConfirmModal(true);
+    
+  } finally {
+    setCountedLoading(false);
+  }
+};
 
   const generateInventoryId = () => {
     const timestamp = new Date().getTime().toString(36);
