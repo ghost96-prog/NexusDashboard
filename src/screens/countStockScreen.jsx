@@ -786,29 +786,42 @@ const handleCountedConfirmComplete = async () => {
       ? `IC${Date.now().toString().slice(-6)}` 
       : countId || `IC${Date.now().toString().slice(-6)}`;
 
-    const countData = {
+    // Split items into batches
+    const BATCH_SIZE = 100;
+    const items = countedItems.map(item => ({
+      productId: item.productId,
+      productName: item.productName,
+      sku: item.sku,
+      category: item.category,
+      expectedStock: item.expectedStock || 0,
+      counted: item.counted || 0,
+      difference: item.difference || 0,
+      priceDifference: item.priceDifference || 0,
+      price: item.price || 0,
+      cost: item.cost || 0,
+      countedQuantity: item.countedQuantity || '',
+      isCounted: item.isCounted || false
+    }));
+
+    // Create batches
+    const batches = [];
+    for (let i = 0; i < items.length; i += BATCH_SIZE) {
+      batches.push(items.slice(i, i + BATCH_SIZE));
+    }
+
+    console.log(`Splitting ${items.length} items into ${batches.length} batches`);
+
+    // FIRST BATCH: Create the count (POST)
+    const firstBatch = batches[0];
+    const baseCountData = {
       countId: finalCountId,
       notes: countedNotes,
       storeName: countedStoreName,
       storeId: countedStoreId,
       type: countType,
-      items: countedItems.map(item => ({
-        productId: item.productId,
-        productName: item.productName,
-        sku: item.sku,
-        category: item.category,
-        expectedStock: item.expectedStock || 0,
-        counted: item.counted || 0,
-        difference: item.difference || 0,
-        priceDifference: item.priceDifference || 0,
-        price: item.price || 0,
-        cost: item.cost || 0,
-        countedQuantity: item.countedQuantity || '',
-        isCounted: item.isCounted || false
-      })),
+      items: firstBatch,
       createdBy: userEmail,
       dateCreated: new Date().toISOString(),
-      dateCompleted: new Date().toISOString(),
       status: 'Completed',
       totalDifference: calculatedTotals.totalDifference,
       totalPriceDifference: calculatedTotals.totalPriceDifference,
@@ -816,76 +829,142 @@ const handleCountedConfirmComplete = async () => {
       completedItems: countedCompletedItems
     };
 
-    console.log('Starting count completion process...');
+    console.log('Saving first batch...');
+    
+    // Create the count with first batch
+    const createResponse = await fetch(
+      `https://nexuspos.onrender.com/api/inventoryCounts?email=${encodeURIComponent(userEmail)}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(baseCountData)
+      }
+    );
 
-    // STEP 1: Save the inventory count with RETRY for cold starts
-    console.log('Saving inventory count to server...');
-    
-    let saveResponse;
-    let retryCount = 0;
-    const maxRetries = 2;
-    
-    while (retryCount <= maxRetries) {
-      try {
-        const saveController = new AbortController();
-        // Increase timeout for first attempt (Render cold start can take 30-60s)
-        const timeoutMs = retryCount === 0 ? 60000 : 30000; // 60s first try, 30s subsequent
-        const saveTimeoutId = setTimeout(() => saveController.abort(), timeoutMs);
-        
-        saveResponse = await fetch(
-          `https://nexuspos.onrender.com/api/inventoryCounts?email=${encodeURIComponent(userEmail)}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify(countData),
-            signal: saveController.signal
+    if (!createResponse.ok) {
+      const errorText = await createResponse.text();
+      throw new Error(`Failed to create inventory count: ${errorText}`);
+    }
+
+    const createdCount = await createResponse.json();
+    console.log('First batch saved successfully');
+
+    // REMAINING BATCHES: Update the count using PUT
+    for (let i = 1; i < batches.length; i++) {
+      const batch = batches[i];
+      console.log(`Adding batch ${i + 1}/${batches.length} (${batch.length} items)...`);
+
+      // Get all items up to current batch
+      const allItemsSoFar = [];
+      for (let j = 0; j <= i; j++) {
+        allItemsSoFar.push(...batches[j]);
+      }
+
+      // Update data with ALL items so far
+      const updateData = {
+        items: allItemsSoFar,
+        notes: countedNotes,
+        storeName: countedStoreName,
+        storeId: countedStoreId,
+        status: 'Completed',
+        totalDifference: calculatedTotals.totalDifference,
+        totalPriceDifference: calculatedTotals.totalPriceDifference,
+        totalItems: countedTotalItems,
+        completedItems: countedCompletedItems
+      };
+
+      let updateSuccess = false;
+      let retryCount = 0;
+      const maxRetries = 2;
+
+      while (!updateSuccess && retryCount <= maxRetries) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+          const response = await fetch(
+            `https://nexuspos.onrender.com/api/inventoryCounts/${finalCountId}?email=${encodeURIComponent(userEmail)}`,
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify(updateData),
+              signal: controller.signal
+            }
+          );
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            updateSuccess = true;
+            console.log(`Batch ${i + 1} added successfully`);
+          } else {
+            const errorText = await response.text();
+            throw new Error(`Update failed: ${errorText}`);
           }
-        );
-        
-        clearTimeout(saveTimeoutId);
-        break; // Success - exit retry loop
-        
-      } catch (error) {
-        retryCount++;
-        console.log(`Attempt ${retryCount} failed:`, error.message);
-        
-        if (retryCount > maxRetries) {
-          throw new Error(`Failed to save inventory count after ${maxRetries} retries: ${error.message}`);
+        } catch (error) {
+          retryCount++;
+          console.log(`Update attempt ${retryCount} failed:`, error.message);
+
+          if (retryCount > maxRetries) {
+            throw new Error(`Failed to add batch ${i + 1} after ${maxRetries} retries: ${error.message}`);
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
         }
-        
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
-        console.log(`Retrying... (attempt ${retryCount + 1}/${maxRetries + 1})`);
       }
     }
 
-    if (!saveResponse.ok) {
-      const errorText = await saveResponse.text();
-      throw new Error(`Failed to save inventory count: ${errorText}`);
+    console.log('All batches saved successfully');
+
+    // Update products with differences
+    const itemsWithDifferences = countedItems.filter(item => item.difference !== 0);
+    if (itemsWithDifferences.length > 0) {
+      console.log(`Updating ${itemsWithDifferences.length} products with differences`);
+      
+      // Batch product updates
+      const productBatches = [];
+      for (let i = 0; i < itemsWithDifferences.length; i += 50) {
+        productBatches.push(itemsWithDifferences.slice(i, i + 50));
+      }
+      
+      for (let i = 0; i < productBatches.length; i++) {
+        const batch = productBatches[i];
+        console.log(`Processing product batch ${i + 1}/${productBatches.length}`);
+        
+        const batchCountData = { 
+          ...baseCountData, 
+          items: batch,
+          countId: finalCountId 
+        };
+        
+        await updateProductsAndCreateInventory(batchCountData);
+      }
     }
 
-    const savedCount = await saveResponse.json();
-    console.log('Inventory count saved successfully:', savedCount);
+    // Remove draft if it was a draft
+    if (countId && countId.startsWith('DRAFT-')) {
+      localStorage.removeItem(countId);
+      const existingDrafts = JSON.parse(localStorage.getItem('inventoryCountDrafts') || '[]');
+      const updatedDrafts = existingDrafts.filter(d => d.id !== countId);
+      localStorage.setItem('inventoryCountDrafts', JSON.stringify(updatedDrafts));
+    }
 
-    // Rest of your code remains the same...
+    setCountedShowConfirmModal(false);
+    setCountedShowCompletionModal(true);
+    setCompletedCountData({ ...baseCountData, items: countedItems });
     
+    toast.success('Inventory count completed successfully!');
+
   } catch (error) {
     console.error('Error in handleCountedConfirmComplete:', error);
-    
-    let errorMessage = 'Failed to complete inventory count';
-    
-    if (error.message.includes('timed out') || error.message.includes('Failed to fetch')) {
-      errorMessage = 'Server is waking up. Please try again in a few moments.';
-    } else {
-      errorMessage = error.message || errorMessage;
-    }
-    
-    toast.error(errorMessage);
+    toast.error(error.message);
     setCountedShowConfirmModal(true);
-    
   } finally {
     setCountedLoading(false);
   }
