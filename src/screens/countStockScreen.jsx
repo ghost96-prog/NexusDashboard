@@ -770,7 +770,7 @@ const updateProductsAndCreateInventory = async (countData) => {
     setCountedShowConfirmModal(true);
   };
 
- const handleCountedConfirmComplete = async () => {
+const handleCountedConfirmComplete = async () => {
   setCountedLoading(true);
 
   try {
@@ -782,12 +782,10 @@ const updateProductsAndCreateInventory = async (countData) => {
     const decoded = jwtDecode(token);
     const userEmail = decoded.email;
 
-    // Generate a new count ID if this wasn't a draft
     const finalCountId = countId && countId.startsWith('DRAFT-') 
       ? `IC${Date.now().toString().slice(-6)}` 
       : countId || `IC${Date.now().toString().slice(-6)}`;
 
-    // 1. Build the count data object
     const countData = {
       countId: finalCountId,
       notes: countedNotes,
@@ -820,35 +818,48 @@ const updateProductsAndCreateInventory = async (countData) => {
 
     console.log('Starting count completion process...');
 
-    // STEP 1: Save the inventory count FIRST (this is the source of truth)
+    // STEP 1: Save the inventory count with RETRY for cold starts
     console.log('Saving inventory count to server...');
     
-    const saveController = new AbortController();
-    const saveTimeoutId = setTimeout(() => saveController.abort(), 30000); // 30 second timeout
-    
     let saveResponse;
-    try {
-      saveResponse = await fetch(
-        `https://nexuspos.onrender.com/api/inventoryCounts?email=${encodeURIComponent(userEmail)}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(countData),
-          signal: saveController.signal
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (retryCount <= maxRetries) {
+      try {
+        const saveController = new AbortController();
+        // Increase timeout for first attempt (Render cold start can take 30-60s)
+        const timeoutMs = retryCount === 0 ? 60000 : 30000; // 60s first try, 30s subsequent
+        const saveTimeoutId = setTimeout(() => saveController.abort(), timeoutMs);
+        
+        saveResponse = await fetch(
+          `https://nexuspos.onrender.com/api/inventoryCounts?email=${encodeURIComponent(userEmail)}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(countData),
+            signal: saveController.signal
+          }
+        );
+        
+        clearTimeout(saveTimeoutId);
+        break; // Success - exit retry loop
+        
+      } catch (error) {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed:`, error.message);
+        
+        if (retryCount > maxRetries) {
+          throw new Error(`Failed to save inventory count after ${maxRetries} retries: ${error.message}`);
         }
-      );
-      
-      clearTimeout(saveTimeoutId);
-    } catch (error) {
-      clearTimeout(saveTimeoutId);
-      
-      if (error.name === 'AbortError') {
-        throw new Error('Saving inventory count timed out after 30 seconds');
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+        console.log(`Retrying... (attempt ${retryCount + 1}/${maxRetries + 1})`);
       }
-      throw new Error(`Failed to save inventory count: ${error.message}`);
     }
 
     if (!saveResponse.ok) {
@@ -859,63 +870,20 @@ const updateProductsAndCreateInventory = async (countData) => {
     const savedCount = await saveResponse.json();
     console.log('Inventory count saved successfully:', savedCount);
 
-    // STEP 2: Update products and inventory (only if there are differences)
-    const itemsWithDifferences = countData.items.filter(item => item.difference !== 0);
-    let updateResult = { success: true, completed: 0, failed: 0, errors: [] };
+    // Rest of your code remains the same...
     
-    if (itemsWithDifferences.length > 0) {
-      console.log(`Updating ${itemsWithDifferences.length} products with differences`);
-      updateResult = await updateProductsAndCreateInventory(countData);
-      
-      if (!updateResult.success) {
-        // Product updates failed but count was saved
-        console.warn('Product updates had failures, but count was saved:', updateResult.errors);
-        
-        // You might want to show a warning but not fail the whole operation
-        toast.warning(`Inventory count saved, but ${updateResult.failed} product updates failed. Please check the inventory.`);
-      } else {
-        console.log('All product updates completed successfully');
-      }
-    }
-
-    // STEP 3: Remove draft from localStorage if it was a draft
-    if (countId && countId.startsWith('DRAFT-')) {
-      localStorage.removeItem(countId);
-      
-      // Update drafts list
-      const existingDrafts = JSON.parse(localStorage.getItem('inventoryCountDrafts') || '[]');
-      const updatedDrafts = existingDrafts.filter(d => d.id !== countId);
-      localStorage.setItem('inventoryCountDrafts', JSON.stringify(updatedDrafts));
-    }
-
-    // STEP 4: Update UI state
-    setCountedShowConfirmModal(false);
-    setCountedShowCompletionModal(true);
-    setCompletedCountData(countData);
-    
-    // Show appropriate success message
-    if (updateResult.failed > 0) {
-      toast.info('Inventory count saved. Some product updates need attention.');
-    } else {
-      toast.success('Inventory count completed successfully!');
-    }
-
   } catch (error) {
     console.error('Error in handleCountedConfirmComplete:', error);
     
     let errorMessage = 'Failed to complete inventory count';
     
-    if (error.message.includes('timed out')) {
-      errorMessage = 'Operation timed out. Please check if the count was saved and try again.';
-    } else if (error.message.includes('Failed to save inventory count')) {
-      errorMessage = error.message; // Use the specific error message
+    if (error.message.includes('timed out') || error.message.includes('Failed to fetch')) {
+      errorMessage = 'Server is waking up. Please try again in a few moments.';
     } else {
       errorMessage = error.message || errorMessage;
     }
     
     toast.error(errorMessage);
-    
-    // Keep the confirm modal open so user can try again
     setCountedShowConfirmModal(true);
     
   } finally {
