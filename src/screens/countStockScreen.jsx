@@ -95,7 +95,6 @@ const CountStockScreen = () => {
     }
   };
 
-  // Load data from navigation state and initialize with products
 // Load data from navigation state and initialize with products
 useEffect(() => {
   if (location.state) {
@@ -111,41 +110,82 @@ useEffect(() => {
       setIsDraftMode(true);
     }
     
-    // Initialize items - PRESERVE the counted values from the draft
-    const initializedItems = items.map(item => ({
-      ...item,
-      counted: item.counted || 0,
-      difference: item.difference || 0,
-      priceDifference: item.priceDifference || 0,
-      // Use the saved countedQuantity if it exists, otherwise empty string
-      countedQuantity: item.countedQuantity !== undefined && item.countedQuantity !== null 
-        ? item.countedQuantity 
-        : '',
-      // isCounted should be true if countedQuantity has a value (even if it's "0")
-      isCounted: item.countedQuantity !== undefined && 
-                 item.countedQuantity !== null && 
-                 item.countedQuantity !== '',
-      price: item.price || 0,
-      cost: item.cost || 0
-    }));
+    // Store the draft items temporarily
+    setCountedItems(items || []);
+    setCountedTotalItems(items?.length || 0);
     
-    setCountedItems(initializedItems);
-    setCountedTotalItems(initializedItems.length);
-    
-    // Count completed items
-    const completed = initializedItems.filter(item => item.isCounted).length;
+    // Count completed items from draft
+    const completed = items?.filter(item => 
+      item.countedQuantity !== undefined && 
+      item.countedQuantity !== null && 
+      item.countedQuantity !== ''
+    ).length || 0;
     setCountedCompletedItems(completed);
     
     // Set first uncounted item as current if there are items
-    if (initializedItems.length > 0) {
-      const firstUncounted = initializedItems.find(item => !item.isCounted) || initializedItems[0];
+    if (items && items.length > 0) {
+      const firstUncounted = items.find(item => 
+        !(item.countedQuantity !== undefined && 
+          item.countedQuantity !== null && 
+          item.countedQuantity !== '')
+      ) || items[0];
       setCountedCurrentItem(firstUncounted);
-      // Set current quantity to empty for the current item (don't pre-fill)
       setCountedCurrentQuantity('');
     }
   }
 }, [location.state]);
 
+// After products are loaded, update the draft items with latest expectedStock
+useEffect(() => {
+  // Only run if we have draft items AND products are loaded
+  if (countedItems.length > 0 && productsLoaded && allProducts.length > 0) {
+    console.log('Updating draft items with latest product data from server');
+    
+    const updatedItems = countedItems.map(draftItem => {
+      // Find the latest product data from server
+      const latestProduct = allProducts.find(p => p.productId === draftItem.productId);
+      
+      if (latestProduct) {
+        // Preserve the counted values from draft, but update expectedStock from server
+        return {
+          ...draftItem,
+          expectedStock: latestProduct.stock || 0, // Update with current server stock
+          price: latestProduct.price || 0, // Also update price in case it changed
+          cost: latestProduct.cost || 0, // Also update cost in case it changed
+          // Recalculate difference based on new expectedStock
+          difference: (draftItem.counted || 0) - (latestProduct.stock || 0),
+          priceDifference: ((draftItem.counted || 0) - (latestProduct.stock || 0)) * (latestProduct.price || 0)
+        };
+      }
+      
+      // If product not found in server data, keep original but log warning
+      console.warn(`Product ${draftItem.productId} not found in server data`);
+      return draftItem;
+    });
+    
+    setCountedItems(updatedItems);
+    
+    // Update completed items count (should be the same)
+    const completed = updatedItems.filter(item => 
+      item.countedQuantity !== undefined && 
+      item.countedQuantity !== null && 
+      item.countedQuantity !== ''
+    ).length;
+    setCountedCompletedItems(completed);
+    
+    // Update current item if needed
+    if (countedCurrentItem) {
+      const updatedCurrentItem = updatedItems.find(
+        item => item.productId === countedCurrentItem.productId
+      );
+      if (updatedCurrentItem) {
+        setCountedCurrentItem(updatedCurrentItem);
+      }
+    }
+    
+    console.log('Draft items updated with latest server stock values');
+  }
+}, [productsLoaded, allProducts]); // Run when products are loaded
   // Fetch email from token and products
   useEffect(() => {
     const token = localStorage.getItem("token");
