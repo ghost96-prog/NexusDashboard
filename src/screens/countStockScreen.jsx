@@ -288,7 +288,7 @@ const updateProductsAndCreateInventory = async (countData) => {
 
       console.log(`Processing item: ${item.productId}, diff: ${item.difference}`);
 
-      // Prepare product update
+      // Prepare product update (will be sent in batch)
       const updatedProductData = {
         productName: existingProduct.productName,
         category: existingProduct.category || "",
@@ -308,7 +308,7 @@ const updateProductsAndCreateInventory = async (countData) => {
 
       productUpdates.push(updatedProductData);
 
-      // Prepare inventory update
+      // Prepare inventory update (will be sent in batch)
       const inventoryId = generateInventoryId();
       const inventoryUpdateData = {
         productName: existingProduct.productName,
@@ -334,17 +334,13 @@ const updateProductsAndCreateInventory = async (countData) => {
       inventoryUpdates.push(inventoryUpdateData);
     }
 
-    // Track progress
     let completed = 0;
     let failed = 0;
     const errors = [];
 
-    // Process product updates with individual timeouts
-    console.log(`Sending ${productUpdates.length} product updates...`);
-    
-    const productUpdatePromises = productUpdates.map(async (productUpdate) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout per request
+    // Send ALL product updates in ONE batch request
+    if (productUpdates.length > 0) {
+      console.log(`Sending ${productUpdates.length} product updates in ONE batch...`);
       
       try {
         const response = await fetch(
@@ -355,46 +351,30 @@ const updateProductsAndCreateInventory = async (countData) => {
               "Content-Type": "application/json",
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(productUpdate),
-            signal: controller.signal
+            body: JSON.stringify(productUpdates) // Send entire array!
           }
         );
         
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Successfully sent ${productUpdates.length} product updates in one batch:`, result);
+          completed += productUpdates.length;
+        } else {
           const errorText = await response.text();
-          failed++;
-          errors.push(`Product ${productUpdate.productId}: ${errorText}`);
-          console.error(`Failed to update product ${productUpdate.productId}:`, errorText);
-          return { success: false, productId: productUpdate.productId, error: errorText };
+          failed += productUpdates.length;
+          errors.push(`Product batch update failed: ${errorText}`);
+          console.error(`Failed to send product batch:`, errorText);
         }
-        
-        completed++;
-        console.log(`Successfully updated product ${productUpdate.productId}`);
-        return { success: true, productId: productUpdate.productId };
-        
       } catch (error) {
-        clearTimeout(timeoutId);
-        failed++;
-        
-        let errorMessage = error.message;
-        if (error.name === 'AbortError') {
-          errorMessage = 'Request timed out after 20 seconds';
-        }
-        
-        errors.push(`Product ${productUpdate.productId}: ${errorMessage}`);
-        console.error(`Product update failed for ${productUpdate.productId}:`, errorMessage);
-        return { success: false, productId: productUpdate.productId, error: errorMessage };
+        failed += productUpdates.length;
+        errors.push(`Product batch update: ${error.message}`);
+        console.error(`Product batch update failed:`, error.message);
       }
-    });
+    }
 
-    // Process inventory updates with individual timeouts
-    console.log(`Sending ${inventoryUpdates.length} inventory updates...`);
-    
-    const inventoryUpdatePromises = inventoryUpdates.map(async (inventoryUpdate) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout per request
+    // Send ALL inventory updates in ONE batch request
+    if (inventoryUpdates.length > 0) {
+      console.log(`Sending ${inventoryUpdates.length} inventory updates in ONE batch...`);
       
       try {
         const response = await fetch(
@@ -405,66 +385,37 @@ const updateProductsAndCreateInventory = async (countData) => {
               "Content-Type": "application/json",
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(inventoryUpdate),
-            signal: controller.signal
+            body: JSON.stringify(inventoryUpdates) // Send entire array!
           }
         );
         
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Successfully sent ${inventoryUpdates.length} inventory updates in one batch:`, result);
+          completed += inventoryUpdates.length;
+        } else {
           const errorText = await response.text();
-          failed++;
-          errors.push(`Inventory ${inventoryUpdate.productId}: ${errorText}`);
-          console.error(`Failed to create inventory update for ${inventoryUpdate.productId}:`, errorText);
-          return { success: false, productId: inventoryUpdate.productId, error: errorText };
+          failed += inventoryUpdates.length;
+          errors.push(`Inventory batch update failed: ${errorText}`);
+          console.error(`Failed to send inventory batch:`, errorText);
         }
-        
-        completed++;
-        console.log(`Successfully created inventory update for ${inventoryUpdate.productId}`);
-        return { success: true, productId: inventoryUpdate.productId };
-        
       } catch (error) {
-        clearTimeout(timeoutId);
-        failed++;
-        
-        let errorMessage = error.message;
-        if (error.name === 'AbortError') {
-          errorMessage = 'Request timed out after 20 seconds';
-        }
-        
-        errors.push(`Inventory ${inventoryUpdate.productId}: ${errorMessage}`);
-        console.error(`Inventory update failed for ${inventoryUpdate.productId}:`, errorMessage);
-        return { success: false, productId: inventoryUpdate.productId, error: errorMessage };
+        failed += inventoryUpdates.length;
+        errors.push(`Inventory batch update: ${error.message}`);
+        console.error(`Inventory batch update failed:`, error.message);
       }
-    });
-
-    // Combine all promises
-    const allPromises = [...productUpdatePromises, ...inventoryUpdatePromises];
-    
-    if (allPromises.length === 0) {
-      console.log('No updates to process');
-      return { success: true, completed: 0, failed: 0, errors: [] };
     }
 
-    // Wait for ALL promises to settle (no race condition)
-    const results = await Promise.allSettled(allPromises);
-    
-    // Count results
-    const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-    const unsuccessful = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)).length;
-    
-    console.log(`All updates processed: ${successful} successful, ${unsuccessful} failed`);
+    console.log(`All updates processed: ${completed} successful, ${failed} failed`);
     
     if (errors.length > 0) {
       console.error('Update errors:', errors);
     }
     
-    // Return summary
     return { 
-      success: unsuccessful === 0, 
-      completed: successful, 
-      failed: unsuccessful,
+      success: failed === 0, 
+      completed: completed, 
+      failed: failed,
       errors: errors
     };
     
@@ -478,7 +429,6 @@ const updateProductsAndCreateInventory = async (countData) => {
     };
   }
 };
-
   // Save draft function
   const handleSaveDraft = () => {
     if (!countedIsSubscribedAdmin) {
