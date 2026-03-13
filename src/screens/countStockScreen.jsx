@@ -136,59 +136,17 @@ useEffect(() => {
   }
 }, [location.state]);
 
-useEffect(() => {
-  if (location.state) {
-    const { notes, items, storeName, storeId, type, countId: existingCountId, isDraft } = location.state;
-    setCountedNotes(notes || '');
-    setCountedStoreName(storeName || '');
-    setCountedStoreId(storeId || '');
-    setCountType(type || 'Partial');
-    
-    if (existingCountId) {
-      setCountId(existingCountId);
-      setIsDraftMode(true);
-    }
-    
-    // Store in ref for later use
-    draftItemsRef.current = items || [];
-    
-    // Set the items
-    setCountedItems(items || []);
-    setCountedTotalItems(items?.length || 0);
-    
-    const completed = items?.filter(item => 
-      item.countedQuantity !== undefined && 
-      item.countedQuantity !== null && 
-      item.countedQuantity !== ''
-    ).length || 0;
-    setCountedCompletedItems(completed);
-    
-    if (items && items.length > 0) {
-      const firstUncounted = items.find(item => 
-        !(item.countedQuantity !== undefined && 
-          item.countedQuantity !== null && 
-          item.countedQuantity !== '')
-      ) || items[0];
-      setCountedCurrentItem(firstUncounted);
-      setCountedCurrentQuantity('');
-    }
-  }
-}, [location.state]);
-
 // After products are loaded, update the draft items with latest expectedStock
 useEffect(() => {
-  // Only run if we have draft items in ref AND products are loaded
-  if (draftItemsRef.current && draftItemsRef.current.length > 0 && productsLoaded && allProducts.length > 0) {
-    console.log('Updating EXISTING draft items with latest product data from server');
-    console.log('Original draft items:', draftItemsRef.current);
+  // Only run if we have draft items AND products are loaded
+  if (countedItems.length > 0 && productsLoaded && allProducts.length > 0) {
+    console.log('Updating draft items with latest product data from server');
     
-    const updatedItems = draftItemsRef.current.map(draftItem => {
+    const updatedItems = countedItems.map(draftItem => {
       // Find the latest product data from server
       const latestProduct = allProducts.find(p => p.productId === draftItem.productId);
       
       if (latestProduct) {
-        console.log(`Updating ${draftItem.productName}: Expected stock from ${draftItem.expectedStock} to ${latestProduct.stock}`);
-        
         // Preserve the counted values from draft, but update expectedStock from server
         return {
           ...draftItem,
@@ -206,10 +164,9 @@ useEffect(() => {
       return draftItem;
     });
     
-    console.log('Updated items:', updatedItems);
     setCountedItems(updatedItems);
     
-    // Update completed items count
+    // Update completed items count (should be the same)
     const completed = updatedItems.filter(item => 
       item.countedQuantity !== undefined && 
       item.countedQuantity !== null && 
@@ -226,9 +183,6 @@ useEffect(() => {
         setCountedCurrentItem(updatedCurrentItem);
       }
     }
-    
-    // Clear the ref after updating
-    draftItemsRef.current = null;
     
     console.log('Draft items updated with latest server stock values');
   }
