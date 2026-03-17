@@ -543,7 +543,7 @@ const EditProductScreen = () => {
                 placeholder="Product Name"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
-                maxLength={40}
+                maxLength={60}
               />
             </div>
             {errors.productName && (
