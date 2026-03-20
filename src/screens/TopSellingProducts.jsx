@@ -10,18 +10,13 @@ import {
   FaSearch,
   FaTimes,
   FaBars,
+  FaFileAlt,
 } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { DateRangePicker, defaultStaticRanges } from "react-date-range";
 import {
   startOfToday,
   endOfToday,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  endOfYear,
   subDays,
   addDays,
   subWeeks,
@@ -36,7 +31,6 @@ import "../Css/TopSellingProducts.css";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { IoCalendar } from "react-icons/io5";
-import { useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { jwtDecode } from "jwt-decode";
@@ -46,9 +40,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFileCsv, FaFilePdf } from "react-icons/fa6";
 import RemainingTimeFooter from "../components/RemainingTimeFooter";
-import { FaArrowUp, FaArrowDown } from "react-icons/fa";
 
-// Move StatCard component outside to prevent unnecessary re-renders
 const StatCard = React.memo(({ title, value, icon, color, isCurrency = true, subValue }) => (
   <div className="topselling-stat-card">
     <div className="topselling-stat-icon-container" style={{ backgroundColor: color + '20', color: color }}>
@@ -74,9 +66,12 @@ StatCard.displayName = 'StatCard';
 const TopSellingProducts = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedStores, setSelectedStores] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
   const [stores, setStoreData] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedStartDate, setSelectedStartDate] = useState(startOfToday());
   const [selectedEndDate, setSelectedEndDate] = useState(endOfToday());
   const [selectedOption, setSelectedOption] = useState("today");
@@ -109,18 +104,21 @@ const TopSellingProducts = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedStores.length > 0) {
+    if (selectedStores.length > 0 && selectedCategories.length > 0 && email) {
       onRefresh(selectedOption, selectedStartDate, selectedEndDate);
     }
-  }, [selectedStores, selectedOption, selectedStartDate, selectedEndDate, filterTopSellingBySales]);
+  }, [selectedStores, selectedCategories, selectedOption, selectedStartDate, selectedEndDate, filterTopSellingBySales, email]);
 
   useEffect(() => {
-    setSelectedStores(stores);
-  }, [selectedOption, stores]);
+    if (stores.length > 0) {
+      setSelectedStores(stores);
+    }
+  }, [stores]);
 
   useEffect(() => {
     if (email) {
       fetchStores();
+      fetchCategories();
     }
   }, [email]);
 
@@ -137,16 +135,13 @@ const TopSellingProducts = () => {
       }
 
       const decoded = jwtDecode(token);
-      const email = decoded.email;
+      const userEmail = decoded.email;
 
       const response = await fetch(
-        `https://nexuspos.onrender.com/api/storeRouter/stores?email=${encodeURIComponent(
-          email
-        )}`
+        `https://nexuspos.onrender.com/api/storeRouter/stores?email=${encodeURIComponent(userEmail)}`
       );
 
       if (!response.ok) {
-        const errorMessage = await response.text();
         toast.error("User not found or invalid email.");
         return;
       }
@@ -163,6 +158,48 @@ const TopSellingProducts = () => {
     }
   }, []);
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication token is missing.");
+        return;
+      }
+
+      const decoded = jwtDecode(token);
+      const userEmail = decoded.email;
+
+      const response = await fetch(
+        `https://nexuspos.onrender.com/api/categoryRouter/categories?email=${encodeURIComponent(userEmail)}`
+      );
+      
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(`Error fetching categories`);
+        return;
+      }
+      
+      if (data.success) {
+        setCategories(data.data);
+        // Select ALL categories including "No Category" by default
+        const allCategories = [
+          ...data.data,
+          { categoryName: "NO CATEGORY", categoryId: "no-category" }
+        ];
+        setSelectedCategories(allCategories);
+      } else {
+        console.error("Error fetching categories:", data.error);
+      }
+    } catch (error) {
+      if (!navigator.onLine) {
+        toast.error("No internet connection. Please check your network.");
+      } else {
+        toast.error("An error occurred while fetching categories.");
+      }
+      console.error("Error fetching categories:", error);
+    }
+  }, []);
+
   const fetchAllReceiptsData = useCallback(async (timeframe, startDate, endDate) => {
     try {
       const token = localStorage.getItem("token");
@@ -173,39 +210,88 @@ const TopSellingProducts = () => {
 
       const decoded = jwtDecode(token);
       const userEmail = decoded.email;
-      const formattedStartDate = startDate;
-      const formattedEndDate = endDate;
 
       const response = await fetch(
-        `https://nexuspos.onrender.com/api/dashboardRouter/${timeframe}?startDate=${formattedStartDate}&endDate=${formattedEndDate}&email=${encodeURIComponent(
-          userEmail
-        )}`
+        `https://nexuspos.onrender.com/api/dashboardRouter/${timeframe}?startDate=${startDate}&endDate=${endDate}&email=${encodeURIComponent(userEmail)}`
       );
       const responseData = await response.json();
 
       if (!response.ok) {
-        const errorMessage = await response.text();
-        toast.error(`Error: ${"User not found or invalid email."}`);
+        toast.error(`Error fetching data`);
+        return;
       }
 
       const { soldProducts } = responseData;
+      
+      // Convert soldProducts to array
+      let productsArray = Object.values(soldProducts || {});
+      
+      // Filter by stores
+      if (selectedStores.length > 0 && selectedStores.length < stores.length) {
+        const storeIds = selectedStores.map(store => store.storeId);
+        productsArray = productsArray.filter(product => storeIds.includes(product.storeId));
+      }
+      
+      // Filter by categories
+      if (selectedCategories.length > 0 && selectedCategories.length < categories.length + 1) {
+        const hasNoCategorySelected = selectedCategories.some(cat => 
+          cat.categoryName && cat.categoryName.toUpperCase() === "NO CATEGORY"
+        );
+        const selectedCategoryNames = selectedCategories
+          .filter(cat => cat.categoryName && cat.categoryName.toUpperCase() !== "NO CATEGORY")
+          .map(cat => cat.categoryName);
+        
+        productsArray = productsArray.filter(product => {
+          const hasRegularCategory = product.category && 
+                                     product.category.trim() !== "" && 
+                                     product.category.toUpperCase() !== "NO CATEGORY";
+          
+          if (hasNoCategorySelected) {
+            if (selectedCategoryNames.length > 0) {
+              const matchesRegularCategory = selectedCategoryNames.some(catName => 
+                catName.toUpperCase() === product.category?.toUpperCase()
+              );
+              const isNoCategoryProduct = !product.category || 
+                                          product.category.trim() === "" || 
+                                          product.category.toUpperCase() === "NO CATEGORY";
+              return matchesRegularCategory || isNoCategoryProduct;
+            } else {
+              const isNoCategoryProduct = !product.category || 
+                                          product.category.trim() === "" || 
+                                          product.category.toUpperCase() === "NO CATEGORY";
+              return isNoCategoryProduct;
+            }
+          } else {
+            if (selectedCategoryNames.length > 0) {
+              const matchesRegularCategory = selectedCategoryNames.some(catName => 
+                catName.toUpperCase() === product.category?.toUpperCase()
+              );
+              const isNoCategoryProduct = !product.category || 
+                                          product.category.trim() === "" || 
+                                          product.category.toUpperCase() === "NO CATEGORY";
+              return matchesRegularCategory && !isNoCategoryProduct;
+            }
+          }
+          return true;
+        });
+      }
 
       let sortedProductSummary;
       if (filterTopSellingBySales) {
-        sortedProductSummary = Object.values(soldProducts).sort(
-          (a, b) => b.totalPrice - a.totalPrice
+        sortedProductSummary = [...productsArray].sort(
+          (a, b) => (b.totalPrice || 0) - (a.totalPrice || 0)
         );
       } else {
-        sortedProductSummary = Object.values(soldProducts).sort(
-          (a, b) => b.quantity - a.quantity
+        sortedProductSummary = [...productsArray].sort(
+          (a, b) => (b.quantity || 0) - (a.quantity || 0)
         );
       }
 
       // Calculate totals
-      const salesTotal = sortedProductSummary.reduce((sum, item) => sum + item.totalPrice, 0);
-      const costTotal = sortedProductSummary.reduce((sum, item) => sum + item.totalCost, 0);
-      const profitTotal = sortedProductSummary.reduce((sum, item) => sum + item.profit, 0);
-      const quantityTotal = sortedProductSummary.reduce((sum, item) => sum + item.quantity, 0);
+      const salesTotal = sortedProductSummary.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+      const costTotal = sortedProductSummary.reduce((sum, item) => sum + (item.totalCost || 0), 0);
+      const profitTotal = sortedProductSummary.reduce((sum, item) => sum + (item.profit || 0), 0);
+      const quantityTotal = sortedProductSummary.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
       setTotalSales(salesTotal);
       setTotalCost(costTotal);
@@ -221,20 +307,14 @@ const TopSellingProducts = () => {
       }
       console.error("Error fetching products:", error);
     }
-  }, [filterTopSellingBySales]);
+  }, [filterTopSellingBySales, selectedStores, selectedCategories, stores, categories]);
 
   const onRefresh = useCallback(async (selectedOption, selectedStartRange, selectedEndRange) => {
     NProgress.start();
     setIsRefreshing(true);
-    await fetchAllReceiptsData(selectedOption, selectedStartRange, selectedEndRange)
-      .then(() => {
-        NProgress.done();
-        setIsRefreshing(false);
-      })
-      .catch((error) => {
-        console.error(error);
-        setIsRefreshing(false);
-      });
+    await fetchAllReceiptsData(selectedOption, selectedStartRange, selectedEndRange);
+    NProgress.done();
+    setIsRefreshing(false);
   }, [fetchAllReceiptsData]);
 
   const handleStoreSelect = useCallback((store) => {
@@ -253,22 +333,54 @@ const TopSellingProducts = () => {
     }
   }, [selectedStores, stores]);
 
+  const handleCategorySelect = useCallback((category) => {
+    if (category === "All Categories") {
+      const totalCategoriesCount = categories.length + 1;
+      if (selectedCategories.length === totalCategoriesCount) {
+        setSelectedCategories([]);
+      } else {
+        const allCategories = [
+          ...categories,
+          { categoryName: "NO CATEGORY", categoryId: "no-category" }
+        ];
+        setSelectedCategories(allCategories);
+      }
+      return;
+    }
+
+    if (category.categoryName === "NO CATEGORY" || category.categoryName === "No Category") {
+      const exists = selectedCategories.some(s => 
+        s.categoryName && s.categoryName.toUpperCase() === "NO CATEGORY"
+      );
+      const updatedCategories = exists
+        ? selectedCategories.filter(s => s.categoryName && s.categoryName.toUpperCase() !== "NO CATEGORY")
+        : [...selectedCategories, { categoryName: "NO CATEGORY", categoryId: "no-category" }];
+      setSelectedCategories(updatedCategories);
+      return;
+    }
+
+    const exists = selectedCategories.some(
+      (s) => s.categoryId === category.categoryId
+    );
+    const updatedCategories = exists
+      ? selectedCategories.filter((s) => s.categoryId !== category.categoryId)
+      : [...selectedCategories, category];
+    setSelectedCategories(updatedCategories);
+  }, [selectedCategories, categories]);
+
   const handleClickOutside = useCallback((event) => {
     if (isStoreDropdownOpen && !event.target.closest(".topselling-store-selector")) {
       setIsStoreDropdownOpen(false);
-      if (selectedStores.length === 0) {
-        setProductSummary([]);
-        setTotalSales(0);
-        setTotalCost(0);
-        setTotalProfit(0);
-        setTotalQuantity(0);
-      }
+    }
+
+    if (isCategoryDropdownOpen && !event.target.closest(".topselling-category-selector")) {
+      setIsCategoryDropdownOpen(false);
     }
 
     if (isExportDropdownOpen && !event.target.closest(".topselling-export-button")) {
       setIsExportDropdownOpen(false);
     }
-  }, [isStoreDropdownOpen, isExportDropdownOpen, selectedStores.length]);
+  }, [isStoreDropdownOpen, isCategoryDropdownOpen, isExportDropdownOpen]);
 
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
@@ -288,180 +400,55 @@ const TopSellingProducts = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dateRangePickerRef]);
+  }, []);
 
   const handleDateRangeChange = useCallback((ranges) => {
     const { startDate, endDate } = ranges.selection;
-
-    const selectedRange = customStaticRanges.find(
-      (range) =>
-        range.range().startDate.getTime() === startDate.getTime() &&
-        range.range().endDate.getTime() === endDate.getTime()
-    );
-
-    if (selectedRange) {
-      if (selectedRange.label === "Today") {
-        setSelectedOption("today");
-        setSelectedRange("Today");
-        setIsDatePickerOpen(false);
-      } else if (selectedRange.label === "Yesterday") {
-        setSelectedOption("customPeriod");
-        setSelectedRange("Yesterday");
-        setIsDatePickerOpen(false);
-      } else if (selectedRange.label === "This Week") {
-        setSelectedOption("thisWeek");
-        setSelectedRange("This Week");
-        setIsDatePickerOpen(false);
-      } else if (selectedRange.label === "Last Week") {
-        setSelectedOption("customPeriod");
-        setSelectedRange("Last Week");
-        setIsDatePickerOpen(false);
-      } else if (selectedRange.label === "This Month") {
-        setSelectedOption("thisMonth");
-        setSelectedRange("This Month");
-        setIsDatePickerOpen(false);
-      } else if (selectedRange.label === "Last Month") {
-        setSelectedOption("customPeriod");
-        setSelectedRange("Last Month");
-        setIsDatePickerOpen(false);
-      } else if (selectedRange.label === "This Year") {
-        setSelectedOption("thisYear");
-        setSelectedRange("This Year");
-        setIsDatePickerOpen(false);
-      }
-    }
-
     setSelectedStartDate(startDate);
     setSelectedEndDate(endDate);
-    onRefresh(selectedOption, startDate, endDate);
+    setSelectedOption("customPeriod");
+    setSelectedRange("Custom");
+    onRefresh("customPeriod", startDate, endDate);
   }, [onRefresh]);
-
-  const customStaticRanges = useMemo(() => [
-    ...defaultStaticRanges,
-    {
-      label: "This Year",
-      range: () => ({
-        startDate: new Date(new Date().getFullYear(), 0, 1),
-        endDate: new Date(new Date().getFullYear(), 11, 31),
-      }),
-      isSelected: () => selectedOption === "This Year",
-    },
-  ], [selectedOption]);
 
   const handleBackClick = useCallback(() => {
     let newStartDate, newEndDate;
-
-    switch (selectedRange) {
-      case "Today":
-        newStartDate = subDays(selectedStartDate, 1);
-        newEndDate = subDays(selectedEndDate, 1);
-        break;
-      case "Yesterday":
-        newStartDate = subDays(selectedStartDate, 1);
-        newEndDate = subDays(selectedEndDate, 1);
-        break;
-      case "This Week":
-        newStartDate = subWeeks(selectedStartDate, 1);
-        newEndDate = subWeeks(selectedEndDate, 1);
-        break;
-      case "Last Week":
-        newStartDate = subWeeks(selectedStartDate, 1);
-        newEndDate = subWeeks(selectedEndDate, 1);
-        break;
-      case "This Month":
-        newStartDate = subMonths(selectedStartDate, 1);
-        newEndDate = subMonths(selectedEndDate, 1);
-        break;
-      case "Last Month":
-        newStartDate = subMonths(selectedStartDate, 1);
-        newEndDate = subMonths(selectedEndDate, 1);
-        break;
-      case "This Year":
-        newStartDate = subYears(selectedStartDate, 1);
-        newEndDate = subYears(selectedEndDate, 1);
-        break;
-      default:
-        newStartDate = subDays(selectedStartDate, 1);
-        newEndDate = subDays(selectedEndDate, 1);
-    }
-
+    newStartDate = subDays(selectedStartDate, 1);
+    newEndDate = subDays(selectedEndDate, 1);
     setSelectedStartDate(newStartDate);
     setSelectedEndDate(newEndDate);
     onRefresh(selectedOption, newStartDate, newEndDate);
-  }, [selectedRange, selectedStartDate, selectedEndDate, onRefresh]);
+  }, [selectedStartDate, selectedEndDate, selectedOption, onRefresh]);
 
   const handleForwardClick = useCallback(() => {
     let newStartDate, newEndDate;
-
-    switch (selectedRange) {
-      case "Today":
-        newStartDate = addDays(selectedStartDate, 1);
-        newEndDate = addDays(selectedEndDate, 1);
-        break;
-      case "Yesterday":
-        newStartDate = addDays(selectedStartDate, 1);
-        newEndDate = addDays(selectedEndDate, 1);
-        break;
-      case "This Week":
-        newStartDate = addWeeks(selectedStartDate, 1);
-        newEndDate = addWeeks(selectedEndDate, 1);
-        break;
-      case "Last Week":
-        newStartDate = addWeeks(selectedStartDate, 1);
-        newEndDate = addWeeks(selectedEndDate, 1);
-        break;
-      case "This Month":
-        newStartDate = addMonths(selectedStartDate, 1);
-        newEndDate = addMonths(selectedEndDate, 1);
-        break;
-      case "Last Month":
-        newStartDate = addMonths(selectedStartDate, 1);
-        newEndDate = addMonths(selectedEndDate, 1);
-        break;
-      case "This Year":
-        newStartDate = addYears(selectedStartDate, 1);
-        newEndDate = addYears(selectedEndDate, 1);
-        break;
-      default:
-        newStartDate = addDays(selectedStartDate, 1);
-        newEndDate = addDays(selectedEndDate, 1);
-    }
-
-    if (selectedEndDate <= new Date()) {
+    newStartDate = addDays(selectedStartDate, 1);
+    newEndDate = addDays(selectedEndDate, 1);
+    if (newEndDate <= new Date()) {
       setSelectedStartDate(newStartDate);
       setSelectedEndDate(newEndDate);
       onRefresh(selectedOption, newStartDate, newEndDate);
     }
-  }, [selectedRange, selectedStartDate, selectedEndDate, onRefresh]);
+  }, [selectedStartDate, selectedEndDate, selectedOption, onRefresh]);
 
   const handlePDFExport = useCallback(() => {
     const doc = new jsPDF();
-    const date = new Date().toLocaleString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-
-    doc.setFontSize(16);
+    const date = new Date().toLocaleString();
     doc.text("Top Selling Products", 14, 20);
-    doc.setFontSize(10);
     doc.text(`Generated on: ${date}`, 14, 28);
     
-    const storeNames = selectedStores.length === 0 
-      ? "All Stores" 
-      : selectedStores.map(s => s.storeName).join(", ");
+    const storeNames = selectedStores.length === 0 ? "All Stores" : selectedStores.map(s => s.storeName).join(", ");
     doc.text(`Stores: ${storeNames}`, 14, 36);
+    
+    const categoryNames = selectedCategories.length === 0 ? "All Categories" : selectedCategories.map(c => c.categoryName).join(", ");
+    doc.text(`Categories: ${categoryNames}`, 14, 44);
 
     const tableData = productSummary.map((item) => [
       item.productName,
-      item.quantity,
-      `$${Number(item.totalPrice).toFixed(2)}`,
-      `$${Number(item.totalCost).toFixed(2)}`,
-      `$${Number(item.profit).toFixed(2)}`,
+      item.quantity || 0,
+      `$${Number(item.totalPrice || 0).toFixed(2)}`,
+      `$${Number(item.totalCost || 0).toFixed(2)}`,
+      `$${Number(item.profit || 0).toFixed(2)}`,
     ]);
 
     tableData.push([
@@ -473,36 +460,27 @@ const TopSellingProducts = () => {
     ]);
 
     autoTable(doc, {
-      startY: 45,
+      startY: 52,
       head: [["Product Name", "QTY", "Total Sales", "Total Cost", "Profit"]],
       body: tableData,
     });
 
     doc.save("TopSellingProducts.pdf");
-  }, [productSummary, totalQuantity, totalSales, totalCost, totalProfit, selectedStores]);
+  }, [productSummary, totalQuantity, totalSales, totalCost, totalProfit, selectedStores, selectedCategories]);
 
   const handleCSVExport = useCallback(() => {
-    const date = new Date().toLocaleString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-
-    const storeNames = selectedStores.length === 0 
-      ? "All Stores" 
-      : selectedStores.map(s => s.storeName).join(", ");
+    const date = new Date().toLocaleString();
+    const storeNames = selectedStores.length === 0 ? "All Stores" : selectedStores.map(s => s.storeName).join(", ");
+    const categoryNames = selectedCategories.length === 0 ? "All Categories" : selectedCategories.map(c => c.categoryName).join(", ");
 
     let csv = "TOP SELLING PRODUCTS\n\n";
     csv += `Generated on:,${date}\n`;
-    csv += `Stores:,${storeNames}\n\n`;
+    csv += `Stores:,${storeNames}\n`;
+    csv += `Categories:,${categoryNames}\n\n`;
     csv += "Product Name,Quantity,Total Sales,Total Cost,Profit\n";
     
     productSummary.forEach((item) => {
-      csv += `${item.productName},${item.quantity},${Number(item.totalPrice).toFixed(2)},${Number(item.totalCost).toFixed(2)},${Number(item.profit).toFixed(2)}\n`;
+      csv += `${item.productName},${item.quantity || 0},${Number(item.totalPrice || 0).toFixed(2)},${Number(item.totalCost || 0).toFixed(2)},${Number(item.profit || 0).toFixed(2)}\n`;
     });
 
     csv += `TOTAL,${totalQuantity},${totalSales.toFixed(2)},${totalCost.toFixed(2)},${totalProfit.toFixed(2)}\n`;
@@ -515,11 +493,11 @@ const TopSellingProducts = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [productSummary, totalQuantity, totalSales, totalCost, totalProfit, selectedStores]);
+  }, [productSummary, totalQuantity, totalSales, totalCost, totalProfit, selectedStores, selectedCategories]);
 
   const filteredProducts = useMemo(() => 
     productSummary.filter((product) =>
-      product.productName.toLowerCase().includes(searchTerm.toLowerCase())
+      product.productName && product.productName.toLowerCase().includes(searchTerm.toLowerCase())
     ),
     [productSummary, searchTerm]
   );
@@ -530,7 +508,6 @@ const TopSellingProducts = () => {
       const totalCost = item.totalCost || 0;
       const profit = item.profit || 0;
       const quantity = item.quantity || 0;
-      
       const profitMargin = totalPrice > 0 ? (profit / totalPrice) * 100 : 0;
       
       return (
@@ -539,9 +516,7 @@ const TopSellingProducts = () => {
           <td className="topselling-table-cell">{quantity}</td>
           <td className="topselling-table-cell">${totalPrice.toFixed(2)}</td>
           <td className="topselling-table-cell">${totalCost.toFixed(2)}</td>
-          <td className="topselling-table-cell topselling-profit">
-            ${profit.toFixed(2)}
-          </td>
+          <td className="topselling-table-cell topselling-profit">${profit.toFixed(2)}</td>
           <td className="topselling-table-cell">
             <div className="topselling-margin-container">
               <span className="topselling-margin-value">{profitMargin.toFixed(1)}%</span>
@@ -552,7 +527,7 @@ const TopSellingProducts = () => {
                     width: `${Math.min(profitMargin, 100)}%`,
                     backgroundColor: profitMargin >= 0 ? '#10b981' : '#ef4444'
                   }}
-                ></div>
+                />
               </div>
             </div>
           </td>
@@ -567,57 +542,17 @@ const TopSellingProducts = () => {
     [totalSales, totalProfit]
   );
 
-  // Add mobile date picker CSS fix
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      @media (max-width: 768px) {
-        .topselling-datepicker-modal .rdrMonths {
-          overflow-x: auto;
-          flex-wrap: nowrap;
-          scroll-snap-type: x mandatory;
-        }
-        .topselling-datepicker-modal .rdrMonth {
-          min-width: 100%;
-          scroll-snap-align: start;
-        }
-        .topselling-datepicker-modal {
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 90vw;
-          max-height: 80vh;
-          overflow: auto;
-          z-index: 1000;
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-          padding: 16px;
-        }
-        .topselling-datepicker-modal .rdrDateRangePickerWrapper {
-          width: 100%;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
   return (
     <div className="topselling-container">
-       <div className="sales-summery-sidebar-toggle-wrapper">
-              <button 
-                className="sales-summery-sidebar-toggle"
-                onClick={toggleSidebar}
-                style={{ left: isSidebarOpen ? '280px' : '80px' }}
-              >
-                {isSidebarOpen ? <FaTimes /> : <FaBars />}
-              </button>
-            </div>
+      <div className="sales-summery-sidebar-toggle-wrapper">
+        <button 
+          className="sales-summery-sidebar-toggle"
+          onClick={toggleSidebar}
+          style={{ left: isSidebarOpen ? '280px' : '80px' }}
+        >
+          {isSidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
+      </div>
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       
       <div className={`topselling-content ${isSidebarOpen ? "topselling-content-shifted" : "topselling-content-collapsed"}`}>
@@ -625,9 +560,7 @@ const TopSellingProducts = () => {
         <div className="topselling-toolbar">
           <div className="topselling-toolbar-content">
             <h1 className="topselling-toolbar-title">Top Selling Products</h1>
-            <div className="topselling-toolbar-subtitle">
-              Analysis of best performing products
-            </div>
+            <div className="topselling-toolbar-subtitle">Analysis of best performing products</div>
           </div>
           <div className="topselling-toolbar-actions">
             <button 
@@ -644,33 +577,16 @@ const TopSellingProducts = () => {
         <div className="topselling-control-panel">
           <div className="topselling-date-controls">
             <div className="topselling-date-navigation">
-              <button 
-                className="topselling-nav-btn"
-                onClick={handleBackClick}
-              >
+              <button className="topselling-nav-btn" onClick={handleBackClick}>
                 <IoIosArrowBack />
               </button>
-              <button 
-                className="topselling-date-range-btn"
-                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-              >
+              <button className="topselling-date-range-btn" onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}>
                 <IoCalendar />
                 <span>
-                  {selectedStartDate.toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })} - {selectedEndDate.toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {selectedStartDate.toLocaleDateString()} - {selectedEndDate.toLocaleDateString()}
                 </span>
               </button>
-              <button 
-                className="topselling-nav-btn"
-                onClick={handleForwardClick}
-              >
+              <button className="topselling-nav-btn" onClick={handleForwardClick}>
                 <IoIosArrowForward />
               </button>
             </div>
@@ -688,29 +604,27 @@ const TopSellingProducts = () => {
                   months={2}
                   direction="horizontal"
                   locale={enUS}
-                  staticRanges={customStaticRanges}
                 />
               </div>
             )}
           </div>
           
           <div className="topselling-filter-controls">
+            {/* Store Selector */}
             <div className="topselling-store-selector">
               <button 
                 className="topselling-filter-btn"
                 onClick={() => {
                   setIsStoreDropdownOpen(!isStoreDropdownOpen);
+                  setIsCategoryDropdownOpen(false);
                   setIsExportDropdownOpen(false);
                 }}
               >
                 <FaStore />
                 <span>
-                  {selectedStores.length === 0
-                    ? "Select Store"
-                    : selectedStores.length === 1
-                    ? selectedStores[0].storeName
-                    : selectedStores.length === stores.length
-                    ? "All Stores"
+                  {selectedStores.length === 0 ? "Select Store"
+                    : selectedStores.length === 1 ? selectedStores[0].storeName
+                    : selectedStores.length === stores.length ? "All Stores"
                     : `${selectedStores.length} stores`}
                 </span>
               </button>
@@ -719,30 +633,81 @@ const TopSellingProducts = () => {
                 <div className="topselling-dropdown">
                   <div className="topselling-dropdown-header">
                     <span>Select Stores</span>
-                    <button 
-                      className="topselling-dropdown-select-all"
-                      onClick={() => handleStoreSelect("All Stores")}
-                    >
+                    <button className="topselling-dropdown-select-all" onClick={() => handleStoreSelect("All Stores")}>
                       {selectedStores.length === stores.length ? "Deselect All" : "Select All"}
                     </button>
                   </div>
                   <div className="topselling-dropdown-content">
                     {stores.map((store) => (
-                      <div
-                        className="topselling-dropdown-item"
-                        key={store.storeId}
-                        onClick={() => handleStoreSelect(store)}
-                      >
+                      <div className="topselling-dropdown-item" key={store.storeId} onClick={() => handleStoreSelect(store)}>
                         <div className="topselling-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={selectedStores.some((s) => s.storeId === store.storeId)}
-                            readOnly
-                          />
-                          <div className="topselling-checkbox-custom"></div>
+                          <input type="checkbox" checked={selectedStores.some((s) => s.storeId === store.storeId)} readOnly />
+                          <div className="topselling-checkbox-custom" />
                         </div>
                         <span className="topselling-store-name">{store.storeName}</span>
                         <span className="topselling-store-location">{store.location}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Category Selector */}
+            <div className="topselling-category-selector">
+              <button 
+                className="topselling-filter-btn"
+                onClick={() => {
+                  setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
+                  setIsStoreDropdownOpen(false);
+                  setIsExportDropdownOpen(false);
+                }}
+              >
+                <FaFileAlt />
+                <span>
+                  {selectedCategories.length === 0 ? "Select Category"
+                    : selectedCategories.length === 1 ? selectedCategories[0].categoryName
+                    : selectedCategories.length === categories.length + 1 ? "All Categories"
+                    : `${selectedCategories.length} categories`}
+                </span>
+              </button>
+              
+              {isCategoryDropdownOpen && (
+                <div className="topselling-dropdown">
+                  <div className="topselling-dropdown-header">
+                    <span>Select Categories</span>
+                    <button className="topselling-dropdown-select-all" onClick={() => handleCategorySelect("All Categories")}>
+                      {selectedCategories.length === categories.length + 1 ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <div className="topselling-dropdown-content">
+                    <div className="topselling-dropdown-item" onClick={() => {
+                      const allCategories = [...categories, { categoryName: "NO CATEGORY", categoryId: "no-category" }];
+                      setSelectedCategories(allCategories);
+                      setIsCategoryDropdownOpen(false);
+                    }}>
+                      <div className="topselling-checkbox">
+                        <input type="checkbox" checked={selectedCategories.length === categories.length + 1} readOnly />
+                        <div className="topselling-checkbox-custom" />
+                      </div>
+                      <span className="topselling-category-name" style={{ fontWeight: '600', color: '#3b82f6' }}>All Items</span>
+                    </div>
+                    
+                    <div className="topselling-dropdown-item" onClick={() => handleCategorySelect({ categoryName: "NO CATEGORY", categoryId: "no-category" })}>
+                      <div className="topselling-checkbox">
+                        <input type="checkbox" checked={selectedCategories.some(s => s.categoryName === "NO CATEGORY" || s.categoryName === "No Category")} readOnly />
+                        <div className="topselling-checkbox-custom" />
+                      </div>
+                      <span className="topselling-category-name">NO CATEGORY</span>
+                    </div>
+                    
+                    {categories.map((category) => (
+                      <div className="topselling-dropdown-item" key={category.categoryId} onClick={() => handleCategorySelect(category)}>
+                        <div className="topselling-checkbox">
+                          <input type="checkbox" checked={selectedCategories.some(s => s.categoryId === category.categoryId)} readOnly />
+                          <div className="topselling-checkbox-custom" />
+                        </div>
+                        <span className="topselling-category-name">{category.categoryName}</span>
                       </div>
                     ))}
                   </div>
@@ -756,6 +721,7 @@ const TopSellingProducts = () => {
                 onClick={() => {
                   setIsExportDropdownOpen(!isExportDropdownOpen);
                   setIsStoreDropdownOpen(false);
+                  setIsCategoryDropdownOpen(false);
                 }}
               >
                 <FaDownload />
@@ -764,23 +730,11 @@ const TopSellingProducts = () => {
               
               {isExportDropdownOpen && (
                 <div className="topselling-dropdown">
-                  <div 
-                    className="topselling-dropdown-item"
-                    onClick={() => {
-                      setIsExportDropdownOpen(false);
-                      handlePDFExport();
-                    }}
-                  >
+                  <div className="topselling-dropdown-item" onClick={handlePDFExport}>
                     <FaFilePdf color="#ef4444" />
                     <span>Download PDF</span>
                   </div>
-                  <div 
-                    className="topselling-dropdown-item"
-                    onClick={() => {
-                      setIsExportDropdownOpen(false);
-                      handleCSVExport();
-                    }}
-                  >
+                  <div className="topselling-dropdown-item" onClick={handleCSVExport}>
                     <FaFileCsv color="#10b981" />
                     <span>Download CSV</span>
                   </div>
@@ -792,66 +746,25 @@ const TopSellingProducts = () => {
 
         {/* Stats Grid */}
         <div className="topselling-stats-grid">
-          <StatCard
-            title="Total Products"
-            value={productSummary.length}
-            icon={<FaBox />}
-            color="#6366f1"
-            isCurrency={false}
-          />
-          
-          <StatCard
-            title="Total Quantity"
-            value={totalQuantity}
-            icon={<FaShoppingCart />}
-            color="#8b5cf6"
-            isCurrency={false}
-          />
-          
-          <StatCard
-            title="Total Sales"
-            value={totalSales}
-            icon={<FaChartLine />}
-            color="#10b981"
-          />
-          
-          <StatCard
-            title="Total Profit"
-            value={totalProfit}
-            icon={<FaChartLine />}
-            color="#8b5cf6"
-            subValue={`${profitMargin}% margin`}
-          />
+          <StatCard title="Total Products" value={filteredProducts.length} icon={<FaBox />} color="#6366f1" isCurrency={false} />
+          <StatCard title="Total Quantity" value={totalQuantity} icon={<FaShoppingCart />} color="#8b5cf6" isCurrency={false} />
+          <StatCard title="Total Sales" value={totalSales} icon={<FaChartLine />} color="#10b981" />
+          <StatCard title="Total Profit" value={totalProfit} icon={<FaChartLine />} color="#8b5cf6" subValue={`${profitMargin}% margin`} />
         </div>
 
         {/* Search and Filter Bar */}
         <div className="topselling-search-filter">
           <div className="topselling-search-container">
             <FaSearch className="topselling-search-icon" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="topselling-search-input"
-            />
+            <input type="text" placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="topselling-search-input" />
             {searchTerm && (
-              <button 
-                className="topselling-clear-search"
-                onClick={() => setSearchTerm("")}
-              >
-                ×
-              </button>
+              <button className="topselling-clear-search" onClick={() => setSearchTerm("")}>×</button>
             )}
           </div>
           
           <div className="topselling-filter-container">
             <FaFilter className="topselling-filter-icon" />
-            <select
-              value={filterTopSellingBySales ? "sales" : "quantity"}
-              onChange={(e) => setFilterTopSelling(e.target.value === "sales")}
-              className="topselling-filter-select"
-            >
+            <select value={filterTopSellingBySales ? "sales" : "quantity"} onChange={(e) => setFilterTopSelling(e.target.value === "sales")} className="topselling-filter-select">
               <option value="sales">Sort by Sales</option>
               <option value="quantity">Sort by Quantity</option>
             </select>
@@ -863,9 +776,7 @@ const TopSellingProducts = () => {
           <div className="topselling-table-header">
             <h3>Product Performance</h3>
             <div className="topselling-table-actions">
-              <span className="topselling-table-count">
-                Showing {filteredProducts.length} products
-              </span>
+              <span className="topselling-table-count">Showing {filteredProducts.length} products</span>
             </div>
           </div>
           
@@ -883,19 +794,13 @@ const TopSellingProducts = () => {
               </thead>
               <tbody>
                 {tableRows}
-                
-                {/* Totals Row with null checks */}
                 <tr className="topselling-table-row topselling-total-row">
                   <td className="topselling-table-cell topselling-total">TOTAL</td>
                   <td className="topselling-table-cell topselling-total">{totalQuantity}</td>
-                  <td className="topselling-table-cell topselling-total">${(totalSales || 0).toFixed(2)}</td>
-                  <td className="topselling-table-cell topselling-total">${(totalCost || 0).toFixed(2)}</td>
-                  <td className="topselling-table-cell topselling-total topselling-profit">
-                    ${(totalProfit || 0).toFixed(2)}
-                  </td>
-                  <td className="topselling-table-cell topselling-total">
-                    {profitMargin}%
-                  </td>
+                  <td className="topselling-table-cell topselling-total">${totalSales.toFixed(2)}</td>
+                  <td className="topselling-table-cell topselling-total">${totalCost.toFixed(2)}</td>
+                  <td className="topselling-table-cell topselling-total topselling-profit">${totalProfit.toFixed(2)}</td>
+                  <td className="topselling-table-cell topselling-total">{profitMargin}%</td>
                 </tr>
               </tbody>
             </table>

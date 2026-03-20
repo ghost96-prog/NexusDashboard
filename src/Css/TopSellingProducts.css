@@ -796,7 +796,16 @@
     font-size: 10px;
   }
 }
+/* Add to TopSellingProducts.css */
+.topselling-category-selector {
+  position: relative;
+}
 
+.topselling-category-name {
+  font-size: 14px;
+  color: #1e293b;
+  flex: 1;
+}
 /* Ensure cards don't overflow on small screens */
 .topselling-stat-card {
   box-sizing: border-box; /* Include padding in width/height */
@@ -873,4 +882,355 @@
 .topselling-dropdown-content::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
+}
+/* ============================================ */
+/* ADD THESE STYLES AT THE BOTTOM OF YOUR CSS FILE */
+/* ============================================ */
+
+/* Mobile Responsive Fixes - Add this entire block */
+@media (max-width: 768px) {
+  /* Control Panel - Make it stack vertically */
+  .topselling-control-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+  }
+  
+  /* Date controls - Full width on mobile */
+  .topselling-date-controls {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .topselling-date-navigation {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .topselling-date-range-btn {
+    flex: 1;
+    min-width: auto;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  /* Filter controls - Stack vertically */
+  .topselling-filter-controls {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+  
+  /* Store selector, category selector, export button - Full width */
+  .topselling-store-selector,
+  .topselling-category-selector,
+  .topselling-export-button {
+    width: 100%;
+  }
+  
+  /* Filter buttons - Full width with proper text */
+  .topselling-filter-btn {
+    width: 100%;
+    justify-content: space-between;
+    min-width: auto;
+    padding: 12px 16px;
+  }
+  
+  /* Dropdown menus - Full width and better positioning */
+  .topselling-dropdown {
+    position: fixed;
+    top: auto;
+    left: 16px;
+    right: 16px;
+    width: calc(100% - 32px);
+    max-width: none;
+    min-width: auto;
+    max-height: 60vh;
+    z-index: 1001;
+  }
+  
+  /* Make dropdown scrollable */
+  .topselling-dropdown-content {
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+  
+  /* Adjust dropdown items for mobile */
+  .topselling-dropdown-item {
+    padding: 14px 16px;
+  }
+  
+  /* Search and filter bar - Stack vertically */
+  .topselling-search-filter {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+  
+  /* Search container - Full width */
+  .topselling-search-container {
+    width: 100%;
+    max-width: none;
+  }
+  
+  /* Filter container - Full width */
+  .topselling-filter-container {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .topselling-filter-select {
+    flex: 1;
+    min-width: auto;
+  }
+  
+  /* Stats grid - 2 columns on mobile */
+  .topselling-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  /* Stat cards - Adjust size for mobile */
+  .topselling-stat-card {
+    height: auto;
+    width: auto;
+    padding: 16px;
+    border-radius: 16px;
+  }
+  
+  .topselling-stat-icon-container {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .topselling-stat-icon-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .topselling-stat-value {
+    font-size: 18px;
+  }
+  
+  /* Table container - Make scrollable horizontally */
+  .topselling-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .topselling-table {
+    min-width: 700px;
+  }
+  
+  /* Table cells - Reduce padding */
+  .topselling-table th,
+  .topselling-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+  
+  /* Table header - Stack on mobile */
+  .topselling-table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+  }
+  
+  /* Toolbar - Adjust for mobile */
+  .topselling-toolbar {
+    padding: 0 16px;
+    height: 60px;
+  }
+  
+  .topselling-toolbar-title {
+    font-size: 18px;
+  }
+  
+  .topselling-toolbar-subtitle {
+    display: none;
+  }
+  
+  /* Main content padding */
+  .topselling-content {
+    padding: 16px;
+  }
+  
+  /* Sidebar toggle button adjustment */
+  .sales-summery-sidebar-toggle {
+    left: 16px !important;
+  }
+}
+
+/* For extra small screens (below 480px) */
+@media (max-width: 480px) {
+  /* Stats grid - Keep 2 columns but smaller */
+  .topselling-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .topselling-stat-card {
+    padding: 12px;
+  }
+  
+  .topselling-stat-icon-container {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 8px;
+  }
+  
+  .topselling-stat-icon-circle {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .topselling-stat-title {
+    font-size: 11px;
+  }
+  
+  .topselling-stat-value {
+    font-size: 16px;
+  }
+  
+  .topselling-stat-subvalue {
+    font-size: 10px;
+  }
+  
+  /* Date range button text smaller */
+  .topselling-date-range-btn span {
+    font-size: 11px;
+  }
+  
+  /* Filter buttons text */
+  .topselling-filter-btn span {
+    font-size: 13px;
+  }
+  
+  /* Dropdown items */
+  .topselling-dropdown-item {
+    padding: 12px;
+  }
+  
+  .topselling-store-name,
+  .topselling-category-name {
+    font-size: 13px;
+  }
+  
+  .topselling-store-location {
+    font-size: 11px;
+  }
+  
+  /* Table cells */
+  .topselling-table th,
+  .topselling-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  /* Profit margin container */
+  .topselling-margin-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .topselling-margin-bar {
+    width: 100%;
+  }
+}
+
+/* For very small screens (below 360px) */
+@media (max-width: 360px) {
+  .topselling-stats-grid {
+    gap: 8px;
+  }
+  
+  .topselling-stat-card {
+    padding: 10px;
+  }
+  
+  .topselling-stat-icon-container {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .topselling-stat-icon-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .topselling-stat-value {
+    font-size: 14px;
+  }
+  
+  .topselling-date-range-btn {
+    padding: 8px 10px;
+  }
+  
+  .topselling-date-range-btn span {
+    font-size: 10px;
+  }
+  
+  .topselling-filter-btn {
+    padding: 10px 12px;
+  }
+  
+  .topselling-filter-btn span {
+    font-size: 12px;
+  }
+}
+
+/* Fix for date picker modal on mobile */
+@media (max-width: 768px) {
+  .topselling-datepicker-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 1002;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 16px;
+  }
+  
+  .topselling-datepicker-modal .rdrCalendarWrapper {
+    width: 100%;
+  }
+  
+  .topselling-datepicker-modal .rdrMonths {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .topselling-datepicker-modal .rdrMonth {
+    width: 100%;
+  }
+  
+  .topselling-datepicker-modal .rdrMonthAndYearWrapper {
+    padding: 8px;
+  }
+  
+  .topselling-datepicker-modal .rdrDay {
+    height: 2.8em;
+  }
+}
+
+/* Also add this category selector style if not already present */
+.topselling-category-selector {
+  position: relative;
+}
+
+.topselling-category-name {
+  font-size: 14px;
+  color: #1e293b;
+  flex: 1;
 }
