@@ -764,7 +764,7 @@ const CreateProductScreen = () => {
           {/* Stock Toggle */}
           <div className="switchContainer">
             <div className="switchWrapper">
-              <label className="switchLabel">Track Stock</label>
+              <label className="switchLabel">Enter Stock</label>
               <label className="switch">
                 <input
                   type="checkbox"
