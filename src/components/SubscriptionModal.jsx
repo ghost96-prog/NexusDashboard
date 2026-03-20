@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FaWhatsapp, FaCrown, FaStar, FaChevronDown, FaClipboardList, FaTruck } from "react-icons/fa";
 import "../Css/SubscriptionModal.css";
 
-const SubscriptionModal = ({ isOpen, onClose }) => {
+const SubscriptionModal = ({ isOpen, onClose, onSubscribe, currentStatus }) => {
   if (!isOpen) return null;
 
   const handleWhatsAppClick = () => {
@@ -19,6 +19,16 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
 
   const handleCallClick = () => {
     window.open("tel:+263783556354");
+  };
+
+  const handleSubscribe = () => {
+    // Store in localStorage that subscription is active
+    localStorage.setItem("nexuspos_admin_subscribed", "true");
+    localStorage.setItem("nexuspos_subscription_timestamp", Date.now().toString());
+    if (onSubscribe) {
+      onSubscribe(true);
+    }
+    onClose();
   };
 
   return (
@@ -96,7 +106,6 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-
             <div className="support-section">
               <p className="support-text">
                 Contact our dedicated support team to choose the perfect plan
@@ -123,6 +132,33 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
                   Available 24/7 • Quick Response
                 </span>
               </div>
+            </div>
+
+            {/* Demo Subscription Button - For testing purposes */}
+            <div className="demo-subscription-section" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+              <button 
+                className="demo-subscribe-button"
+                onClick={handleSubscribe}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                Activate Subscription (Demo)
+              </button>
+              <p style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', marginTop: '10px' }}>
+                Click to activate subscription. Contact support for permanent activation.
+              </p>
             </div>
 
             <div className="scroll-indicator">

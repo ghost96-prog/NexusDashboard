@@ -86,29 +86,46 @@ const ProductListScreen = () => {
     setDisplayProducts(filtered);
   }, [products, selectedStores, selectedCategories, selectStockOption, searchTerm]);
 
-  const fetchAdminSubscriptionStatus = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+const fetchAdminSubscriptionStatus = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-      const decoded = jwtDecode(token);
-      const userEmail = decoded.email;
+    const decoded = jwtDecode(token);
+    const userEmail = decoded.email;
 
-      const response = await fetch(
-        `https://nexuspos.onrender.com/api/adminSubscriptionRouter/status?email=${encodeURIComponent(
-          userEmail
-        )}`
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setIsSubscribedAdmin(data.isSubscribedAdmin);
-      }
-    } catch (error) {
-      console.error("Error fetching subscription status:", error);
+    // Check localStorage first
+    const cachedSubscription = localStorage.getItem("nexuspos_admin_subscribed");
+    const cachedTimestamp = localStorage.getItem("nexuspos_subscription_timestamp");
+    const isCacheValid = cachedTimestamp && (Date.now() - parseInt(cachedTimestamp) < 24 * 60 * 60 * 1000);
+    
+    if (cachedSubscription === "true" && isCacheValid) {
+      setIsSubscribedAdmin(true);
+      return;
     }
-  };
 
+    const response = await fetch(
+      `https://nexuspos.onrender.com/api/adminSubscriptionRouter/status?email=${encodeURIComponent(userEmail)}`
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      setIsSubscribedAdmin(data.isSubscribedAdmin);
+      
+      // Save to localStorage
+      localStorage.setItem("nexuspos_admin_subscribed", data.isSubscribedAdmin.toString());
+      localStorage.setItem("nexuspos_subscription_timestamp", Date.now().toString());
+    }
+  } catch (error) {
+    console.error("Error fetching subscription status:", error);
+  }
+};
+
+const handleSubscriptionActivation = (isSubscribed) => {
+  setIsSubscribedAdmin(isSubscribed);
+  localStorage.setItem("nexuspos_admin_subscribed", isSubscribed.toString());
+  localStorage.setItem("nexuspos_subscription_timestamp", Date.now().toString());
+};
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
@@ -949,10 +966,12 @@ const exportToCSV = () => {
         <RemainingTimeFooter />
       </div>
       
-      <SubscriptionModal
-        isOpen={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
-      />
+     <SubscriptionModal
+  isOpen={showSubscriptionModal}
+  onClose={() => setShowSubscriptionModal(false)}
+  onSubscribe={handleSubscriptionActivation}
+  currentStatus={isSubscribedAdmin}
+/>
       <ToastContainer position="bottom-right" />
       
       {/* Add CSS for spinning animation */}
