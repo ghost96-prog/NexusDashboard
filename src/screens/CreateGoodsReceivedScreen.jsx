@@ -1393,12 +1393,12 @@ const CreateGoodsReceivedScreen = () => {
                   <div className="grv-create-empty-message">
                     <FaBox className="grv-create-empty-icon" />
                     <p>No items added. Use the search above to add items.</p>
-                    <button 
+                    {/* <button 
                       className="grv-create-empty-new-product-btn"
                       onClick={handleOpenCreateProductModal}
                     >
                       <FaPlusCircle /> Create New Product
-                    </button>
+                    </button> */}
                     {grvProducts.length === 0 && (
                       <p style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
                         No products available for this store.
