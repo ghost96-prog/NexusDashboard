@@ -1409,7 +1409,7 @@ const CreateGoodsReceivedScreen = () => {
               </div>
 
               {grvSelectedItems.length > 0 && (
-                <div className="grv-create-totals-row">
+                <div className="grv-create-totals-row">r
                   <div className="grv-create-total-label">
                     Total Value:
                   </div>
@@ -1445,7 +1445,7 @@ const CreateGoodsReceivedScreen = () => {
         </div>
       </div>
 
-      {/* CREATE PRODUCT MODAL */}
+      {/* CREATE PRODUCT MODAL */}chand
       {showCreateProductModal && (
         <div className="grv-create-product-modal-overlay" onClick={() => setShowCreateProductModal(false)}>
           <div className="grv-create-product-modal" onClick={(e) => e.stopPropagation()}>

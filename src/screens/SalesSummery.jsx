@@ -121,6 +121,7 @@ const SalesSummery = () => {
   const [discounts, setToTalDiscounts] = useState(0);
   const [refunds, setTotalRefunds] = useState(0);
   const [laybyeTotal, setLaybyeTotal] = useState(0);
+  
   const [cost, setCost] = useState(0);
   const [receiptsByDate, setReceiptsByDate] = useState({});
   const [receiptsLength, setReceiptsLength] = useState(0);
@@ -259,6 +260,8 @@ const SalesSummery = () => {
         totalDiscount,
         netSales,
         prevProfit,
+          laybyeCOGS,  // You can use this if needed
+
         receipts,
         totalAmountDifferencePercentage,
         totalCostDifferencePercentage,

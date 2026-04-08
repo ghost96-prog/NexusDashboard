@@ -184,6 +184,8 @@ const LaybyeScreen = () => {
       }
 
       const responsedata = await response.json();
+      console.log('kkkkkkkkkkk',responsedata.data);
+      
       setPaymentsData(responsedata.data || []);
       const depositLaybyes = (responsedata.data || []).filter(
         (payment) => payment.type === "Deposit"

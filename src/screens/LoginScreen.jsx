@@ -226,39 +226,40 @@ const LoginScreen = () => {
             </div>
 
             {/* Password Input */}
-            <div className="login-input-group">
-              <div
-                className={`login-input-wrapper ${
-                  isFocused.password ? "login-input-focused" : ""
-                } ${passwordError ? "login-input-error" : ""}`}
-              >
-                <span className="login-input-icon">🔒</span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  className="login-input-field"
-                  placeholder="Password"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  onFocus={() => handleFocus("password")}
-                  onBlur={() => handleBlur("password")}
-                  onKeyPress={handleKeyPress}
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  className="login-password-toggle"
-                  onClick={togglePasswordVisibility}
-                  disabled={loading}
-                >
-                  <span className="login-toggle-icon">
-                    {showPassword ? "👁️" : "👁️‍🗨️"}
-                  </span>
-                </button>
-              </div>
-              {passwordError && (
-                <div className="login-error-text">{passwordError}</div>
-              )}
-            </div>
+
+{/* Password Input */}
+<div className="login-input-group">
+  <div
+    className={`login-input-wrapper ${
+      isFocused.password ? "login-input-focused" : ""
+    } ${passwordError ? "login-input-error" : ""}`}
+  >
+    <span className="login-input-icon">🔒</span>
+    <input
+      type={showPassword ? "text" : "password"}
+      className="login-input-field"
+      placeholder="Password"
+      value={password}
+      onChange={handlePasswordChange}
+      onFocus={() => handleFocus("password")}
+      onBlur={() => handleBlur("password")}
+      onKeyPress={handleKeyPress}
+      disabled={loading}
+    />
+    <button
+      type="button"
+      className="login-password-toggle"
+      onClick={togglePasswordVisibility}
+      disabled={loading}
+      aria-label={showPassword ? "Hide password" : "Show password"}
+    >
+      {showPassword ? "🙈" : "👁️"}
+    </button>
+  </div>
+  {passwordError && (
+    <div className="login-error-text">{passwordError}</div>
+  )}
+</div>
 
             {/* Login Button */}
             <div className="login-button-wrapper">
