@@ -8,6 +8,7 @@ import { toast, ToastContainer } from "react-toastify";
 import NProgress from "nprogress";
 import "react-toastify/dist/ReactToastify.css";
 import "nprogress/nprogress.css";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const LoginScreen = () => {
   const navigate = useNavigate();
@@ -253,7 +254,7 @@ const LoginScreen = () => {
       disabled={loading}
       aria-label={showPassword ? "Hide password" : "Show password"}
     >
-      {showPassword ? "🙈" : "👁️"}
+  {showPassword ? <FaEyeSlash /> : <FaEye />}
     </button>
   </div>
   {passwordError && (
