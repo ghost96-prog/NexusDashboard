@@ -146,56 +146,80 @@ const ImportProductsScreen = () => {
     toast.success("Template downloaded successfully!");
   };
 
-  const validateCSV = (data) => {
-    const errors = [];
+const validateCSV = (data) => {
+  const errors = [];
+  
+  const headers = Object.keys(data[0] || {});
+  const missingHeaders = expectedHeaders.filter(h => !headers.includes(h));
+  
+  if (missingHeaders.length > 0) {
+    errors.push(`Missing required columns: ${missingHeaders.join(", ")}`);
+  }
+  
+  data.forEach((row, index) => {
+    const rowNum = index + 2;
     
-    const headers = Object.keys(data[0] || {});
-    const missingHeaders = expectedHeaders.filter(h => !headers.includes(h));
-    
-    if (missingHeaders.length > 0) {
-      errors.push(`Missing required columns: ${missingHeaders.join(", ")}`);
+    if (!row["Product Name"]?.trim()) {
+      errors.push(`Row ${rowNum}: Product Name is required`);
     }
     
-    data.forEach((row, index) => {
-      const rowNum = index + 2;
-      
-      if (!row["Product Name"]?.trim()) {
-        errors.push(`Row ${rowNum}: Product Name is required`);
-      }
-      
-      const productType = row["Product Type"]?.trim();
-      if (!productType || !["Each", "Weight"].includes(productType)) {
-        errors.push(`Row ${rowNum}: Product Type must be "Each" or "Weight"`);
-      }
-      
-      const price = parseFloat(row["Price"]);
-      if (isNaN(price) || price < 0) {
-        errors.push(`Row ${rowNum}: Price must be a valid positive number`);
-      }
-      
-      const cost = parseFloat(row["Cost"]);
-      if (isNaN(cost) || cost < 0) {
-        errors.push(`Row ${rowNum}: Cost must be a valid positive number`);
-      }
-      
-      const stock = parseFloat(row["Stock"]);
-      if (isNaN(stock) || stock < 0) {
-        errors.push(`Row ${rowNum}: Stock must be a valid positive number`);
-      }
-      
-      const lowStock = parseFloat(row["Low Stock"]);
-      if (isNaN(lowStock) || lowStock < 0) {
-        errors.push(`Row ${rowNum}: Low Stock must be a valid positive number`);
-      }
-      
-      const trackStock = row["Track Stock"];
-      if (!["TRUE", "FALSE", "true", "false"].includes(trackStock)) {
-        errors.push(`Row ${rowNum}: Track Stock must be "TRUE" or "FALSE"`);
-      }
-    });
+    const productType = row["Product Type"]?.trim();
+    if (!productType || !["Each", "Weight"].includes(productType)) {
+      errors.push(`Row ${rowNum}: Product Type must be "Each" or "Weight"`);
+    }
     
-    return errors;
-  };
+    // Price - allow empty (set to 0)
+    const priceValue = row["Price"]?.trim();
+    if (priceValue === "") {
+      row["Price"] = "0";
+    } else {
+      const price = parseFloat(priceValue);
+      if (isNaN(price) || price < 0) {
+        errors.push(`Row ${rowNum}: Price must be a valid positive number or empty`);
+      }
+    }
+    
+    // Cost - allow empty (set to 0)
+    const costValue = row["Cost"]?.trim();
+    if (costValue === "") {
+      row["Cost"] = "0";
+    } else {
+      const cost = parseFloat(costValue);
+      if (isNaN(cost) || cost < 0) {
+        errors.push(`Row ${rowNum}: Cost must be a valid positive number or empty`);
+      }
+    }
+    
+    // Stock - allow empty (set to 0)
+    const stockValue = row["Stock"]?.trim();
+    if (stockValue === "") {
+      row["Stock"] = "0";
+    } else {
+      const stock = parseFloat(stockValue);
+      if (isNaN(stock) || stock < 0) {
+        errors.push(`Row ${rowNum}: Stock must be a valid positive number or empty`);
+      }
+    }
+    
+    // Low Stock - allow empty (set to 0)
+    const lowStockValue = row["Low Stock"]?.trim();
+    if (lowStockValue === "") {
+      row["Low Stock"] = "0";
+    } else {
+      const lowStock = parseFloat(lowStockValue);
+      if (isNaN(lowStock) || lowStock < 0) {
+        errors.push(`Row ${rowNum}: Low Stock must be a valid positive number or empty`);
+      }
+    }
+    
+    const trackStock = row["Track Stock"];
+    if (!["TRUE", "FALSE", "true", "false"].includes(trackStock)) {
+      errors.push(`Row ${rowNum}: Track Stock must be "TRUE" or "FALSE"`);
+    }
+  });
+  
+  return errors;
+};
 
   const onDrop = useCallback((acceptedFiles) => {
     setErrors([]);
@@ -509,25 +533,25 @@ const createProductsFromCSV = async () => {
             stockBefore = Number(existingProduct.stock) || 0;
           }
           
-          const product = {
-            productName: item["Product Name"].toUpperCase(),
-            category: categoryName,
-            categoryId: categoryId,
-            productType: item["Product Type"],
-            sku: newSKU,
-            lowStockNotification: Number(item["Low Stock"]),
-            trackStock: item["Track Stock"].toUpperCase() === "TRUE",
-            price: Number(item["Price"]),
-            cost: Number(item["Cost"]),
-            stock: Number(item["Stock"]),
-            userId: userId,
-            productId: productId,
-            roleOfEditor: "Admin",
-            storeId: "",
-            createdBy: 'Web User',
-            EditorId: userId,
-            currentDate: new Date().toISOString(),
-          };
+const product = {
+  productName: item["Product Name"].toUpperCase(),
+  category: categoryName,
+  categoryId: categoryId,
+  productType: item["Product Type"],
+  sku: newSKU,
+  lowStockNotification: Number(item["Low Stock"]),
+  trackStock: item["Track Stock"].toUpperCase() === "TRUE",
+  price: Number(item["Price"] || 0),  // MODIFIED: Default to 0 if empty
+  cost: Number(item["Cost"] || 0),     // MODIFIED: Default to 0 if empty
+  stock: Number(item["Stock"]),
+  userId: userId,
+  productId: productId,
+  roleOfEditor: "Admin",
+  storeId: "",
+  createdBy: 'Web User',
+  EditorId: userId,
+  currentDate: new Date().toISOString(),
+};
           
           // Save product to server
           const response = await fetch(
