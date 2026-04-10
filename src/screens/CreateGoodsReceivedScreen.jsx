@@ -546,15 +546,9 @@ const CreateGoodsReceivedScreen = () => {
     );
   };
 
-  const handlePriceChange = (productId, priceType, value) => {
-    const cleaned = value.replace(/[^\d.]/g, '');
-    const parts = cleaned.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    } else if (parts.length === 2 && parts[1].length > 2) {
-      value = parts[0] + '.' + parts[1].substring(0, 2);
-    }
-    
+const handlePriceChange = (productId, priceType, value) => {
+  // Allow empty string
+  if (value === '') {
     setGrvSelectedItems(prevItems =>
       prevItems.map(item =>
         item.productId === productId
@@ -562,15 +556,41 @@ const CreateGoodsReceivedScreen = () => {
               ...item,
               [priceType === 'unitCost' ? 'unitCost' : 
                priceType === 'newPrice' ? 'newPrice' : 
-               'newCost']: value,
+               'newCost']: '',
               totalPrice: priceType === 'newCost' 
-                ? (parseFloat(item.receivedQuantity) || 0) * (parseFloat(value) || 0)
+                ? (parseFloat(item.receivedQuantity) || 0) * 0
                 : item.totalPrice
             }
           : item
       )
     );
-  };
+    return;
+  }
+  
+  const cleaned = value.replace(/[^\d.]/g, '');
+  const parts = cleaned.split('.');
+  if (parts.length > 2) {
+    value = parts[0] + '.' + parts.slice(1).join('');
+  } else if (parts.length === 2 && parts[1].length > 2) {
+    value = parts[0] + '.' + parts[1].substring(0, 2);
+  }
+  
+  setGrvSelectedItems(prevItems =>
+    prevItems.map(item =>
+      item.productId === productId
+        ? {
+            ...item,
+            [priceType === 'unitCost' ? 'unitCost' : 
+             priceType === 'newPrice' ? 'newPrice' : 
+             'newCost']: value,
+            totalPrice: priceType === 'newCost' 
+              ? (parseFloat(item.receivedQuantity) || 0) * (parseFloat(value) || 0)
+              : item.totalPrice
+          }
+        : item
+    )
+  );
+};
 
   const calculateTotalValue = () => {
     return grvSelectedItems.reduce((total, item) => total + (parseFloat(item.totalPrice) || 0), 0);
@@ -583,12 +603,18 @@ const CreateGoodsReceivedScreen = () => {
     });
   };
 
-  const hasInvalidUnitPrices = () => {
-    return grvSelectedItems.some(item => {
-      const newCost = parseFloat(item.newCost) || 0;
-      return newCost <= 0;
-    });
-  };
+// Replace the existing hasInvalidUnitPrices function (around line 478-482) with:
+
+const hasInvalidUnitPrices = () => {
+  return grvSelectedItems.some(item => {
+    const newCost = parseFloat(item.newCost) || 0;
+    // Only validate if there's a value AND it's negative (allow 0 or empty)
+    if (item.newCost !== '' && item.newCost !== null && !isNaN(parseFloat(item.newCost))) {
+      return newCost < 0; // Only block if negative
+    }
+    return false; // Allow empty or zero
+  });
+};
 
   // ==================== CREATE PRODUCT MODAL FUNCTIONS ====================
   
@@ -853,10 +879,10 @@ const CreateGoodsReceivedScreen = () => {
       return;
     }
 
-    if (hasInvalidUnitPrices()) {
-      toast.error('Please enter valid cost (greater than 0) for all items.');
-      return;
-    }
+    // if (hasInvalidUnitPrices()) {
+    //   toast.error('Please enter valid cost (greater than 0) for all items.');
+    //   return;
+    // }
 
     const grvData = {
       grNumber: `GRV-${Date.now()}`,
@@ -1434,13 +1460,13 @@ const CreateGoodsReceivedScreen = () => {
             <button className="grv-create-cancel-btn" onClick={handleGrvCancel}>
               CANCEL
             </button>
-            <button 
-              className="grv-create-save-btn" 
-              onClick={handleGrvSaveAndProcess}
-              disabled={grvLoading || grvSelectedItems.length === 0 || !grvSupplierName.trim() || hasInvalidQuantities() || hasInvalidUnitPrices()}
-            >
-              {grvLoading ? 'SAVING...' : 'SAVE & PROCESS'}
-            </button>
+           <button 
+  className="grv-create-save-btn" 
+  onClick={handleGrvSaveAndProcess}
+  disabled={grvLoading || grvSelectedItems.length === 0 || !grvSupplierName.trim() || hasInvalidQuantities()}
+>
+  {grvLoading ? 'SAVING...' : 'SAVE & PROCESS'}
+</button>
           </div>
         </div>
       </div>
