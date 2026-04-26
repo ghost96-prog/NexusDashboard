@@ -771,16 +771,18 @@ const product = {
             )}
           </div>
           
-         {file && !isUploading && !isSuccess && (
-  <button 
-    className="import-action-btn"
-    onClick={createProductsFromCSV}
-    disabled={errors.length > 0}
-  >
-    <FaFileUpload />
-    {errors.length > 0 ? "Fix Errors First" : "Import Products"}
-  </button>
-)}
+          {file && !isUploading && !isSuccess && (
+            <button 
+              className="import-action-btn"
+              onClick={createProductsFromCSV}
+              disabled={errors.length > 0 || existingProducts.length === 0}
+              title={existingProducts.length === 0 ? "Loading products data..." : ""}
+            >
+              <FaFileUpload />
+              {errors.length > 0 ? "Fix Errors First" : 
+               existingProducts.length === 0 ? "Loading..." : "Import Products"}
+            </button>
+          )}
           
           {isUploading && (
             <div className="upload-progress">
