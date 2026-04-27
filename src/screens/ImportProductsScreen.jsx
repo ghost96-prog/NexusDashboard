@@ -34,6 +34,7 @@ const ImportProductsScreen = () => {
     updated: 0,
     failed: 0
   });
+const [hasLoadedProducts, setHasLoadedProducts] = useState(false);
 
   useEffect(() => {
     fetchExistingProducts();
@@ -46,6 +47,7 @@ const fetchExistingProducts = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       setIsLoadingProducts(false);
+      setHasLoadedProducts(true); // Mark as loaded even if no token
       return [];
     }
 
@@ -67,12 +69,15 @@ const fetchExistingProducts = async () => {
       const userProducts = responseData.data.filter(p => p.userId === userId);
       setExistingProducts(userProducts);
       console.log(`Loaded ${userProducts.length} existing products`);
+      setHasLoadedProducts(true); // Mark as successfully loaded
       return userProducts;
     }
+    setHasLoadedProducts(true);
     return [];
   } catch (error) {
     console.error("Error fetching existing products:", error);
     toast.error("Failed to load products data");
+    setHasLoadedProducts(true); // Still mark as loaded even on error to avoid infinite loading
     return [];
   } finally {
     setIsLoadingProducts(false);
@@ -80,6 +85,33 @@ const fetchExistingProducts = async () => {
 };
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: retry a fetch up to `retries` times with exponential back-off.
+// Handles both network errors (fetch throws) and bad HTTP status codes.
+// ─────────────────────────────────────────────────────────────────────────────
+const fetchWithRetry = async (url, options, retries = 3) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok) return res;
+
+      // Server returned an error status
+      if (attempt === retries) return res; // give up, return bad response so caller can read the body
+      const backoff = attempt * 1500; // 1.5 s, 3 s, …
+      console.warn(`Attempt ${attempt} failed (HTTP ${res.status}). Retrying in ${backoff}ms…`);
+      await new Promise(r => setTimeout(r, backoff));
+    } catch (networkErr) {
+      if (attempt === retries) throw networkErr;
+      const backoff = attempt * 1500;
+      console.warn(`Attempt ${attempt} network error. Retrying in ${backoff}ms…`, networkErr);
+      await new Promise(r => setTimeout(r, backoff));
+    }
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main import function
+// ─────────────────────────────────────────────────────────────────────────────
 const createProductsFromCSV = async () => {
   setIsUploading(true);
   if (!file || csvData.length === 0) return;
@@ -104,44 +136,34 @@ const createProductsFromCSV = async () => {
     const userId = decoded.userId;
     const userEmail = decoded.email;
 
-    // FRESH FETCH - Get latest products before starting import
-    console.log("Fetching latest products before import...");
+    // ── 1. Fresh fetch of existing products before we touch anything ──────────
+    console.log("Fetching latest products before import…");
     const freshProducts = await fetchExistingProducts();
+    console.log(`Fresh fetch returned ${freshProducts.length} products.`);
 
-    if (freshProducts.length === 0) {
-      // Only block if fetch actually failed (not just empty store)
-      // We'll allow empty stores to proceed
-      console.log("No existing products found - this may be a new store, proceeding with import.");
-    }
-
-    // Create lookup maps from freshProducts directly (not stale state)
+    // Build fast lookup maps
     const existingProductsBySKU = new Map();
-    const existingProductsById = new Map();
+    const existingProductsById  = new Map();
 
     freshProducts.forEach(product => {
-      if (product.sku) {
-        existingProductsBySKU.set(product.sku, product);
-      }
-      if (product.productId) {
-        existingProductsById.set(product.productId, product);
-      }
+      if (product.sku)       existingProductsBySKU.set(product.sku,       product);
+      if (product.productId) existingProductsById.set(product.productId,  product);
     });
 
-    // Validate CSV data before processing
-    let hasEmptySKU = false;
-    const csvSKUSet = new Set();
+    // ── 2. Pre-flight CSV validation ──────────────────────────────────────────
+    let hasEmptySKU    = false;
+    const csvSKUSet    = new Set();
 
     for (const item of csvData) {
-      const importedSKU = item["Product SKU"]?.trim();
+      const importedSKU       = item["Product SKU"]?.trim();
       const importedProductId = item["Product Id"]?.trim();
 
-      if (importedSKU === "") {
-        hasEmptySKU = true;
-        break;
-      }
+      if (!importedSKU) { hasEmptySKU = true; break; }
 
       if (csvSKUSet.has(importedSKU)) {
-        toast.error(`Duplicate SKU found in CSV: "${importedSKU}". Please ensure all SKUs in the file are unique.`);
+        toast.error(
+          `Duplicate SKU in CSV: "${importedSKU}". All SKUs in the file must be unique.`
+        );
         setIsUploading(false);
         return;
       }
@@ -149,29 +171,35 @@ const createProductsFromCSV = async () => {
 
       if (importedProductId) {
         if (existingProductsById.has(importedProductId)) {
-          const existingProduct = existingProductsById.get(importedProductId);
-
-          if (existingProduct.sku !== importedSKU) {
-            if (existingProductsBySKU.has(importedSKU)) {
-              const skuProduct = existingProductsBySKU.get(importedSKU);
-              if (skuProduct.productId !== importedProductId) {
-                toast.error(`Cannot change SKU to "${importedSKU}" for product ID "${importedProductId}" because this SKU is already used by product "${skuProduct.productName}" (ID: ${skuProduct.productId})`);
-                setIsUploading(false);
-                return;
-              }
+          const existing = existingProductsById.get(importedProductId);
+          if (existing.sku !== importedSKU && existingProductsBySKU.has(importedSKU)) {
+            const skuOwner = existingProductsBySKU.get(importedSKU);
+            if (skuOwner.productId !== importedProductId) {
+              toast.error(
+                `Cannot change SKU to "${importedSKU}" for product ID "${importedProductId}" — ` +
+                `that SKU is already used by "${skuOwner.productName}" (ID: ${skuOwner.productId}).`
+              );
+              setIsUploading(false);
+              return;
             }
-            console.log(`SKU will be updated for product ${existingProduct.productName} from "${existingProduct.sku}" to "${importedSKU}"`);
           }
         } else if (existingProductsBySKU.has(importedSKU)) {
-          const existingProduct = existingProductsBySKU.get(importedSKU);
-          toast.error(`Cannot create new product with SKU "${importedSKU}" because it's already used by product "${existingProduct.productName}" (ID: ${existingProduct.productId}). Please use a unique SKU for this new product.`);
+          const existing = existingProductsBySKU.get(importedSKU);
+          toast.error(
+            `Cannot create product with SKU "${importedSKU}" — ` +
+            `it is already used by "${existing.productName}" (ID: ${existing.productId}).`
+          );
           setIsUploading(false);
           return;
         }
       } else {
         if (existingProductsBySKU.has(importedSKU)) {
-          const existingProduct = existingProductsBySKU.get(importedSKU);
-          toast.error(`Cannot create new product with SKU "${importedSKU}" because it already exists for product "${existingProduct.productName}" (ID: ${existingProduct.productId}). Please use a different unique SKU for this new product.`);
+          const existing = existingProductsBySKU.get(importedSKU);
+          toast.error(
+            `Cannot create product with SKU "${importedSKU}" — ` +
+            `it already exists for "${existing.productName}" (ID: ${existing.productId}). ` +
+            `Use a unique SKU, or supply the Product Id to update it.`
+          );
           setIsUploading(false);
           return;
         }
@@ -179,29 +207,31 @@ const createProductsFromCSV = async () => {
     }
 
     if (hasEmptySKU) {
-      toast.error("Some products have empty SKUs. Please provide SKUs for all products.");
+      toast.error("Some rows have empty SKUs. All products must have a SKU.");
       setIsUploading(false);
       return;
     }
 
-    // Process in chunks
-    const chunkSize = 100;
-    const chunks = [];
-    for (let i = 0; i < csvData.length; i += chunkSize) {
-      chunks.push(csvData.slice(i, i + chunkSize));
+    // ── 3. Process in chunks ──────────────────────────────────────────────────
+    const CHUNK_SIZE      = 100;
+    const REQUEST_DELAY   = 80;   // ms between product saves — avoids hammering the server
+    const chunks          = [];
+    for (let i = 0; i < csvData.length; i += CHUNK_SIZE) {
+      chunks.push(csvData.slice(i, i + CHUNK_SIZE));
     }
 
     const categoryMap = new Map();
     let processedCount = 0;
-    let failedCount = 0;
-    let createdCount = 0;
-    let updatedCount = 0;
+    let failedCount    = 0;
+    let createdCount   = 0;
+    let updatedCount   = 0;
     const totalProducts = csvData.length;
 
     for (const chunk of chunks) {
-      // Handle categories first
+
+      // ── 3a. Ensure every category in this chunk exists on the server ────────
       for (const item of chunk) {
-        const categoryName = item["Category"].toUpperCase();
+        const categoryName = item["Category"].trim().toUpperCase();
 
         if (!categoryMap.has(categoryName)) {
           const categoryId = generateCategoryId();
@@ -215,7 +245,7 @@ const createProductsFromCSV = async () => {
           };
 
           try {
-            const response = await fetch(
+            await fetchWithRetry(
               `https://nexuspos.onrender.com/api/categoryRouter/category-updates?email=${encodeURIComponent(userEmail)}`,
               {
                 method: "POST",
@@ -226,131 +256,134 @@ const createProductsFromCSV = async () => {
                 body: JSON.stringify(newCategory),
               }
             );
-
-            if (!response.ok) {
-              console.error("Error adding category to server");
-            }
-          } catch (error) {
-            console.error("Error pushing category to server:", error);
+          } catch (err) {
+            console.error("Error creating category:", categoryName, err);
+            // Non-fatal — product save may still succeed if category already exists server-side
           }
         }
       }
 
-      // Process products
+      // ── 3b. Save each product ───────────────────────────────────────────────
       for (const item of chunk) {
         try {
-          const categoryName = item["Category"].toUpperCase();
-          const categoryId = categoryMap.get(categoryName);
-          const newSKU = item["Product SKU"]?.trim() || "";
+          const categoryName      = item["Category"].trim().toUpperCase();
+          const categoryId        = categoryMap.get(categoryName);
+          const newSKU            = item["Product SKU"]?.trim() || "";
           const providedProductId = item["Product Id"]?.trim();
 
           let existingProduct = null;
-          let productId = providedProductId;
-          let isUpdate = false;
-          let oldSKU = null;
+          let productId       = providedProductId;
+          let isUpdate        = false;
+          let oldSKU          = null;
 
           if (providedProductId) {
             if (existingProductsById.has(providedProductId)) {
               existingProduct = existingProductsById.get(providedProductId);
               productId = providedProductId;
-              isUpdate = true;
-              oldSKU = existingProduct.sku;
+              isUpdate  = true;
+              oldSKU    = existingProduct.sku;
               console.log(`UPDATE by ID: ${existingProduct.productName} (${providedProductId})`);
             } else {
               isUpdate = false;
-              console.log(`CREATE NEW with provided ID: ${providedProductId} for product ${item["Product Name"]}`);
+              console.log(`CREATE with provided ID: ${providedProductId} — ${item["Product Name"]}`);
             }
           } else {
             productId = generateProductId();
-            isUpdate = false;
-            console.log(`CREATE NEW (generated ID): ${item["Product Name"]} with SKU: ${newSKU}`);
+            isUpdate  = false;
+            console.log(`CREATE (generated ID): ${item["Product Name"]} SKU: ${newSKU}`);
           }
 
+          // Handle SKU rename: remove old SKU from our in-memory map
           if (isUpdate && oldSKU && oldSKU !== newSKU) {
-            console.log(`Updating SKU for product ${existingProduct.productName} from "${oldSKU}" to "${newSKU}"`);
+            console.log(
+              `SKU rename: "${existingProduct.productName}" ${oldSKU} → ${newSKU}`
+            );
             existingProductsBySKU.delete(oldSKU);
 
             if (existingProductsBySKU.has(newSKU)) {
-              const conflictingProduct = existingProductsBySKU.get(newSKU);
-              if (conflictingProduct.productId !== productId) {
-                throw new Error(`Cannot change SKU to "${newSKU}" - it is already used by product "${conflictingProduct.productName}"`);
+              const conflict = existingProductsBySKU.get(newSKU);
+              if (conflict.productId !== productId) {
+                throw new Error(
+                  `Cannot rename SKU to "${newSKU}" — already used by "${conflict.productName}".`
+                );
               }
             }
           }
 
-          let stockBefore = 0;
-          if (existingProduct) {
-            stockBefore = Number(existingProduct.stock) || 0;
-          }
+          const stockBefore = existingProduct ? (Number(existingProduct.stock) || 0) : 0;
 
           const product = {
-            productName: item["Product Name"].toUpperCase(),
-            category: categoryName,
-            categoryId: categoryId,
-            productType: item["Product Type"],
-            sku: newSKU,
-            lowStockNotification: Number(item["Low Stock"]),
-            trackStock: item["Track Stock"].toUpperCase() === "TRUE",
-            price: Number(item["Price"] || 0),
-            cost: Number(item["Cost"] || 0),
-            stock: Number(item["Stock"]),
-            userId: userId,
-            productId: productId,
+            productName:          item["Product Name"].trim().toUpperCase(),
+            category:             categoryName,
+            categoryId:           categoryId,
+            productType:          item["Product Type"],
+            sku:                  newSKU,
+            lowStockNotification: Number(item["Low Stock"]  || 0),
+            trackStock:           item["Track Stock"].toUpperCase() === "TRUE",
+            price:                Number(item["Price"]  || 0),
+            cost:                 Number(item["Cost"]   || 0),
+            stock:                Number(item["Stock"]  || 0),
+            userId,
+            productId,
             roleOfEditor: "Admin",
-            storeId: "",
-            createdBy: 'Web User',
-            EditorId: userId,
-            currentDate: new Date().toISOString(),
+            storeId:      "",
+            createdBy:    "Web User",
+            EditorId:     userId,
+            currentDate:  new Date().toISOString(),
           };
 
-          const response = await fetch(
+          // Save product (with retry)
+          const productResponse = await fetchWithRetry(
             `https://nexuspos.onrender.com/api/productRouter/product-updates?email=${encodeURIComponent(userEmail)}`,
             {
               method: "POST",
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type":  "application/json",
                 "Authorization": `Bearer ${token}`
               },
               body: JSON.stringify(product),
             }
           );
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to save product");
+          if (!productResponse.ok) {
+            const errorData = await productResponse.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${productResponse.status}`);
           }
 
+          // Save inventory record (with retry)
           const inventoryUpdateData = {
             productName: product.productName,
             inventoryId: generateInventoryId(16),
-            productId: product.productId,
+            productId:   product.productId,
             roleOfEditor: "Owner",
-            createdBy: "Web User",
-            EditorId: userId,
-            userId: userId,
-            editedBy: isUpdate ? "adminApp" : "",
+            createdBy:   "Web User",
+            EditorId:    userId,
+            userId,
+            editedBy:    isUpdate ? "adminApp" : "",
             currentDate: product.currentDate,
-            stockBefore: stockBefore,
-            stockAfter: product.stock,
-            typeOfEdit: isUpdate ? "Override" : "Create",
+            stockBefore,
+            stockAfter:  product.stock,
+            typeOfEdit:  isUpdate ? "Override" : "Create",
             synchronized: false,
           };
 
-          await fetch(
+          await fetchWithRetry(
             `https://nexuspos.onrender.com/api/inventoryRouter/inventory-updates?email=${encodeURIComponent(userEmail)}`,
             {
               method: "POST",
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type":  "application/json",
                 "Authorization": `Bearer ${token}`
               },
               body: JSON.stringify(inventoryUpdateData),
             }
           );
 
+          // Update in-memory lookup maps so later rows see fresh state
           if (isUpdate) {
-            existingProductsBySKU.set(newSKU, { ...existingProduct, sku: newSKU, ...product });
-            existingProductsById.set(productId, { ...existingProduct, sku: newSKU, ...product });
+            const updated = { ...existingProduct, sku: newSKU, ...product };
+            existingProductsBySKU.set(newSKU, updated);
+            existingProductsById.set(productId, updated);
             updatedCount++;
           } else {
             existingProductsBySKU.set(newSKU, { ...product });
@@ -360,33 +393,27 @@ const createProductsFromCSV = async () => {
 
           processedCount++;
 
-          setImportProgress({
-            current: processedCount,
-            total: totalProducts,
-            created: createdCount,
-            updated: updatedCount,
-            failed: failedCount
-          });
-
-          console.log(`Progress: ${processedCount}/${totalProducts} (Created: ${createdCount}, Updated: ${updatedCount}, Failed: ${failedCount})`);
-
         } catch (error) {
-          console.error(`Error saving product:`, error);
+          console.error("Error saving product:", item["Product Name"], error);
           failedCount++;
-
-          setImportProgress({
-            current: processedCount,
-            total: totalProducts,
-            created: createdCount,
-            updated: updatedCount,
-            failed: failedCount
-          });
-
-          toast.error(`Failed to save product: ${error.message}`);
+          toast.error(`Failed to save "${item["Product Name"]}": ${error.message}`);
         }
+
+        // ── Throttle: small pause between requests to avoid rate-limiting ─────
+        await new Promise(r => setTimeout(r, REQUEST_DELAY));
+
+        // Update progress after every product (success or failure)
+        setImportProgress({
+          current: processedCount + failedCount,
+          total:   totalProducts,
+          created: createdCount,
+          updated: updatedCount,
+          failed:  failedCount
+        });
       }
     }
 
+    // ── 4. Final summary ──────────────────────────────────────────────────────
     setIsUploading(false);
 
     if (failedCount > 0) {
@@ -413,13 +440,7 @@ const createProductsFromCSV = async () => {
       setFileName(null);
       setCsvData([]);
       setIsSuccess(false);
-      setImportProgress({
-        current: 0,
-        total: 0,
-        created: 0,
-        updated: 0,
-        failed: 0
-      });
+      setImportProgress({ current: 0, total: 0, created: 0, updated: 0, failed: 0 });
       navigate("/products");
     }, 3000);
 
@@ -1127,16 +1148,15 @@ const product = {
           </div>
           
           {file && !isUploading && !isSuccess && (
-            <button 
-              className="import-action-btn"
-              onClick={createProductsFromCSV}
-disabled={errors.length > 0 || isLoadingProducts}
-              title={existingProducts.length === 0 ? "Loading products data..." : ""}
-            >
-              <FaFileUpload />
-              {errors.length > 0 ? "Fix Errors First" : 
-               existingProducts.length === 0 ? "Loading..." : "Import Products"}
-            </button>
+           <button 
+  className="import-action-btn"
+  onClick={createProductsFromCSV}
+  disabled={errors.length > 0 || isLoadingProducts}
+  title={!hasLoadedProducts ? "Loading products data..." : ""}
+>
+  {errors.length > 0 ? "Fix Errors First" : 
+   !hasLoadedProducts ? "Loading..." : "Import Products"}
+</button>
           )}
           
           {isUploading && (
