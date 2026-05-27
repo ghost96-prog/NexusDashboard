@@ -698,153 +698,169 @@ const hasInvalidUnitPrices = () => {
     }
   };
 
-  const handleCreateProduct = async () => {
-    if (!validateProductForm()) {
-      return;
-    }
+const handleCreateProduct = async () => {
+  if (!validateProductForm()) {
+    return;
+  }
 
-    setCreatingProduct(true);
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Authentication token is missing.");
+  setCreatingProduct(true);
+  const token = localStorage.getItem("token");
+  if (!token) {
+    toast.error("Authentication token is missing.");
+    setCreatingProduct(false);
+    return;
+  }
+
+  try {
+    const decoded = jwtDecode(token);
+    const userEmail = decoded.email;
+    const userId = decoded.userId.toString();
+    const currentDate = new Date();
+    const productId = generateProductId();
+
+    const productData = {
+      productName: productFormData.productName.toUpperCase(),
+      category: productFormData.categoryName === "No Category" ? "" : productFormData.categoryName,
+      categoryId: productFormData.categoryId || "",
+      productType: productFormData.productType,
+      sku: productFormData.sku,
+      lowStockNotification: Number(productFormData.lowStockNotification) || 0,
+      trackStock: productFormData.trackStock,
+      editType: "Create",
+      stock: productFormData.trackStock ? parseFloat(productFormData.stock) : 0,
+      userId: userId,
+      productId: productId,
+      price: Number(productFormData.price),
+      roleOfEditor: "Owner",
+      createdBy: "Web User",
+      EditorId: userId,
+      cost: Number(productFormData.cost) || 0,
+      currentDate: currentDate.toISOString(),
+      appCreated: "adminApp",
+      adminSynced: false,
+    };
+
+    if (!navigator.onLine) {
+      toast.error("No internet connection. Please check your connection.");
       setCreatingProduct(false);
       return;
     }
 
-    try {
-      const decoded = jwtDecode(token);
-      const userEmail = decoded.email;
-      const userId = decoded.userId.toString();
-      const currentDate = new Date();
-      const productId = generateProductId();
+    const inventoryUpdateData = {
+      productName: productData.productName,
+      inventoryId: generateInventoryId(),
+      productId: productData.productId,
+      roleOfEditor: "Owner",
+      createdBy: "Web User",
+      EditorId: userId,
+      userId: userId,
+      currentDate: productData.currentDate,
+      stockBefore: 0,
+      stockAfter: productData.stock,
+      typeOfEdit: "Create",
+      synchronized: false,
+      editedBy: "",
+    };
 
-      const productData = {
+    // Send inventory update
+    await fetch(
+      `https://nexuspos.onrender.com/api/inventoryRouter/inventory-updates?email=${encodeURIComponent(userEmail)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inventoryUpdateData),
+      }
+    );
+
+    // Send product data
+    const responseProduct = await fetch(
+      `https://nexuspos.onrender.com/api/productRouter/product-updates?email=${encodeURIComponent(userEmail)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productData),
+      }
+    );
+
+    if (responseProduct.ok) {
+      // CLOSE MODAL IMMEDIATELY - FIRST THING!
+      setShowCreateProductModal(false);
+      
+      // Show success toast
+      toast.success("Product created successfully!");
+      
+      // Create the new product object
+      const newProduct = {
+        ...productData,
+        productId: productId,
         productName: productFormData.productName.toUpperCase(),
         category: productFormData.categoryName === "No Category" ? "" : productFormData.categoryName,
-        categoryId: productFormData.categoryId || "",
         productType: productFormData.productType,
         sku: productFormData.sku,
-        lowStockNotification: Number(productFormData.lowStockNotification) || 0,
-        trackStock: productFormData.trackStock,
-        editType: "Create",
         stock: productFormData.trackStock ? parseFloat(productFormData.stock) : 0,
-        userId: userId,
-        productId: productId,
         price: Number(productFormData.price),
-        roleOfEditor: "Owner",
-        createdBy: "Web User",
-        EditorId: userId,
         cost: Number(productFormData.cost) || 0,
-        currentDate: currentDate.toISOString(),
-        appCreated: "adminApp",
-        adminSynced: false,
-      };
-
-      if (!navigator.onLine) {
-        toast.error("No internet connection. Please check your connection.");
-        setCreatingProduct(false);
-        return;
-      }
-
-      const inventoryUpdateData = {
-        productName: productData.productName,
-        inventoryId: generateInventoryId(),
-        productId: productData.productId,
-        roleOfEditor: "Owner",
-        createdBy: "Web User",
-        EditorId: userId,
         userId: userId,
-        currentDate: productData.currentDate,
-        stockBefore: 0,
-        stockAfter: productData.stock,
-        typeOfEdit: "Create",
-        synchronized: false,
-        editedBy: "",
+        existingStock: 0
       };
-
-      // Send inventory update
-      await fetch(
-        `https://nexuspos.onrender.com/api/inventoryRouter/inventory-updates?email=${encodeURIComponent(userEmail)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(inventoryUpdateData),
-        }
-      );
-
-      // Send product data
-      const responseProduct = await fetch(
-        `https://nexuspos.onrender.com/api/productRouter/product-updates?email=${encodeURIComponent(userEmail)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(productData),
-        }
-      );
-
-      if (responseProduct.ok) {
-        toast.success("Product created successfully!");
-        
-        // Create the new product object to add to GRV
-        const newProduct = {
-          ...productData,
-          productId: productId,
-          productName: productFormData.productName.toUpperCase(),
-          category: productFormData.categoryName === "No Category" ? "" : productFormData.categoryName,
-          productType: productFormData.productType,
-          sku: productFormData.sku,
-          stock: productFormData.trackStock ? parseFloat(productFormData.stock) : 0,
-          price: Number(productFormData.price),
-          cost: Number(productFormData.cost) || 0,
-          userId: userId,
-          existingStock: 0
-        };
-        
-        // Add the new product to the GRV items list with received quantity fields
-        const newGrvItem = {
-          ...newProduct,
-          receivedQuantity: productFormData.trackStock ? productFormData.stock.toString() : '',
-          unitCost: formatDecimal(productFormData.cost || 0),
-          totalPrice: (parseFloat(productFormData.stock) || 0) * (parseFloat(productFormData.cost) || 0),
-          newPrice: formatDecimal(productFormData.price),
-          newCost: formatDecimal(productFormData.cost || 0),
-          existingStock: 0
-        };
-        
-        // Add to GRV items
-        setGrvSelectedItems(prev => [...prev, newGrvItem]);
-        
-        // Refresh product list
-        await fetchGrvProducts();
+      
+      // Add the new product to the GRV items list
+      const newGrvItem = {
+        ...newProduct,
+        receivedQuantity: productFormData.trackStock ? productFormData.stock.toString() : '',
+        unitCost: formatDecimal(productFormData.cost || 0),
+        totalPrice: (parseFloat(productFormData.stock) || 0) * (parseFloat(productFormData.cost) || 0),
+        newPrice: formatDecimal(productFormData.price),
+        newCost: formatDecimal(productFormData.cost || 0),
+        existingStock: 0
+      };
+      
+      // Add to GRV items
+      setGrvSelectedItems(prev => [...prev, newGrvItem]);
+      
+      // INSTEAD OF FETCHING ALL PRODUCTS AGAIN, just add the new product to the existing list
+      setGrvProducts(prevProducts => {
+        const updatedProducts = [...prevProducts, newProduct];
+        // Sort alphabetically by product name
+        updatedProducts.sort((a, b) => 
+          a.productName?.localeCompare(b.productName || '')
+        );
+        return updatedProducts;
+      });
+      
+      // Also update categories if needed (but fetch only categories, not products)
+      const shouldUpdateCategories = productFormData.categoryName !== "No Category" && 
+        !categories.some(cat => cat.categoryName === productFormData.categoryName);
+      
+      if (shouldUpdateCategories) {
         await fetchModalCategories();
-        
-        // Reset form and close modal
-        setProductFormData({
-          productName: '',
-          productType: 'Each',
-          price: '',
-          cost: '',
-          sku: '',
-          lowStockNotification: '0',
-          stock: '0',
-          trackStock: true,
-          categoryName: 'No Category',
-          categoryId: ''
-        });
-        setShowCreateProductModal(false);
-        
-        toast.success(`Product added to GRV! You can now enter received quantity.`);
-      } else {
-        throw new Error("Failed to save product");
       }
-    } catch (error) {
-      toast.error("Error creating product. Please try again.");
-      console.error("Error creating product:", error);
-    } finally {
-      setCreatingProduct(false);
+      
+      // Reset form
+      setProductFormData({
+        productName: '',
+        productType: 'Each',
+        price: '',
+        cost: '',
+        sku: '',
+        lowStockNotification: '0',
+        stock: '0',
+        trackStock: true,
+        categoryName: 'No Category',
+        categoryId: ''
+      });
+      
+      toast.success(`Product added to GRV! You can now enter received quantity.`);
+    } else {
+      throw new Error("Failed to save product");
     }
-  };
-
+  } catch (error) {
+    toast.error("Error creating product. Please try again.");
+    console.error("Error creating product:", error);
+  } finally {
+    setCreatingProduct(false);
+  }
+};
   const handleOpenCreateProductModal = () => {
     generateSKU();
     setProductFormData(prev => ({
