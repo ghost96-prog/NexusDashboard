@@ -510,8 +510,24 @@ const applyFilters = (productsList) => {
     doc.save(`products_${dateTime.replace(/[/:]/g, '-')}.pdf`);
     setIsExportDropdownOpen(false);
   };
-
 const exportToCSV = () => {
+  // Helper function to escape and quote CSV fields
+  const escapeCSV = (value) => {
+    if (value === null || value === undefined) return '';
+    
+    // Convert to string
+    let stringValue = String(value);
+    
+    // If the field contains commas, newlines, or double quotes, wrap in quotes
+    if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
+      // Replace double quotes with two double quotes (CSV escape)
+      stringValue = stringValue.replace(/"/g, '""');
+      return `"${stringValue}"`;
+    }
+    
+    return stringValue;
+  };
+  
   const headers = [
     "Product SKU",
     "Product Name",
@@ -526,28 +542,29 @@ const exportToCSV = () => {
   ];
   
   const rows = displayProducts.map((p) => [
-    p.sku || "",
-    p.productName || "", // NO QUOTES - match your app
-    p.category || "No Category", // NO QUOTES
-    p.productType || "Each", // NO QUOTES
-    p.productId || "",
-    p.lowStockNotification || 0,
-    p.trackStock ? "TRUE" : "FALSE",
-    Number(p.price).toFixed(2),
-    Number(p.cost).toFixed(2),
-    p.productType === "Weight" ? Number(p.stock).toFixed(2) : p.stock
+    escapeCSV(p.sku || ""),
+    escapeCSV(p.productName || ""),
+    escapeCSV(p.category || "No Category"),
+    escapeCSV(p.productType || "Each"),
+    escapeCSV(p.productId || ""),
+    escapeCSV(p.lowStockNotification || 0),
+    escapeCSV(p.trackStock ? "TRUE" : "FALSE"),
+    escapeCSV(Number(p.price).toFixed(2)),
+    escapeCSV(Number(p.cost).toFixed(2)),
+    escapeCSV(p.productType === "Weight" ? Number(p.stock).toFixed(2) : p.stock)
   ]);
-
-  // NO "Product List" header row - just headers then data
+  
+  // Quote all headers to be safe
+  const quotedHeaders = headers.map(h => `"${h}"`);
   const csvArray = [
-    headers,
-    ...rows,
+    quotedHeaders.join(","),
+    ...rows.map(row => row.join(","))
   ];
   
-  const csvString = csvArray.map(e => e.join(",")).join("\n");
+  const csvString = csvArray.join("\n");
   
-  // Use Blob approach
-  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  // Add BOM for UTF-8 to handle special characters properly in Excel
+  const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   
   const link = document.createElement("a");
