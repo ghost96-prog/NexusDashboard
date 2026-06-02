@@ -112,6 +112,23 @@ const fetchWithRetry = async (url, options, retries = 3) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main import function
 // ─────────────────────────────────────────────────────────────────────────────
+// Add this helper function near your other helper functions (around line 200)
+const generateNewSKU = (originalSKU, existingSKUs) => {
+  // Remove any existing numeric suffix
+  let baseSKU = originalSKU.replace(/-\d+$/, '');
+  let counter = 1;
+  let newSKU = `${baseSKU}-${counter}`;
+  
+  // Keep incrementing counter until we find a unique SKU
+  while (existingSKUs.has(newSKU)) {
+    counter++;
+    newSKU = `${baseSKU}-${counter}`;
+  }
+  
+  return newSKU;
+};
+
+// Replace your createProductsFromCSV function with this updated version:
 const createProductsFromCSV = async () => {
   setIsUploading(true);
   if (!file || csvData.length === 0) return;
@@ -150,59 +167,82 @@ const createProductsFromCSV = async () => {
       if (product.productId) existingProductsById.set(product.productId,  product);
     });
 
-    // ── 2. Pre-flight CSV validation ──────────────────────────────────────────
-    let hasEmptySKU    = false;
-    const csvSKUSet    = new Set();
+    // Create a set of all existing SKUs for quick lookup
+    const existingSKUs = new Set(existingProductsBySKU.keys());
+
+    // ── 2. Pre-flight CSV validation with automatic SKU conflict resolution ─────
+    let hasEmptySKU = false;
+    const csvSKUSet = new Set();
+    const skuConflictMap = new Map(); // Track conflicts to resolve later
+    const productsToProcess = []; // Store processed rows with resolved SKUs
 
     for (const item of csvData) {
-      const importedSKU       = item["Product SKU"]?.trim();
+      const importedSKU = item["Product SKU"]?.trim();
       const importedProductId = item["Product Id"]?.trim();
 
-      if (!importedSKU) { hasEmptySKU = true; break; }
-
-      if (csvSKUSet.has(importedSKU)) {
-        toast.error(
-          `Duplicate SKU in CSV: "${importedSKU}". All SKUs in the file must be unique.`
-        );
-        setIsUploading(false);
-        return;
+      if (!importedSKU) { 
+        hasEmptySKU = true; 
+        break; 
       }
-      csvSKUSet.add(importedSKU);
 
+      // Check for duplicates within the CSV file itself
+      if (csvSKUSet.has(importedSKU)) {
+        // Duplicate within CSV - generate new SKU for the duplicate
+        const newSKU = generateNewSKU(importedSKU, new Set([...existingSKUs, ...csvSKUSet]));
+        skuConflictMap.set(importedSKU, newSKU);
+        console.log(`CSV duplicate SKU "${importedSKU}" resolved to "${newSKU}"`);
+        // Store the resolved SKU for later use
+        const resolvedItem = { ...item, resolvedSKU: newSKU };
+        productsToProcess.push(resolvedItem);
+        csvSKUSet.add(newSKU);
+        existingSKUs.add(newSKU);
+        continue;
+      }
+
+      // Check if SKU conflicts with existing products
+      let finalSKU = importedSKU;
+      let needsResolving = false;
+      
       if (importedProductId) {
+        // If Product ID exists, we might be updating
         if (existingProductsById.has(importedProductId)) {
-          const existing = existingProductsById.get(importedProductId);
-          if (existing.sku !== importedSKU && existingProductsBySKU.has(importedSKU)) {
-            const skuOwner = existingProductsBySKU.get(importedSKU);
-            if (skuOwner.productId !== importedProductId) {
-              toast.error(
-                `Cannot change SKU to "${importedSKU}" for product ID "${importedProductId}" — ` +
-                `that SKU is already used by "${skuOwner.productName}" (ID: ${skuOwner.productId}).`
-              );
-              setIsUploading(false);
-              return;
+          const existingProduct = existingProductsById.get(importedProductId);
+          // If this is the same product (by ID), SKU conflict is fine (we're updating the same product)
+          if (existingProduct.sku !== importedSKU) {
+            // Check if new SKU is already used by a DIFFERENT product
+            if (existingProductsBySKU.has(importedSKU)) {
+              const skuProduct = existingProductsBySKU.get(importedSKU);
+              if (skuProduct.productId !== importedProductId) {
+                // Conflict: SKU belongs to another product - generate new SKU
+                finalSKU = generateNewSKU(importedSKU, existingSKUs);
+                needsResolving = true;
+              }
             }
           }
         } else if (existingProductsBySKU.has(importedSKU)) {
-          const existing = existingProductsBySKU.get(importedSKU);
-          toast.error(
-            `Cannot create product with SKU "${importedSKU}" — ` +
-            `it is already used by "${existing.productName}" (ID: ${existing.productId}).`
-          );
-          setIsUploading(false);
-          return;
+          // Creating new product but SKU already exists - generate new SKU
+          finalSKU = generateNewSKU(importedSKU, existingSKUs);
+          needsResolving = true;
         }
       } else {
+        // No Product ID provided - new product creation
         if (existingProductsBySKU.has(importedSKU)) {
-          const existing = existingProductsBySKU.get(importedSKU);
-          toast.error(
-            `Cannot create product with SKU "${importedSKU}" — ` +
-            `it already exists for "${existing.productName}" (ID: ${existing.productId}). ` +
-            `Use a unique SKU, or supply the Product Id to update it.`
-          );
-          setIsUploading(false);
-          return;
+          // SKU already exists - generate new unique SKU
+          finalSKU = generateNewSKU(importedSKU, existingSKUs);
+          needsResolving = true;
         }
+      }
+      
+      if (needsResolving) {
+        console.log(`SKU conflict for "${importedSKU}" resolved to "${finalSKU}"`);
+        const resolvedItem = { ...item, resolvedSKU: finalSKU };
+        productsToProcess.push(resolvedItem);
+        csvSKUSet.add(finalSKU);
+        existingSKUs.add(finalSKU);
+      } else {
+        productsToProcess.push(item);
+        csvSKUSet.add(importedSKU);
+        existingSKUs.add(importedSKU);
       }
     }
 
@@ -214,10 +254,10 @@ const createProductsFromCSV = async () => {
 
     // ── 3. Process in chunks ──────────────────────────────────────────────────
     const CHUNK_SIZE      = 100;
-    const REQUEST_DELAY   = 80;   // ms between product saves — avoids hammering the server
+    const REQUEST_DELAY   = 80;
     const chunks          = [];
-    for (let i = 0; i < csvData.length; i += CHUNK_SIZE) {
-      chunks.push(csvData.slice(i, i + CHUNK_SIZE));
+    for (let i = 0; i < productsToProcess.length; i += CHUNK_SIZE) {
+      chunks.push(productsToProcess.slice(i, i + CHUNK_SIZE));
     }
 
     const categoryMap = new Map();
@@ -225,13 +265,12 @@ const createProductsFromCSV = async () => {
     let failedCount    = 0;
     let createdCount   = 0;
     let updatedCount   = 0;
-    const totalProducts = csvData.length;
+    const totalProducts = productsToProcess.length;
 
     for (const chunk of chunks) {
-
       // ── 3a. Ensure every category in this chunk exists on the server ────────
       for (const item of chunk) {
-        const categoryName = item["Category"].trim().toUpperCase();
+        const categoryName = item["Category"]?.trim().toUpperCase() || "NO CATEGORY";
 
         if (!categoryMap.has(categoryName)) {
           const categoryId = generateCategoryId();
@@ -258,7 +297,6 @@ const createProductsFromCSV = async () => {
             );
           } catch (err) {
             console.error("Error creating category:", categoryName, err);
-            // Non-fatal — product save may still succeed if category already exists server-side
           }
         }
       }
@@ -266,9 +304,10 @@ const createProductsFromCSV = async () => {
       // ── 3b. Save each product ───────────────────────────────────────────────
       for (const item of chunk) {
         try {
-          const categoryName      = item["Category"].trim().toUpperCase();
+          const categoryName      = item["Category"]?.trim().toUpperCase() || "NO CATEGORY";
           const categoryId        = categoryMap.get(categoryName);
-          const newSKU            = item["Product SKU"]?.trim() || "";
+          // Use resolvedSKU if it exists, otherwise use the original SKU
+          const newSKU            = item.resolvedSKU || item["Product SKU"]?.trim() || "";
           const providedProductId = item["Product Id"]?.trim();
 
           let existingProduct = null;
@@ -276,53 +315,47 @@ const createProductsFromCSV = async () => {
           let isUpdate        = false;
           let oldSKU          = null;
 
-          if (providedProductId) {
-            if (existingProductsById.has(providedProductId)) {
-              existingProduct = existingProductsById.get(providedProductId);
-              productId = providedProductId;
-              isUpdate  = true;
-              oldSKU    = existingProduct.sku;
-              console.log(`UPDATE by ID: ${existingProduct.productName} (${providedProductId})`);
-            } else {
-              isUpdate = false;
-              console.log(`CREATE with provided ID: ${providedProductId} — ${item["Product Name"]}`);
+          // Check if this is an update (Product ID exists in system)
+          if (providedProductId && existingProductsById.has(providedProductId)) {
+            existingProduct = existingProductsById.get(providedProductId);
+            productId = providedProductId;
+            isUpdate = true;
+            oldSKU = existingProduct.sku;
+            console.log(`UPDATE by ID: ${existingProduct.productName} (${providedProductId}) - SKU: ${oldSKU} → ${newSKU}`);
+          } else if (!providedProductId && existingProductsBySKU.has(newSKU)) {
+            // If no Product ID but SKU exists, we might have a conflict - check if we resolved it
+            const skuProduct = existingProductsBySKU.get(newSKU);
+            if (skuProduct.productId && existingProductsById.has(skuProduct.productId)) {
+              existingProduct = existingProductsById.get(skuProduct.productId);
+              productId = existingProduct.productId;
+              isUpdate = true;
+              oldSKU = existingProduct.sku;
             }
           } else {
-            productId = generateProductId();
-            isUpdate  = false;
-            console.log(`CREATE (generated ID): ${item["Product Name"]} SKU: ${newSKU}`);
+            // New product
+            productId = providedProductId || generateProductId();
+            isUpdate = false;
+            console.log(`CREATE: ${item["Product Name"]} (SKU: ${newSKU})`);
           }
 
-          // Handle SKU rename: remove old SKU from our in-memory map
+          // If SKU changed, update maps
           if (isUpdate && oldSKU && oldSKU !== newSKU) {
-            console.log(
-              `SKU rename: "${existingProduct.productName}" ${oldSKU} → ${newSKU}`
-            );
             existingProductsBySKU.delete(oldSKU);
-
-            if (existingProductsBySKU.has(newSKU)) {
-              const conflict = existingProductsBySKU.get(newSKU);
-              if (conflict.productId !== productId) {
-                throw new Error(
-                  `Cannot rename SKU to "${newSKU}" — already used by "${conflict.productName}".`
-                );
-              }
-            }
           }
 
           const stockBefore = existingProduct ? (Number(existingProduct.stock) || 0) : 0;
 
           const product = {
-            productName:          item["Product Name"].trim().toUpperCase(),
+            productName:          item["Product Name"]?.trim().toUpperCase() || "",
             category:             categoryName,
             categoryId:           categoryId,
-            productType:          item["Product Type"],
+            productType:          item["Product Type"] || "Each",
             sku:                  newSKU,
-            lowStockNotification: Number(item["Low Stock"]  || 0),
-            trackStock:           item["Track Stock"].toUpperCase() === "TRUE",
-            price:                Number(item["Price"]  || 0),
-            cost:                 Number(item["Cost"]   || 0),
-            stock:                Number(item["Stock"]  || 0),
+            lowStockNotification: Number(item["Low Stock"] || 0),
+            trackStock:           (item["Track Stock"] || "TRUE").toUpperCase() === "TRUE",
+            price:                Number(item["Price"] || 0),
+            cost:                 Number(item["Cost"] || 0),
+            stock:                Number(item["Stock"] || 0),
             userId,
             productId,
             roleOfEditor: "Admin",
@@ -331,6 +364,11 @@ const createProductsFromCSV = async () => {
             EditorId:     userId,
             currentDate:  new Date().toISOString(),
           };
+
+          // Validate required fields
+          if (!product.productName) {
+            throw new Error("Product Name is required");
+          }
 
           // Save product (with retry)
           const productResponse = await fetchWithRetry(
@@ -385,10 +423,22 @@ const createProductsFromCSV = async () => {
             existingProductsBySKU.set(newSKU, updated);
             existingProductsById.set(productId, updated);
             updatedCount++;
+            // If SKU was resolved, show a notification
+            if (item.resolvedSKU && item.resolvedSKU !== item["Product SKU"]) {
+              toast.info(`Product "${product.productName}" imported with generated SKU: ${newSKU} (original: ${item["Product SKU"]})`, {
+                autoClose: 3000
+              });
+            }
           } else {
             existingProductsBySKU.set(newSKU, { ...product });
             existingProductsById.set(productId, { ...product });
             createdCount++;
+            // If SKU was resolved for a new product, show a notification
+            if (item.resolvedSKU && item.resolvedSKU !== item["Product SKU"]) {
+              toast.info(`New product "${product.productName}" created with generated SKU: ${newSKU} (original: ${item["Product SKU"]} already existed)`, {
+                autoClose: 3000
+              });
+            }
           }
 
           processedCount++;
@@ -396,13 +446,13 @@ const createProductsFromCSV = async () => {
         } catch (error) {
           console.error("Error saving product:", item["Product Name"], error);
           failedCount++;
-          toast.error(`Failed to save "${item["Product Name"]}": ${error.message}`);
+          toast.error(`Failed to save "${item["Product Name"] || "Unknown"}": ${error.message}`);
         }
 
-        // ── Throttle: small pause between requests to avoid rate-limiting ─────
+        // Throttle: small pause between requests
         await new Promise(r => setTimeout(r, REQUEST_DELAY));
 
-        // Update progress after every product (success or failure)
+        // Update progress after every product
         setImportProgress({
           current: processedCount + failedCount,
           total:   totalProducts,
@@ -429,6 +479,7 @@ const createProductsFromCSV = async () => {
         <div>
           <strong>Successfully imported all products!</strong><br />
           Total: {totalProducts} | ✅ Created: {createdCount} | ✏️ Updated: {updatedCount}
+          {skuConflictMap.size > 0 && <div style={{ fontSize: '12px', marginTop: '5px' }}>⚠️ {skuConflictMap.size} SKU conflicts were automatically resolved</div>}
         </div>
       );
     }
@@ -450,7 +501,6 @@ const createProductsFromCSV = async () => {
     console.error("Error in createProductsFromCSV:", error);
   }
 };
-
   const expectedHeaders = [
     "Product SKU",
     "Product Name", 
