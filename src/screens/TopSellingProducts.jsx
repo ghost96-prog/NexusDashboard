@@ -200,115 +200,174 @@ const TopSellingProducts = () => {
     }
   }, []);
 
-  const fetchAllReceiptsData = useCallback(async (timeframe, startDate, endDate) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Authentication token is missing.");
-        return;
+const fetchAllReceiptsData = useCallback(async (timeframe, startDate, endDate) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication token is missing.");
+      return;
+    }
+
+    const decoded = jwtDecode(token);
+    const userEmail = decoded.email;
+
+    const response = await fetch(
+      `https://nexuspos.onrender.com/api/dashboardRouter/${timeframe}?startDate=${startDate}&endDate=${endDate}&email=${encodeURIComponent(userEmail)}`
+    );
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      toast.error(`Error fetching data`);
+      return;
+    }
+
+    const { soldProducts } = responseData;
+    
+    // Convert soldProducts to array
+    let productsArray = Object.values(soldProducts || {});
+    
+    // 🔍 Fetch category information from product API if needed
+    if (productsArray.length > 0) {
+      try {
+        // Check if products already have category
+        const hasCategory = productsArray.some(p => p.category !== undefined && p.category !== null && p.category !== '');
+        
+        if (!hasCategory) {
+          console.log('📊 Products missing category, fetching from product API...');
+          
+          // Fetch product details including categories
+          const productResponse = await fetch(
+            `https://nexuspos.onrender.com/api/productRouter/products?email=${encodeURIComponent(userEmail)}`
+          );
+          const productData = await productResponse.json();
+          
+          if (productData.success && productData.data) {
+            // Create a map of productId -> category
+            const categoryMap = {};
+            productData.data.forEach(product => {
+              if (product.productId && product.category) {
+                categoryMap[product.productId] = product.category;
+              }
+            });
+            
+            // Add category to each product in productsArray
+            productsArray = productsArray.map(product => {
+              if (product.productId && categoryMap[product.productId]) {
+                return {
+                  ...product,
+                  category: categoryMap[product.productId]
+                };
+              }
+              // If product doesn't have a category, mark it as "NO CATEGORY"
+              return {
+                ...product,
+                category: product.category || "NO CATEGORY"
+              };
+            });
+            
+            console.log('✅ Added categories to', Object.keys(categoryMap).length, 'products');
+          }
+        } else {
+          console.log('📊 Products already have category information');
+        }
+      } catch (err) {
+        console.error('Error fetching product categories:', err);
+        // If error, mark products without category as "NO CATEGORY"
+        productsArray = productsArray.map(product => ({
+          ...product,
+          category: product.category || "NO CATEGORY"
+        }));
       }
-
-      const decoded = jwtDecode(token);
-      const userEmail = decoded.email;
-
-      const response = await fetch(
-        `https://nexuspos.onrender.com/api/dashboardRouter/${timeframe}?startDate=${startDate}&endDate=${endDate}&email=${encodeURIComponent(userEmail)}`
-      );
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        toast.error(`Error fetching data`);
-        return;
-      }
-
-      const { soldProducts } = responseData;
+    }
+    
+    // Filter by stores
+    if (selectedStores.length > 0 && selectedStores.length < stores.length) {
+      const storeIds = selectedStores.map(store => store.storeId);
+      productsArray = productsArray.filter(product => storeIds.includes(product.storeId));
+    }
+    
+    // ✅ CATEGORY FILTERING
+    if (selectedCategories.length > 0) {
+      const totalAvailableCategories = categories.length + 1; // +1 for "NO CATEGORY"
+      const isAllCategoriesSelected = selectedCategories.length === totalAvailableCategories;
       
-      // Convert soldProducts to array
-      let productsArray = Object.values(soldProducts || {});
-      
-      // Filter by stores
-      if (selectedStores.length > 0 && selectedStores.length < stores.length) {
-        const storeIds = selectedStores.map(store => store.storeId);
-        productsArray = productsArray.filter(product => storeIds.includes(product.storeId));
-      }
-      
-      // Filter by categories
-      if (selectedCategories.length > 0 && selectedCategories.length < categories.length + 1) {
-        const hasNoCategorySelected = selectedCategories.some(cat => 
-          cat.categoryName && cat.categoryName.toUpperCase() === "NO CATEGORY"
-        );
+      // If all categories are selected, skip filtering
+      if (!isAllCategoriesSelected) {
+        // Get selected category names for filtering
         const selectedCategoryNames = selectedCategories
           .filter(cat => cat.categoryName && cat.categoryName.toUpperCase() !== "NO CATEGORY")
-          .map(cat => cat.categoryName);
+          .map(cat => cat.categoryName.toUpperCase());
         
+        const hasNoCategorySelected = selectedCategories.some(
+          cat => cat.categoryName && cat.categoryName.toUpperCase() === "NO CATEGORY"
+        );
+        
+        console.log('🔍 Filtering by categories:', selectedCategoryNames);
+        console.log('🔍 Has NO CATEGORY selected:', hasNoCategorySelected);
+        console.log('🔍 Products before filter:', productsArray.length);
+        
+        // Filter products by category
         productsArray = productsArray.filter(product => {
-          const hasRegularCategory = product.category && 
-                                     product.category.trim() !== "" && 
-                                     product.category.toUpperCase() !== "NO CATEGORY";
+          // Get product category, default to "NO CATEGORY" if missing
+          const productCategory = (product.category || "NO CATEGORY").toString().toUpperCase().trim();
+          const isNoCategoryProduct = productCategory === "NO CATEGORY" || productCategory === "";
           
-          if (hasNoCategorySelected) {
-            if (selectedCategoryNames.length > 0) {
-              const matchesRegularCategory = selectedCategoryNames.some(catName => 
-                catName.toUpperCase() === product.category?.toUpperCase()
-              );
-              const isNoCategoryProduct = !product.category || 
-                                          product.category.trim() === "" || 
-                                          product.category.toUpperCase() === "NO CATEGORY";
-              return matchesRegularCategory || isNoCategoryProduct;
-            } else {
-              const isNoCategoryProduct = !product.category || 
-                                          product.category.trim() === "" || 
-                                          product.category.toUpperCase() === "NO CATEGORY";
-              return isNoCategoryProduct;
-            }
-          } else {
-            if (selectedCategoryNames.length > 0) {
-              const matchesRegularCategory = selectedCategoryNames.some(catName => 
-                catName.toUpperCase() === product.category?.toUpperCase()
-              );
-              const isNoCategoryProduct = !product.category || 
-                                          product.category.trim() === "" || 
-                                          product.category.toUpperCase() === "NO CATEGORY";
-              return matchesRegularCategory && !isNoCategoryProduct;
-            }
+          // If product has NO CATEGORY
+          if (isNoCategoryProduct) {
+            return hasNoCategorySelected;
           }
-          return true;
+          
+          // Check if product's category matches any selected category
+          const matchesSelectedCategory = selectedCategoryNames.some(selectedCat => {
+            // Exact match (case insensitive)
+            if (productCategory === selectedCat) return true;
+            // Partial match (case insensitive) - useful for categories like "BLOUSES, TOPS & SHIRTS"
+            if (productCategory.includes(selectedCat) || selectedCat.includes(productCategory)) return true;
+            return false;
+          });
+          
+          return matchesSelectedCategory;
         });
-      }
-
-      let sortedProductSummary;
-      if (filterTopSellingBySales) {
-        sortedProductSummary = [...productsArray].sort(
-          (a, b) => (b.totalPrice || 0) - (a.totalPrice || 0)
-        );
+        
+        console.log('🔍 Products after category filter:', productsArray.length);
       } else {
-        sortedProductSummary = [...productsArray].sort(
-          (a, b) => (b.quantity || 0) - (a.quantity || 0)
-        );
+        console.log('📊 All categories selected, no filtering applied');
       }
-
-      // Calculate totals
-      const salesTotal = sortedProductSummary.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-      const costTotal = sortedProductSummary.reduce((sum, item) => sum + (item.totalCost || 0), 0);
-      const profitTotal = sortedProductSummary.reduce((sum, item) => sum + (item.profit || 0), 0);
-      const quantityTotal = sortedProductSummary.reduce((sum, item) => sum + (item.quantity || 0), 0);
-
-      setTotalSales(salesTotal);
-      setTotalCost(costTotal);
-      setTotalProfit(profitTotal);
-      setTotalQuantity(quantityTotal);
-      setProductSummary(sortedProductSummary);
-
-    } catch (error) {
-      if (!navigator.onLine) {
-        toast.error("No internet connection. Please check your network.");
-      } else {
-        toast.error("An error occurred while fetching products.");
-      }
-      console.error("Error fetching products:", error);
     }
-  }, [filterTopSellingBySales, selectedStores, selectedCategories, stores, categories]);
 
+    // Sort products based on filter
+    let sortedProductSummary;
+    if (filterTopSellingBySales) {
+      sortedProductSummary = [...productsArray].sort(
+        (a, b) => (b.totalPrice || 0) - (a.totalPrice || 0)
+      );
+    } else {
+      sortedProductSummary = [...productsArray].sort(
+        (a, b) => (b.quantity || 0) - (a.quantity || 0)
+      );
+    }
+
+    // Calculate totals
+    const salesTotal = sortedProductSummary.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+    const costTotal = sortedProductSummary.reduce((sum, item) => sum + (item.totalCost || 0), 0);
+    const profitTotal = sortedProductSummary.reduce((sum, item) => sum + (item.profit || 0), 0);
+    const quantityTotal = sortedProductSummary.reduce((sum, item) => sum + (item.quantity || 0), 0);
+
+    setTotalSales(salesTotal);
+    setTotalCost(costTotal);
+    setTotalProfit(profitTotal);
+    setTotalQuantity(quantityTotal);
+    setProductSummary(sortedProductSummary);
+
+  } catch (error) {
+    if (!navigator.onLine) {
+      toast.error("No internet connection. Please check your network.");
+    } else {
+      toast.error("An error occurred while fetching products.");
+    }
+    console.error("Error fetching products:", error);
+  }
+}, [filterTopSellingBySales, selectedStores, selectedCategories, stores, categories]);
   const onRefresh = useCallback(async (selectedOption, selectedStartRange, selectedEndRange) => {
     NProgress.start();
     setIsRefreshing(true);
