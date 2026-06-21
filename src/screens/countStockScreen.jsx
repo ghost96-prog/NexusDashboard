@@ -155,7 +155,8 @@ useEffect(() => {
           cost: latestProduct.cost || 0, // Also update cost in case it changed
           // Recalculate difference based on new expectedStock
           difference: (draftItem.counted || 0) - (latestProduct.stock || 0),
-          priceDifference: ((draftItem.counted || 0) - (latestProduct.stock || 0)) * (latestProduct.price || 0)
+          priceDifference: ((draftItem.counted || 0) - (latestProduct.stock || 0)) * (latestProduct.price || 0),
+          costDifference: ((draftItem.counted || 0) - (latestProduct.stock || 0)) * (latestProduct.cost || 0)
         };
       }
       
@@ -187,6 +188,7 @@ useEffect(() => {
     console.log('Draft items updated with latest server stock values');
   }
 }, [productsLoaded, allProducts]); // Run when products are loaded
+
   // Fetch email from token and products
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -328,7 +330,8 @@ const updateProductsAndCreateInventory = async (countData) => {
         storeName: countData.storeName,
         notes: countData.notes,
         difference: item.difference,
-        priceImpact: item.priceDifference
+        priceImpact: item.priceDifference,
+        costImpact: item.costDifference
       };
 
       inventoryUpdates.push(inventoryUpdateData);
@@ -374,7 +377,7 @@ const updateProductsAndCreateInventory = async (countData) => {
 
     // Send ALL inventory updates in ONE batch request
     if (inventoryUpdates.length > 0) {
-      console.log(`Sending ${inventoryUpdates.length} inventory updates in ONE batch...`);
+      console.log(`Sending ${inventoryUpdates.length} inventory updates in one batch...`);
       
       try {
         const response = await fetch(
@@ -429,6 +432,7 @@ const updateProductsAndCreateInventory = async (countData) => {
     };
   }
 };
+
   // Save draft function
   const handleSaveDraft = () => {
     if (!countedIsSubscribedAdmin) {
@@ -465,6 +469,7 @@ const updateProductsAndCreateInventory = async (countData) => {
         counted: item.counted || 0,
         difference: item.difference || 0,
         priceDifference: item.priceDifference || 0,
+        costDifference: item.costDifference || 0,
         price: item.price || 0,
         cost: item.cost || 0,
         countedQuantity: item.countedQuantity || '',
@@ -475,6 +480,7 @@ const updateProductsAndCreateInventory = async (countData) => {
       status: 'Draft',
       totalDifference: calculatedTotals.totalDifference,
       totalPriceDifference: calculatedTotals.totalPriceDifference,
+      totalCostDifference: calculatedTotals.totalCostDifference,
       totalItems: countedTotalItems,
       completedItems: countedCompletedItems
     };
@@ -608,13 +614,16 @@ const updateProductsAndCreateInventory = async (countData) => {
         const counted = quantity;
         const difference = counted - (item.expectedStock || 0);
         const price = parseFloat(item.price) || 0;
+        const cost = parseFloat(item.cost) || 0;
         const priceDifference = difference * price;
+        const costDifference = difference * cost;
         
         return {
           ...item,
           counted,
           difference,
           priceDifference,
+          costDifference,
           countedQuantity: countedCurrentQuantity,
           isCounted: true
         };
@@ -659,13 +668,16 @@ const updateProductsAndCreateInventory = async (countData) => {
         const counted = quantity;
         const difference = counted - (item.expectedStock || 0);
         const price = parseFloat(item.price) || 0;
+        const cost = parseFloat(item.cost) || 0;
         const priceDifference = difference * price;
+        const costDifference = difference * cost;
         
         return {
           ...item,
           counted,
           difference,
           priceDifference,
+          costDifference,
           countedQuantity: value, // Keep as string for input
           isCounted: value !== '' // Counted if any value is entered (even 0)
         };
@@ -683,10 +695,11 @@ const updateProductsAndCreateInventory = async (countData) => {
     (acc, item) => {
       return {
         totalDifference: acc.totalDifference + (item.difference || 0),
-        totalPriceDifference: acc.totalPriceDifference + (item.priceDifference || 0)
+        totalPriceDifference: acc.totalPriceDifference + (item.priceDifference || 0),
+        totalCostDifference: acc.totalCostDifference + (item.costDifference || 0)
       };
     },
-    { totalDifference: 0, totalPriceDifference: 0 }
+    { totalDifference: 0, totalPriceDifference: 0, totalCostDifference: 0 }
   );
 
   const handleCountedComplete = () => {
@@ -747,6 +760,7 @@ const handleCountedConfirmComplete = async () => {
       counted: item.counted || 0,
       difference: item.difference || 0,
       priceDifference: item.priceDifference || 0,
+      costDifference: item.costDifference || 0,
       price: item.price || 0,
       cost: item.cost || 0,
       countedQuantity: item.countedQuantity || '',
@@ -775,6 +789,7 @@ const handleCountedConfirmComplete = async () => {
       status: 'Completed',
       totalDifference: calculatedTotals.totalDifference,
       totalPriceDifference: calculatedTotals.totalPriceDifference,
+      totalCostDifference: calculatedTotals.totalCostDifference,
       totalItems: countedTotalItems,
       completedItems: countedCompletedItems
     };
@@ -822,6 +837,7 @@ const handleCountedConfirmComplete = async () => {
         status: 'Completed',
         totalDifference: calculatedTotals.totalDifference,
         totalPriceDifference: calculatedTotals.totalPriceDifference,
+        totalCostDifference: calculatedTotals.totalCostDifference,
         totalItems: countedTotalItems,
         completedItems: countedCompletedItems
       };
@@ -1014,8 +1030,6 @@ const handleCountedConfirmComplete = async () => {
             )}
           </div>
 
-    
-
           {/* Start Section - Only show when no current item */}
           {!countedCurrentItem && countedItems.length > 0 && (
             <div className="counted-start-section">
@@ -1091,7 +1105,8 @@ const handleCountedConfirmComplete = async () => {
                     <div className="counted-table-header-cell">Expected stock</div>
                     <div className="counted-table-header-cell">Counted</div>
                     <div className="counted-table-header-cell">Difference</div>
-                    <div className="counted-table-header-cell">Price difference</div>
+                    <div className="counted-table-header-cell">Price diff</div>
+                    <div className="counted-table-header-cell">Cost diff</div>
                     <div className="counted-table-header-cell">Actions</div>
                   </div>
                   
@@ -1112,7 +1127,7 @@ const handleCountedConfirmComplete = async () => {
                               className="counted-count-input"
                               value={item.countedQuantity || ''}
                               onChange={(e) => handleCountedManualUpdate(item.productId, e.target.value)}
-                              placeholder={item.expectedStock?.toString() || '0'} // Show expected stock as placeholder
+                              placeholder={item.expectedStock?.toString() || '0'}
                             />
                           </div>
                           <div className={`counted-item-difference ${(item.difference || 0) < 0 ? 'counted-negative' : (item.difference || 0) > 0 ? 'counted-positive' : ''}`}>
@@ -1120,6 +1135,9 @@ const handleCountedConfirmComplete = async () => {
                           </div>
                           <div className={`counted-item-cost-difference ${(item.priceDifference || 0) < 0 ? 'counted-negative' : (item.priceDifference || 0) > 0 ? 'counted-positive' : ''}`}>
                             ${Math.abs(item.priceDifference || 0).toFixed(2)}
+                          </div>
+                          <div className={`counted-item-cost-difference ${(item.costDifference || 0) < 0 ? 'counted-negative' : (item.costDifference || 0) > 0 ? 'counted-positive' : ''}`}>
+                            ${Math.abs(item.costDifference || 0).toFixed(2)}
                           </div>
                           <div className="counted-item-actions">
                             <button
@@ -1156,6 +1174,9 @@ const handleCountedConfirmComplete = async () => {
                         </div>
                         <div className={`counted-total-cost-difference ${calculatedTotals.totalPriceDifference < 0 ? 'counted-negative' : calculatedTotals.totalPriceDifference > 0 ? 'counted-positive' : ''}`}>
                           ${Math.abs(calculatedTotals.totalPriceDifference).toFixed(2)}
+                        </div>
+                        <div className={`counted-total-cost-difference ${calculatedTotals.totalCostDifference < 0 ? 'counted-negative' : calculatedTotals.totalCostDifference > 0 ? 'counted-positive' : ''}`}>
+                          ${Math.abs(calculatedTotals.totalCostDifference).toFixed(2)}
                         </div>
                         <div className="counted-total-actions"></div>
                       </div>
@@ -1332,6 +1353,12 @@ const handleCountedConfirmComplete = async () => {
                   <span>Price Impact:</span>
                   <strong className={calculatedTotals.totalPriceDifference < 0 ? 'counted-negative' : calculatedTotals.totalPriceDifference > 0 ? 'counted-positive' : ''}>
                     ${Math.abs(calculatedTotals.totalPriceDifference).toFixed(2)}
+                  </strong>
+                </div>
+                <div className="counted-summary-item">
+                  <span>Cost Impact:</span>
+                  <strong className={calculatedTotals.totalCostDifference < 0 ? 'counted-negative' : calculatedTotals.totalCostDifference > 0 ? 'counted-positive' : ''}>
+                    ${Math.abs(calculatedTotals.totalCostDifference).toFixed(2)}
                   </strong>
                 </div>
               </div>
